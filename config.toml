@@ -1,0 +1,12 @@
+baseURL = 'http://suraciii.github.io/'
+languageCode = 'en-us'
+title = 'The Dice Maker'
+
+theme = 'yinyang'
+
+[author]
+  name = "The Dice Maker"
+
+[[params.socials]]
+name = "Github"
+link = "https://github.com/suraciii"
