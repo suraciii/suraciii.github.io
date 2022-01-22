@@ -1,5 +1,5 @@
 ---
-title: "生产更好的应用"
+title: "更有效率地生产更好的应用"
 date: 2022-01-20T00:00:00Z
 ---
 
@@ -125,4 +125,9 @@ date: 2022-01-20T00:00:00Z
 
 ### 7. 待续
 
+*引用：*
+
+*1. The DevOps Handbook*  
+*2. [What is DevOps?](https://azure.microsoft.com/en-us/overview/what-is-devops/)*  
+*3. State Of DevOps 2021*  
 
