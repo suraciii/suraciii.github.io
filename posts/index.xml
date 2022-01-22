@@ -1,0 +1,525 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on The Dice Maker</title><link>http://suraciii.github.io/posts/</link><description>Recent content in Posts on The Dice Maker</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Thu, 20 Jan 2022 00:00:00 +0000</lastBuildDate><atom:link href="http://suraciii.github.io/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>更有效率地生产更好的应用</title><link>http://suraciii.github.io/posts/build-better-apps/</link><pubDate>Thu, 20 Jan 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/build-better-apps/</guid><description>&lt;p>想象一个产品，比如一辆汽车，它是如何出现，又是如何成为我们在街上见到的那样，而它又结束在何处呢？&lt;/p>
+&lt;p>首先，任何产品都不是凭空出现的，它们都是凝结了人类的智慧和劳动，被人们生产出来的，那么，这些产品最开始都是出现在人类的大脑中。&lt;/p>
+&lt;blockquote>
+&lt;p>蜘蛛的活动与织工的活动相似，蜜蜂建筑蜂房的本领使人间的许多建筑师感到惭愧。但是，最蹩脚的建筑师从一开始就比最灵巧的蜜蜂高明的地方，是他在建筑蜂房以前，已经在自己的头脑中把它建成了。&lt;/p>
+&lt;/blockquote>
+&lt;p>一开始，我们要思考——这些即将被我们制造出来的汽车，它们满足了哪些人的哪些需要？它们应该是什么形状，它们应该具备哪些功能？对此，我们进行了一些想象和假设，有了一个模糊的蓝图。&lt;br>
+接着，我们对生产过程进行规划和分工，我们设计出产品的原型，建设生产线，估计各种零件制造和组装的工时和损耗等，我们规划这些过程并安排相应的任务，追踪进度和问题。&lt;br>
+随后，生产线被打造出来，零件被车铣、打磨，组装成型，成为完整的汽车。&lt;br>
+我们将这些运输到世界各地，最终交付到了客户手中。&lt;br>
+但这还没有结束——如果我们想要业务持续地进行下去并增长地话。&lt;br>
+我们要为客户维修故障车辆，我们要聆听客户的抱怨以及他们新的、更深层的需要，我们总结这批汽车的优点和缺陷，我们继续进行新的市场调查和技术研究，然后打造更快，更舒适，更安全的新的汽车。&lt;/p>
+&lt;h2 id="应用的生命周期">应用的生命周期&lt;/h2>
+&lt;p>类似的，应用的生命周期通常有着如下几个阶段：&lt;/p>
+&lt;ol>
+&lt;li>计划。在这个阶段，我们收集用户需求，对应用的功能和形态进行假设和描绘，设计产品原型。拆解开发任务，评估任务的开发成本和难度，规划任务的优先级和排期，追踪任务的进度和开发过程中出现的缺陷。&lt;/li>
+&lt;li>开发。这个阶段中，我们进行应用的编码和测试等工作，最终生成可部署的制品。&lt;/li>
+&lt;li>交付。应用开发完成后，我们要将其部署到生产环境，配置相应的基础设施，如服务器和数据库等，直到用户能够使用到它。&lt;/li>
+&lt;li>运维。应用交付后，我们需要对其进行观察和维护，如果它出现了故障，我们需要进行响应处理。&lt;/li>
+&lt;/ol>
+&lt;p>&lt;img src="http://suraciii.github.io/build-better-apps/1.png" alt="">&lt;/p>
+&lt;p>而对于绝大多数现代应用来说，无论是web服务还是客户端应用，它们都是需要持续进行迭代和改进的，一个版本上线后，我们总是会不断地收集或者开发到更多的用户需求，我们会不断地识别到其中隐藏着的商业空间和发展潜力，我们会不断地尝试对其调整，以响应市场的变化，也会不断地进行改进，以图拓宽用户群体和商业渠道，或是为了应对来自竞争对手的压力。&lt;/p>
+&lt;p>&lt;img src="http://suraciii.github.io/build-better-apps/2.png" alt="">&lt;/p>
+&lt;p>而应用的每一次改进和调整，也都有着上面讲的四个阶段，形成一个迭代周期，这样，应用的生产成为了一个多周期的、持续性的活动。&lt;/p>
+&lt;p>&lt;img src="http://suraciii.github.io/build-better-apps/3.png" alt="">&lt;/p>
+&lt;p>在这样的活动中，在不断的改进和调整中，产品的价值不断增长，业务更加成功，而这正是我们所追求的。&lt;/p>
+&lt;p>&lt;img src="http://suraciii.github.io/build-better-apps/4.png" alt="">&lt;/p>
+&lt;h2 id="恶性循环和黑天鹅">恶性循环和黑天鹅&lt;/h2>
+&lt;p>然而真的有这么乐观吗？来看看现实中的情况吧：&lt;/p>
+&lt;ul>
+&lt;li>工期评估是否足够&lt;strong>准确&lt;/strong>？计划是否总是被意外打乱？&lt;/li>
+&lt;li>新功能需要多久时间才能够完全上线？在这期间出现过多少次&lt;strong>返工&lt;/strong>？&lt;/li>
+&lt;li>我们多久可以进行一次&lt;strong>部署&lt;/strong>？部署总是可以顺利进行吗？&lt;/li>
+&lt;li>线上产品出现过多少次在开发阶段没有测试出来的&lt;strong>缺陷&lt;/strong>？&lt;/li>
+&lt;li>线上产品出现过多少次&lt;strong>服务中断&lt;/strong>？我们花费了多少时间来定位问题？又花了多少时间使其恢复正常？&lt;/li>
+&lt;li>花费大量人力和时间投入打造的新功能，是否被客户所接受？是否具备与成本相符合的&lt;strong>价值&lt;/strong>？&lt;/li>
+&lt;li>&lt;strong>变更&lt;/strong>是否很可能会导致失败？是否经常会破坏已有的功能？团队是否已经开始恐惧对产品进行变更？&lt;/li>
+&lt;li>团队能花费多少力气在新功能的开发交付上？又有多少力气用在了不停地修复不断产生的问题？&lt;/li>
+&lt;li>如果我们扩充团队，团队的生产力能随之有效增长吗？&lt;/li>
+&lt;/ul>
+&lt;p>思考清楚这些问题后，再看：&lt;/p>
+&lt;ul>
+&lt;li>我们能够对变化莫测的市场及时做出有效的响应吗？&lt;/li>
+&lt;li>竞争对手们呢？&lt;/li>
+&lt;/ul>
+&lt;p>软件开发中存在着一个常见地恶性循环：&lt;/p>
+&lt;ol>
+&lt;li>新功能的开发总是会难以避免地在代码和基础设施中引入混乱，如果不及时进行干预，这些混乱会使得软件和基础设施变得越来越复杂和脆弱。&lt;/li>
+&lt;li>复杂和脆弱的代码及基础设施，导致了更高的开发难度，更高的返工率，以及线上产品更高的故障率，也使得我们的任务和成本预估变得更加不准确。&lt;/li>
+&lt;li>我们花费了更多的资源用来调查和修复问题，而新功能的开发又会需要更高的资源投入，为了满足工期要求，我们不得不暂时（我们是这么说服自己的）地去快而脏地处理故障和进行新的开发，从而引入了更多的混乱。&lt;/li>
+&lt;/ol>
+&lt;blockquote>
+&lt;p>所有事情都变得更加困难——所有人都越来越忙，工作所消耗的时间越来越多，沟通变得更加缓慢，工作积压得越来越多。我们的工作耦合得更加紧密，即使是很小的行动也会导致较大的事故，我们更加害怕和拒绝做出变更。工作需要更多的沟通、协调和审批；团队必须等待更长的时间，等待相关的工作完成；我们的工作质量持续恶化。车轮开始嘎嘎作响地缓慢移动，要想使之继续转动，就需要付出更多的努力。&lt;/p>
+&lt;/blockquote>
+&lt;p>最终，黑天鹅出现了：&lt;/p>
+&lt;p>&lt;img src="http://suraciii.github.io/build-better-apps/5.png" alt="">&lt;/p>
+&lt;p>也许是一个政策的变更，也许是一次疫情的发生，或者是一个新生的更有活力的竞争对手的崛起，总之，灾难似乎是在慢慢地逼近，又仿佛在一瞬间降临，一个产品迎来了自己的终点。
+也许企业会开发出新的应用，会去追求新的商机，团队也会有新的项目，或者有新的东家，但是这个应用的一切都死亡了。&lt;/p>
+&lt;p>这个产品结束了，我们失败了。&lt;/p>
+&lt;h2 id="改变状况的三个关键">改变状况的三个关键&lt;/h2>
+&lt;p>如何避免这样的结局呢？这其中有三个关键点：&lt;/p>
+&lt;h3 id="1-缩短交付周期">1. 缩短交付周期：&lt;/h3>
+&lt;p>更短的交付周期意味着能够更快更及时更有效地获得来自客户的反馈，这有助于我们发掘客户的真实需要并去实现这些需求。
+而更短的交付周期里，我们的交付计划能够做到更为准确，每次交付过程中的风险也会相对较小，出现的问题也更容易处理。
+最终，更短的交付周期使得我们能够更迅捷、更频繁、更准确地向客户交付更多的价值。&lt;/p>
+&lt;p>从：&lt;br>
+&lt;img src="http://suraciii.github.io/build-better-apps/3.png" alt="">&lt;br>
+到：&lt;br>
+&lt;img src="http://suraciii.github.io/build-better-apps/6.png" alt="">&lt;/p>
+&lt;h3 id="2-建立快速高效持续的反馈机制">2. 建立快速、高效、持续的反馈机制：&lt;/h3>
+&lt;p>在应用交付的每个阶段里，我们建立快速、高效、持续的反馈机制，缩短问题检测周期，一方面，这可以帮助我们更及时准确地发现问题，从而以更低的成本实现更及时快速的修复，另一方面，也帮助我们打造安全可靠且高质量的应用。&lt;/p>
+&lt;h3 id="3-持续学习和持续改善">3. 持续学习和持续改善&lt;/h3>
+&lt;p>通过持续地，制度性地学习和改善，提高团队技能水平，将局部的经验快速转化为全局的改进，帮助整个组织尝试和实践新技术，通过科学的方式改进流程和开发产品，从成功和失败中积累经验教训，持续不断地进行改善，从而提高产品质量和生产力。&lt;/p>
+&lt;h2 id="一些实践方法和工具">一些实践、方法和工具&lt;/h2>
+&lt;p>具体来说，会有多种实践方法和工具来帮助我们做到这些：&lt;/p>
+&lt;h3 id="1-持续集成">1. 持续集成&lt;/h3>
+&lt;p>频繁持续地将个人的代码变更集成到主干分支，能够避免解决冲突成本过高，bug难以修复，开发者之间代码互相影响或重复相同工作等。
+持续集成流水线中的自动化测试能够帮助我们在更早的阶段发现和解决问题，并避免问题在将来被重复引入。
+自动化代码质量检查能够持续地帮助我们改善代码质量，减少代码中的混乱和隐患。&lt;/p>
+&lt;h3 id="2-持续交付">2. 持续交付&lt;/h3>
+&lt;p>通过高效、可靠、自动化的发布流水线，减少应用交付流程中的人工和停滞环节，降低过程中的阻力和风险，从而使应用可以更频繁、轻松地进行发布。&lt;/p>
+&lt;h3 id="3-建立应用可观测性">3. 建立应用可观测性&lt;/h3>
+&lt;p>为应用建立可观测性，提供完善的日志收集、链路追踪和监控能力，使开发者能够更好的理解应用内部的行为，从而减少应用故障的发现和定位所需要的时间，提高线上可用性。
+完善的监控也提供了基于线上应用的反馈回路，能够在故障恶化或产生严重影响之前提前发现，也能够通过对用量指标的收集为应用的后续增强和改善提供信息。&lt;/p>
+&lt;h3 id="4-技术债务管理">4. 技术债务管理&lt;/h3>
+&lt;p>通过持续性地、组织性地、制度性的对技术债务进行管理，降低应用代码中存在的风险，减少新功能开发时可能导致的额外成本。&lt;/p>
+&lt;h3 id="5-代码评审">5. 代码评审&lt;/h3>
+&lt;p>通过代码评审，增强业务知识和技术知识在团队成员之间传播，增强团队成员的生产力，减少bug出现的风险，提高代码质量，获得可能的更优解决方案等。&lt;/p>
+&lt;h3 id="6-基础设施即代码">6. 基础设施即代码&lt;/h3>
+&lt;p>通过以代码形式管理幂等、不可变的基础设施，解决应用发布过程中因环境偏移（如随时间发展各个环境中的配置逐渐变得不同）而导致的各种问题，降低应用交付过程中的阻碍和风险。
+同时，基础设施即代码也提高了管理基础设施的可靠性和效率等。&lt;/p>
+&lt;h3 id="7-待续">7. 待续&lt;/h3>
+&lt;p>&lt;em>引用：&lt;/em>&lt;/p>
+&lt;p>&lt;em>1. The DevOps Handbook&lt;/em>&lt;br>
+&lt;em>2. &lt;a href="https://azure.microsoft.com/en-us/overview/what-is-devops/">What is DevOps?&lt;/a>&lt;/em>&lt;br>
+&lt;em>3. State Of DevOps 2021&lt;/em>&lt;/p></description></item><item><title>解决吞吐性能问题时的思路</title><link>http://suraciii.github.io/posts/throughput-issue-solutions/</link><pubDate>Fri, 20 Nov 2020 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/throughput-issue-solutions/</guid><description>&lt;h2 id="什么是throughput">什么是Throughput&lt;/h2>
+&lt;p>Throughput指的是应用处理任务的速率，它所描述的是应用在单位时间内能够处理多大数量的任务&lt;/p>
+&lt;p>如下，如果应用能够在1s中处理3个task，我们可以说它的throughput是3tps&lt;/p>
+&lt;p>&lt;img src="https://fulu-item11-zjk.oss-cn-zhangjiakou.aliyuncs.com/images/1.png" alt="1">&lt;/p>
+&lt;p>值得注意的是，throughput这个指标所代表的是速率，它并不代表同时性（Concurrency），比如图一中的3tps的应用，我们能说它可以在1s中处理3个task，但是并不意味着3个task是同时被处理的，而可能是顺序、线性地被处理&lt;/p>
+&lt;p>如果应用可以支持同时处理多个任务，比如应用（系统）中有2个worker，每个worker都可以并行地在1s中内处理3个task，它的throughput则是6tps&lt;/p>
+&lt;p>&lt;img src="https://fulu-item11-zjk.oss-cn-zhangjiakou.aliyuncs.com/images/2.png" alt="2">&lt;/p>
+&lt;p>如何提高throughput呢？显然可以想到：&lt;/p>
+&lt;ol>
+&lt;li>缩短每个任务处理的耗时&lt;/li>
+&lt;li>让更多的任务可以被同时处理 - 增加并行能力&lt;/li>
+&lt;/ol>
+&lt;p>下图中的应用（系统）可以支持同时处理3个任务，并且每个任务的处理耗时缩短到一半，其throughput是18tps&lt;/p>
+&lt;p>&lt;img src="https://fulu-item11-zjk.oss-cn-zhangjiakou.aliyuncs.com/images/3.png" alt="3">&lt;/p>
+&lt;p>##并行中的共享资源和锁&lt;/p>
+&lt;p>如果对任务的处理需要访问/修改共享资源呢？比如在扣减库存的任务中，每个任务都需要去访问（校验）当前库存余量，并且要修改（扣减）它&lt;/p>
+&lt;p>对共享资源的并发访问和修改会产生冲突和一致性问题，比如有两个扣减库存的任务正在同时进行，此时库存余量为1，两个任务都从存储中拿到了当前的库存余量，当其中一个任务完成后，库存余量被扣减为0，此时另一个任务已经完成了校验过程，再去扣减库存的时候，库存余量就被更新成了-1&lt;/p>
+&lt;p>我们通常使用锁来解决对共享资源的争用所导致的并发冲突与一致性问题，使用资源锁来隔离对资源的操作，保证数据的一致性（正确性）&lt;/p>
+&lt;p>&lt;img src="https://fulu-item11-zjk.oss-cn-zhangjiakou.aliyuncs.com/images/4.png" alt="4">&lt;/p>
+&lt;p>如图，在试图使用某个资源之前，先获取锁从而占用住这个资源，隔离掉其它任务对此资源的访问/修改，从而在占用时间里保证资源的一致性，再使用结束后则释放锁，使资源可以被其它任务访问&lt;/p>
+&lt;p>为了避免并发冲突以及获取一致性，并非一定要通过锁，也会有其它的方法（比如原子操作），但是总体上还是在对资源的访问/修改制造隔离&lt;/p>
+&lt;p>隔离的后果是什么呢？&lt;/p>
+&lt;h3 id="锁共享资源的争用和等待">锁（共享资源）的争用和等待&lt;/h3>
+&lt;p>&lt;img src="https://fulu-item11-zjk.oss-cn-zhangjiakou.aliyuncs.com/images/5.png" alt="5">&lt;/p>
+&lt;p>争用会导致wait time&lt;/p>
+&lt;p>也因为我们对资源的访问/修改进行了隔离，导致了多个任务的处理无法同时使用共享资源，每个任务都要等待其它任务对资源的占用结束后才可以继续进行处理，这个等待就会产生wait time&lt;/p>
+&lt;p>这些wait time意味着：&lt;/p>
+&lt;ol>
+&lt;li>任务的处理时间被延长 - 体现为latency&lt;/li>
+&lt;li>并行的任务越多，wait time越长 - 破坏了并行处理任务的能力&lt;/li>
+&lt;/ol>
+&lt;h4 id="降低锁的成本">降低锁的成本&lt;/h4>
+&lt;h5 id="降低使用锁的费用">降低使用锁的费用&lt;/h5>
+&lt;p>锁的创建、获取、释放和销毁都是有代价的，降低使用锁本身的费用，比如把数据库锁换成redis锁，甚至换成本地内存锁&lt;/p>
+&lt;p>以减库存为例： 提前把库存放到redis里，从redis中扣减&lt;/p>
+&lt;h5 id="降低锁的占用时间">降低锁的占用时间&lt;/h5>
+&lt;p>在获取到资源锁之后，应该尽快地释放它，尽量不要在占用锁的期间里做比较花费时间的事情，比如：1）发送HTTP请求 2）执行昂贵的SQL语句 3）超时等待 等等&lt;/p>
+&lt;p>但是它有局限，如果我们尝试增加任务的并行数，wait time就会继续随之增长&lt;/p>
+&lt;p>&lt;img src="https://fulu-item11-zjk.oss-cn-zhangjiakou.aliyuncs.com/images/6.png" alt="6">
+&lt;img src="https://fulu-item11-zjk.oss-cn-zhangjiakou.aliyuncs.com/images/6-1.png" alt="6-1">&lt;/p>
+&lt;h4 id="使用更细粒度的锁共享资源">使用更细粒度的锁（共享资源）&lt;/h4>
+&lt;p>通过尽量使用更细粒度的锁（共享资源），可以使锁争用（碰撞）的概率更低，出现等待的情况也就更少&lt;/p>
+&lt;p>&lt;img src="https://fulu-item11-zjk.oss-cn-zhangjiakou.aliyuncs.com/images/7.png" alt="7">&lt;/p>
+&lt;p>以减库存为例： 把库存分布到多个篮子里，100=10*10，随机或者按策略去某个篮子里扣减，这样原本是所有任务都使用单一的库存余量，现在变成分散地使用10个库存余量，出现等待的概率就会变少&lt;/p>
+&lt;p>无论是降低锁成本还是降低锁粒度，其目的都是减少争用的发生，减少任务的wait time，从而可以提高对多任务的并行处理能力&lt;/p>
+&lt;h3 id="缓冲请求合并任务批量处理buffer-merge-process">缓冲请求，合并任务，批量处理（Buffer-Merge-Process）&lt;/h3>
+&lt;p>&lt;img src="https://fulu-item11-zjk.oss-cn-zhangjiakou.aliyuncs.com/images/8.png" alt="8">&lt;/p>
+&lt;p>以减库存为例：&lt;/p>
+&lt;ol>
+&lt;li>把减库存请求丢进队列中&lt;/li>
+&lt;li>每次从队列中取出多个减库存请求，合并成一个减库存任务&lt;/li>
+&lt;li>处理合并后的减库存任务&lt;/li>
+&lt;/ol>
+&lt;p>这种方式会导致单个任务的耗时增加 - 因为任务不会立即被处理，但是可以增加总体的throughput，某种程度上是用延迟交换了吞吐，需要考虑这个交换是否值得&lt;/p>
+&lt;h4 id="总体思路">总体思路&lt;/h4>
+&lt;p>1.首先定位争用&lt;/p>
+&lt;p>2.减少争用，减少Wait Time&lt;/p>
+&lt;p>3.最后才尝试Buffer-Merge-Process&lt;/p>
+&lt;p>通常这三个方法都可以尝试，都有着一些成本和副作用，也经常需要结合使用，但是在考虑解决方案时，优先考虑解决锁争用&lt;/p>
+&lt;p>共享资源争用是个很糟糕的质量信号，即使在当前看起来它没有产生很严重的后果，但是实际上它有着非常大的隐患&lt;/p>
+&lt;p>它会导致应用在性能上变得脆弱：我们可以通过减少锁的费用和占用时间来减少争用从而提高性能，相反的，当锁的费用上升以及占用时间增加时，很容易大量争用导致性能急剧下降，而这时想要解决性能问题很可能要付出非常大的成本 。比如网络环境变化导致使用锁时的延迟增高，又或者一个业务需求或者bugfix需要你在占用锁时执行一个昂贵的sql语句或者http请求，甚至可能只是一个轻微的网络波动，都可能导致应用的吞吐剧烈下降&lt;/p>
+&lt;h4 id="资源争用下的scalability问题">资源争用下的Scalability问题&lt;/h4>
+&lt;p>当我们在开发应用的时候，对于应用的吞吐性能可以有三种要求：&lt;/p>
+&lt;ol>
+&lt;li>够用就行，只要能满足当前需求即可&lt;/li>
+&lt;li>吞吐性能不仅要够用，还要出色，比如当前业务只需要我们的应用有30tps，但是我们在设计和开发时，要以1000tps的性能质量来要求它&lt;/li>
+&lt;li>当前的吞吐性能需要满足当前的业务需求，不要求应用具备过高的吞吐性能，但是要求在将来它可以通过较低的成本来提升到更高的吞吐性能&lt;/li>
+&lt;/ol>
+&lt;p>第三种要求实际上就是对于应用的scalability的要求，它不要求过高的吞吐性能，但是它需要应用能够快速地响应业务需求对于吞吐性能要求的提升&lt;/p>
+&lt;p>即当外部环境变化时 - 比如业务规模的增长，比如一个重要的feature带来了性能的降低，比如云迁移导致了应用运行环境发生了变化，这时我们需要能够通过调配资源能够简单快速的提升应用的吞吐性能来适应新的需求，先快速地做到&amp;quot;Doing more&amp;quot;，然后再去&amp;quot;With less&amp;quot;&lt;/p></description></item><item><title>愚钝程序员的生存之道 - Part0: 复杂性</title><link>http://suraciii.github.io/posts/how-to-survive-as-an-01x-developer-0/</link><pubDate>Wed, 22 Apr 2020 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/how-to-survive-as-an-01x-developer-0/</guid><description>&lt;p>工作几年，我发现自己身上有着一些现象：&lt;/p>
+&lt;p>别人讲给我的东西要讲很多遍我才能理解&lt;/p>
+&lt;p>学习技术要花很多时间才能掌握&lt;/p>
+&lt;p>写代码平均每写十几行就会引入一个错误&lt;/p>
+&lt;p>…&lt;/p>
+&lt;p>这些现象似乎都指向着一个现实——我是一个愚钝的程序员。&lt;/p>
+&lt;p>作为一个愚钝的程序员，想要产出平均水平的质量和产量从而生存下去，又不想被无尽的加班和焦头烂额吞噬自己的生活，就不得不掌握一些属于愚钝程序员的生存之道，从而可以不用很辛苦很累也可以交付出高质量的软件。&lt;/p>
+&lt;h2 id="从复杂到复杂性">从复杂到复杂性&lt;/h2>
+&lt;p>愚钝程序员在开发活动中总是面临诸多的挑战，这些挑战让愚钝程序员们感到自己愚钝，当我：&lt;/p>
+&lt;ul>
+&lt;li>总是难以搞明白一些代码是如何工作的&lt;/li>
+&lt;li>总是需要花费很长时间来实现一个很小的改进&lt;/li>
+&lt;li>或者总是不清楚自己应该去修改代码的哪些地方来实现这些改进&lt;/li>
+&lt;li>总是难以快速修复一个bug&lt;/li>
+&lt;li>或者总是难以在修复一个bug的同时而不引入另一个bug&lt;/li>
+&lt;/ul>
+&lt;p>当这一系列的状况发生，让我感觉自己无能为力去轻松解决问题，让我感觉自己难以处理，无从下手，让我怀疑自己是否不适合这个行业的时候，我发出了抱怨：&lt;/p>
+&lt;p>——“这太复杂(Complex/Complicated)了！”&lt;/p>
+&lt;h3 id="区分complex和complicated">区分Complex和Complicated&lt;/h3>
+&lt;p>Complex与Complicated，二者所描述的对象都是是由存在大量互相交互的元素构成的系统，但是二者有着一些细微的不同之处：&lt;/p>
+&lt;p>对于Complicated系统，它有着确定性(deterministic)，尽管系统中所有的组件都在发生交互，都在影响着系统的状态，但是这种交互是确定的，可测的，可靠的，并且系统被影响后的状态也是有限的、有界的&lt;/p>
+&lt;p>而对于Complex系统，组件的交互以及对系统的影响是不确定的，系统的可能状态也是无限的、无界的&lt;/p>
+&lt;p>对于Complex与Complicated，目前我还没有见到一个准确而又权威的定义，有时这两个词汇在不同领域甚至会被用来表达截然相反的两个概念，但是为了方便交流，在这里我们引用了上面这种定义，并且利用一个说法来帮助我们更清晰地识别Complex：&lt;/p>
+&lt;p>&lt;em>Complex更偏向于将对象系统作为待解决的问题描述，即当我们使用Complex来描述一个系统时，Complex其实是在描述其投射在我们的大脑中的问题，那个我们正在尝试解决，并且无法轻松地理解处理的问题&lt;/em>&lt;/p>
+&lt;h3 id="复杂性">复杂性&lt;/h3>
+&lt;p>我们将复杂问题中那些标志其成为复杂问题的要素称作复杂性(Complexity) - 问题系统之所以复杂，正是因为其表现出了复杂性&lt;/p>
+&lt;p>结合前面的分析，我们可以说：我们解决问题时所面对的复杂性，成为了我们对复杂问题的开发处理难度&lt;/p>
+&lt;p>也就是说，当我们感觉问题杂乱、庞大，难以理解和处理的时候，我们大概是撞上了问题的复杂性&lt;/p>
+&lt;p>&lt;img src="http://suraciii.github.io/how-to-survive-as-an-01x-developer-0/1.png" alt="1">&lt;/p>
+&lt;h2 id="管理复杂性">管理复杂性&lt;/h2>
+&lt;h3 id="撞上复杂性">撞上复杂性&lt;/h3>
+&lt;p>面对复杂性，我们通常会有这几种反应：&lt;/p>
+&lt;ol>
+&lt;li>无视它，我们欺骗自己，假装复杂性并不存在。这种反应体现在我们会对系统做出一些假设，来忽略复杂性，一个经典的例子就是&lt;a href="https://en.wikipedia.org/wiki/Fallacies_of_distributed_computing">Fallacies of distributed computing&lt;/a>，分布式系统中的网络通讯是极其常见的复杂性的来源，但是许多时候我们都会去假设网络是可靠安全稳定的&lt;/li>
+&lt;li>通过启发探索(heuristic)，即调查(Probe)-感知(Sense)-响应(Respond)，这种方式也可以说是通过本能去应对——我们一步步地试探着前进，运气好的话也许可以积累一些有用经验形成本能来加速这个过程&lt;/li>
+&lt;/ol>
+&lt;p>在大多数情况下，人们面对复杂性时的反应都会是这两种，本质上这两种应对方式都是被动地应对，对于第一种我们可以略过不提，而第二种反应——愚钝的程序员在这条路上无法走得更远&lt;/p>
+&lt;p>如果我们把一个复杂问题比作一个大泡泡，里面充满了复杂性，那么我们通过启发探索应对复杂性，就是去对问题进行探索和开发，由于学习理解能力、记忆力以及经验的差距，对于那些自身具备优秀的先天条件（学习理解能力、记忆力等）聪慧的程序员(Rockstar developer)，和那些在特定项目或特定领域上浸淫已久获得了丰富经验的地头蛇来说，这不是个很辛苦的过程，但是对于愚钝程序员来说，这里是个不公平的竞技场，一些对于愚钝程序员来说很复杂的问题，对于这些人来说却相对简单&lt;/p>
+&lt;p>所以面对复杂性，愚钝的程序员要多考虑第三种应对方式&lt;/p>
+&lt;h3 id="抓住复杂性的缰绳">抓住复杂性的缰绳&lt;/h3>
+&lt;p>相比于被动地用本能去应对复杂性，作为人类的我们，更应该主动地去认识，识别，分析，从而有效地管理它&lt;/p>
+&lt;h4 id="复杂性的来源">复杂性的来源&lt;/h4>
+&lt;p>想要管理复杂性，首先就要知道在软件开发的活动中，我们所面对的复杂性&lt;strong>来源&lt;/strong>是哪里&lt;/p>
+&lt;p>首先是来自现实世界的复杂性——我们开发软件是为了解决现实世界的问题，所以软件的开发必然会引入现实世界的复杂性（一些情况下我们会把它们称做“需求”）&lt;/p>
+&lt;p>来自现实世界的复杂性是必要的复杂性，大多是作为开发者的我们无法控制的——经济危机可能导致公司的业务方向发生变化，孩子气的用户总是以我们预想不到的方式使用软件，GDPR，英国脱欧……这些都是我们无法改变又不可抗拒的，因为现实世界就是这么运作的&lt;/p>
+&lt;p>但是作为开发者，除了来自现实世界的复杂性，我们还要面对软件本身的复杂性——随意懒散的建模，混乱的架构设计、千奇百怪的工具和框架、分布式系统的一致性问题甚至迥异的代码风格，都是开发者需要面对的&lt;/p>
+&lt;p>这两种复杂性并不总是泾渭分明，通常，开发者沟通着现实世界与软件，接收来自现实的复杂性，混合进自己的理解，又通过代码输入到解决方案之中，最终又成为开发者自己需要面对的问题&lt;/p>
+&lt;p>&lt;img src="http://suraciii.github.io/how-to-survive-as-an-01x-developer-0/2.png" alt="2">&lt;/p>
+&lt;p>现实世界是必要的复杂，但是我们软件不必复杂，软件系统也许甚至经常会是complicated，但是不必complex。&lt;strong>软件是来自开发者的极其自由的创作&lt;/strong>，我们将数百万离散的元素聚合到一起，生成新的东西，它没有来自现实世界的诸多干扰和限制，我们无法通过Pull Request来改变现实世界的物理规律，但是我们可以任意去改变我们的软件，因此我们的软件的复杂性在大多数情况下都是可以控制的&lt;/p>
+&lt;h3 id="发现复杂性">发现复杂性&lt;/h3>
+&lt;p>我们无法和看不见的敌人战斗&lt;/p>
+&lt;p>前面提到过当我们觉得问题难以理解，难以处理的时候，说明我们很有可能正在面对问题的复杂性，那么更具体一些，软件的复杂性会以怎样的形式体现呢？&lt;/p>
+&lt;p>尽管软件系统的复杂性会表现为开发者的开发难度，但是具体地来讲，软件的复杂性会体现为三种形式&lt;/p>
+&lt;h4 id="1-改动扩散change-amplification">1. 改动扩散(Change amplification)&lt;/h4>
+&lt;p>改动扩散是指一个看起来很简单的改动，却需要对软件的多个不同的地方进行代码修改，这种修改被我们称为散弹式修改，它不仅仅意味着劳动量的增加，它所导致的更严重的问题在于，如果一个开发者想要进行这个改动，他就必须要清楚地知道所有需要修改的地方，并且还要清楚地知道这些地方都应该怎么修改，一旦开发者缺乏这些需要的信息和知识，或者是没有充分地理解它们，就极易引入错误&lt;/p>
+&lt;h4 id="2-认知负担cognitive-load">2. 认知负担(Cognitive load)&lt;/h4>
+&lt;p>认知负担是指开发者为了完成一个任务，需要了解多少东西，更高的认知负担意味着开发者们需要花费更多的时间去学习所需要的信息，并且有更高的因为缺乏信息导致的错误风险。&lt;/p>
+&lt;p>可以看到改动扩散会导致某种程度上的认知负担（当然，认知负担不总是来源于改动扩散，而是一切可能导致开发者们理解困难的东西）&lt;/p>
+&lt;h4 id="3-未知的无知unknown-unknown">3. 未知的无知(Unknown unknown)&lt;/h4>
+&lt;p>未知的无知（我不确定我有没有翻译好）是指在你想要完成一个任务时，根本不知道应该去修改那些代码，根本不知道你该具备哪些信息，它意味着你有一些需要了解学习的信息，但是你在开发时根本无法发现它们是什么，甚至你根本没有发现你需要了解学习这些，直到之后有bug出现，你才能以回顾的方式发现它们&lt;/p>
+&lt;p>未知的无知是最糟糕的，它是那些我们无法利用启发探索去到达的地方，而我们却只能以启发探索的方式应对它——因为我们根本不知道它的存在&lt;/p>
+&lt;p>这是复杂性会体现为的三种形式，我们也可以将这三种形式作为复杂性的信号对待——当它们出现时，我们就要警惕了&lt;/p>
+&lt;p>而观察这三种形式，可以明显地看到，它们的本质都是体现为开发者信息的匮乏，收集学习必要的信息会拖慢我们的开发，遗漏必要的信息会导致错误风险的增高&lt;/p>
+&lt;h3 id="未知和不确定性">未知和不确定性&lt;/h3>
+&lt;p>这些信息匮乏的现象是如何产生的呢？原因总体上来自于我们对软件系统的未知和其本身的不确定性&lt;/p>
+&lt;p>软件系统的不确定性，导致了我们开发软件时所需要了解的信息爆炸，我们需要处理的状况也会增加，而我们对软件系统的未知，在导致我们需要收集额外信息的同时，也容易使我们在开发软件时做出错误的假设——可以说这是一种因无知而产生的傲慢&lt;/p>
+&lt;p>&lt;img src="http://suraciii.github.io/how-to-survive-as-an-01x-developer-0/3.png" alt="3">&lt;/p>
+&lt;p>所以，管理软件系统复杂性的基本方向，就是通过一系列的手段减少开发时的未知，捕获其中的不确定性，最终&lt;strong>打破迷雾&lt;/strong>，让复杂的问题在我们看来变得一目了然（Obvious）&lt;/p>
+&lt;h2 id="关于这篇分享">关于这篇分享&lt;/h2>
+&lt;ul>
+&lt;li>这篇分享里的想法最初来自于对朋友抛出的一个问题“为什么我们要避免循环依赖”的持续发散的思考，结合了一些知识的阅读学习，对一些现象的观察，以及一些从实践中总结的规律，到现在对于这个问题总算是能够给出一个能够说服我自己的答案了&lt;/li>
+&lt;li>当然，观点来自于理解，理解来自于经验，由于每个人的经历不同，很可能每个人的观点和理解也都有所不同，我也无法确定自己的理解是否是足够客观的，普适的，是能够通过正确认识问题从而解决问题的，所以非常希望大家都能分享自己的理解，我也能够通过和大家的交流，有进一步的理解，从而可以不断修正和完善自己的结论&lt;/li>
+&lt;li>这篇是一系列相关分享的第一篇，计划是分享一系列我认为可以提高交付效率和质量，简化开发负担的工具和方法，但是因为这些分享是建立在我对软件开发和其复杂性的理解上的，所以这篇作为第一篇，说一下我的思路，为什么会这么想，后续（如果不鸽的话），我会分享一些更为具体的，可操作的工具和方法&lt;/li>
+&lt;/ul>
+&lt;h4 id="管理复杂性需要团队合作">管理复杂性需要团队合作&lt;/h4>
+&lt;p>复杂性是由所有的开发者每人每个提交一点一滴的积累起来的——每个人都容易说服自己引入一点点的复杂性不是什么大事，但复杂性持续地在积累中增殖，最终成为软件灾难（&lt;a href="https://en.wikipedia.org/wiki/Big_ball_of_mud">大泥球&lt;/a>）&lt;/p>
+&lt;p>&lt;strong>软件发展为复杂软件（大泥球）是团队合作的产物，所以也需要团队的力量才能真正解决它&lt;/strong>&lt;/p>
+&lt;h4 id="软件复杂性不只是开发者的敌人">软件复杂性不只是开发者的敌人&lt;/h4>
+&lt;p>尽管软件的高复杂性会加重开发者们的负担，但是它不止对开发者们造成伤害，对于项目本身，软件复杂性也是非常危险的，它会拖慢软件的交付效率，降低软件的交付质量，&lt;strong>失控的软件复杂性是项目过于脆弱的体现&lt;/strong>，持续下去会越来越无法承受挑战的冲击
+&lt;em>如果要讨论这个问题，那对象系统就不是软件本身而是整个工程项目了，所以不在此进行深入分析&lt;/em>&lt;/p>
+&lt;h5 id="参考">&lt;em>参考&lt;/em>：&lt;/h5>
+&lt;ol>
+&lt;li>&lt;a href="https://www.youtube.com/watch?v=pMfzxmCzThI">Antifragile Designing the Systems of the Future - Barry O&amp;rsquo;Reilly - DDD Europe 2019&lt;/a>&lt;/li>
+&lt;li>Cynefin framework &lt;a href="https://en.wikipedia.org/wiki/Cynefin_framework">https://en.wikipedia.org/wiki/Cynefin_framework&lt;/a>&lt;/li>
+&lt;li>&lt;strong>&lt;a href="https://www.infoq.com/articles/software-is-synthetic">The Fundamental Truth behind Successful Development Practices: Software is Synthetic&lt;/a>&lt;/strong>
+- 非常好的一篇文章，讲清楚了“当我们在开发软件时，我们究竟在做什么”&lt;/li>
+&lt;li>&lt;strong>&lt;a href="https://www.goodreads.com/en/book/show/39996759-a-philosophy-of-software-design">A Philosophy of Software Design&lt;/a>&lt;/strong>
+- 这个分享中有很大一部分内容都是参考的这本书，我还没看完，但是就现在的体会而言，非常值得一看&lt;/li>
+&lt;/ol></description></item><item><title>高并发下的高频账号余额加减方案探索</title><link>http://suraciii.github.io/posts/hot-spot-balance-reduce/</link><pubDate>Thu, 07 Mar 2019 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/hot-spot-balance-reduce/</guid><description>&lt;h2 id="问题描述">问题描述&lt;/h2>
+&lt;p>打造一个服务，管理用户余额（信用点、积分、代币等），实现主要功能：&lt;/p>
+&lt;ul>
+&lt;li>加减款：即对余额进行增减&lt;/li>
+&lt;li>冻结流程：减用户余额 加用户的冻结余额，同时生成一条冻结记录&lt;/li>
+&lt;li>付款流程：减付款用户的冻结余额，加收款商户（可能为多个）的余额&lt;/li>
+&lt;li>余额流水：余额的每笔变动都会产生相应流水明细&lt;/li>
+&lt;/ul>
+&lt;p>同时 还有以下特征：&lt;/p>
+&lt;ul>
+&lt;li>高并发&lt;/li>
+&lt;li>多数用户均为高频账号&lt;/li>
+&lt;li>强一致性&lt;/li>
+&lt;/ul>
+&lt;h2 id="代码层面事务与锁">代码层面：事务与锁&lt;/h2>
+&lt;p>问题中存在的若干规则&lt;/p>
+&lt;ul>
+&lt;li>冻结与减款（减用户余额）时，校验减后余额&lt;/li>
+&lt;li>付款（减用户冻结余额）时，校验减后冻结余额&lt;/li>
+&lt;li>冻结时，更新余额、更新冻结余额、生成冻结记录&lt;/li>
+&lt;li>付款时，各账号加减余额、冻结余额、解冻、生成付款记录&lt;/li>
+&lt;/ul>
+&lt;h3 id="锁的优化">锁的优化&lt;/h3>
+&lt;p>总体来看，需要加锁的地方有：1)更新余额 2)解冻(更改冻结状态)&lt;/p>
+&lt;p>主要拿更新余额来说，最直观的流程：&lt;/p>
+&lt;ul>
+&lt;li>加锁查询余额&lt;/li>
+&lt;li>检查余额&lt;/li>
+&lt;li>更新余额&lt;/li>
+&lt;/ul>
+&lt;p>即&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-sql" data-lang="sql">&lt;span style="color:#66d9ef">SELECT&lt;/span> &lt;span style="color:#f92672">*&lt;/span> &lt;span style="color:#66d9ef">FROM&lt;/span> &lt;span style="color:#f92672">`&lt;/span>Accounts&lt;span style="color:#f92672">`&lt;/span> &lt;span style="color:#66d9ef">WHERE&lt;/span> &lt;span style="color:#f92672">`&lt;/span>Id&lt;span style="color:#f92672">`=@&lt;/span>Id &lt;span style="color:#66d9ef">FOR&lt;/span> &lt;span style="color:#66d9ef">UPDATE&lt;/span>;
+&lt;span style="color:#75715e">/* 检查余额 */&lt;/span>
+&lt;span style="color:#66d9ef">Update&lt;/span> &lt;span style="color:#f92672">`&lt;/span>Accounts&lt;span style="color:#f92672">`&lt;/span> &lt;span style="color:#66d9ef">SET&lt;/span> &lt;span style="color:#f92672">`&lt;/span>Balance&lt;span style="color:#f92672">`=@&lt;/span>Balance;
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>由于“多数用户均为高频账号”，在高频校验更新余额时势必会产生性能问题，而在某些特殊场景下，甚至会产生死锁的问题&lt;/p>
+&lt;p>那么这里的主要思路就是减少降低锁的使用频率：&lt;/p>
+&lt;h4 id="a-只在减款校验时加锁">a) 只在减款校验时加锁&lt;/h4>
+&lt;p>余额的更新中，只有减款时需要校验当前实时余额，而加款则不需要&lt;/p>
+&lt;p>减款时流程不变，加款时直接对余额进行加操作&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-sql" data-lang="sql">&lt;span style="color:#66d9ef">Update&lt;/span> &lt;span style="color:#f92672">`&lt;/span>Accounts&lt;span style="color:#f92672">`&lt;/span> &lt;span style="color:#66d9ef">SET&lt;/span> &lt;span style="color:#f92672">`&lt;/span>Balance&lt;span style="color:#f92672">`=@&lt;/span>Balance&lt;span style="color:#f92672">+@&lt;/span>Amount;
+&lt;/code>&lt;/pre>&lt;/div>&lt;h4 id="b-先减款再校验">b) 先减款，再校验&lt;/h4>
+&lt;p>加款操作去掉了锁，减款是否也能去掉呢？
+我们在减款中加锁，是为了避免在减款操作时余额被并发更改，出现校验时账号有充足的余额，但是减款时余额却变成了负数
+如果我们按照之前的流程 加锁-查询-更新，的确是需要锁住这一行记录，但是如果先减款，再判断余额是否小于0，就可以避免锁的需求&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-sql" data-lang="sql">&lt;span style="color:#66d9ef">Update&lt;/span> &lt;span style="color:#f92672">`&lt;/span>Accounts&lt;span style="color:#f92672">`&lt;/span> &lt;span style="color:#66d9ef">SET&lt;/span> &lt;span style="color:#f92672">`&lt;/span>Balance&lt;span style="color:#f92672">`=@&lt;/span>Balance&lt;span style="color:#f92672">-@&lt;/span>Amount RETURNING &lt;span style="color:#f92672">`&lt;/span>Balance&lt;span style="color:#f92672">`&lt;/span>;
+&lt;span style="color:#75715e">/* 判断Balance是否小于0，如果小于0，则回滚事务 */&lt;/span>
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>这样在减款操作时也避免了显式锁行&lt;/p>
+&lt;p>解冻校验也可以用类似方法，比如将冻结记录的校验与更新，使用&lt;code>WHERE&lt;/code>语句合成一条SQL语句，来避免锁的使用&lt;/p>
+&lt;h3 id="尝试摆脱数据库事务">尝试摆脱数据库事务&lt;/h3>
+&lt;p>上一步里去除了更新余额时的显式行锁，但是对于高频账号来说，数据库事务自带的锁/隔离机制仍然会是其并发性能的一大阻碍
+但是在需要多个写（更新、插入）操作同时成功同时回滚的场景下，数据库的强一致性事务似乎又是不可或缺的&lt;/p>
+&lt;p>那么可以换一种思路：
+只要保证所有操作&lt;em>最终&lt;/em>一定会成功，那么是否就可以去除对数据库事务的依赖了呢？&lt;/p>
+&lt;p>看上面几个流程
+首先单纯的加减款肯定是可以不依赖数据库事务的，那么就是冻结、付款等需要多次写操作的场景
+比如冻结场景，要么 1.减款成功，生成冻结 2.减款失败，不生成冻结
+减款失败的情况不需要担心，但是如果减款成功的情况下，需要保证一定有对应的一条冻结记录插入&lt;/p>
+&lt;p>如何保证？
+可以在生成冻结失败时，重试此操作，直到最终生成成功为止
+但是我们可能不止需要重试冻结失败的操作，在程序异常中止然后重启后，有些情况下我们无从得知上次异常中止的流程中，是否已经进行了减款操作，失去了数据库事务两阶段提交(2PC)支持，我们只能重试整个冻结流程，即1.减款成功，生成冻结&lt;/p>
+&lt;p>这里就有很严重一个问题，此时减款操作的重试是不安全的，每次减款，都是更新账号上的余额字段，这就需要一个幂等机制，来让减款可以安全地重试&lt;/p>
+&lt;h4 id="eventsourcing">EventSourcing&lt;/h4>
+&lt;p>如果了解&lt;a href="https://docs.microsoft.com/en-us/azure/architecture/patterns/event-sourcing">EventSourcing&lt;/a>的话，接下来的事情就顺理成章了&lt;/p>
+&lt;p>还记得需求中关于流水明细的部分吗？&lt;/p>
+&lt;p>参考EventSourcing的实现，可以把每次的余额更新操作，都转换成相关的流水明细的插入操作，而插入操作是很容易实现幂等的，同时，大多数情况下，插入记录的性能要比更新记录的性能要好&lt;/p>
+&lt;p>实现非常简单，即在进行加减款操作时，不更新数据库中的余额字段，而是向数据库中插入一条变动记录，如账号XXX余额减10
+如何进行减款前的校验呢？我们可以预先把某账号的流水记录预先读取出来，然后将此账号的余额按照流水记录走过一遍，就在内存中得到了当前的余额，同时在插入变动记录时，同时更新内存中的余额值，当然，要保证内存中的余额变动和流水中一致&lt;/p>
+&lt;h5 id="分布式">分布式？&lt;/h5>
+&lt;p>前面说过，要保证内存中的余额和数据库中的流水记录一致，如果是单实例的应用，很简单，只需要创造一个单例的账号对象，并保证其余额不会被并发更新就好了，但是如果是分布式的应用怎么办？&lt;/p>
+&lt;p>如何在分布式系统中避免并发冲突？和许多分布式EventSourcing框架一样，此时，Actor是唯一解决方案。Actor模型提供了&lt;em>针对每个Actor(账号)的单线程执行约束&lt;/em>，也就是说，每个账号作为Actor存在于集群中时，其代码执行是不会有并发冲突的&lt;/p>
+&lt;h5 id="看起来很完美">看起来很完美？&lt;/h5>
+&lt;p>实际上不是，无论是EventSourcing还是Actor模型，都不是常规的编程思想，其实现无疑会比较复杂，并且在分布式环境中，对其不够熟悉的话，很容易踩入各种各样的并发陷阱 - 当然这些陷阱在常规分布式应用中也是普遍存在的，但是在这里更容易令人疏忽大意&lt;/p>
+&lt;p>并且，Actor的&lt;em>单线程执行约束&lt;/em>，本身也是并发性能的一个阻碍&lt;/p>
+&lt;h2 id="高频账号问题">高频账号问题&lt;/h2>
+&lt;p>在代码层面提高高频账号或者单点账号的单操作性能，从而提高其并发性能，但是在这条路上想走得更远是十分困难的。
+或许可以以一个更大的视角来尝试解决&lt;/p>
+&lt;p>高频账号问题，本质上其实相当类似秒杀/减库存问题
+所以很大程度上，可以借用秒杀/减库存问题的解决方案&lt;/p>
+&lt;h3 id="拆分高频账号">拆分高频账号&lt;/h3>
+&lt;p>一个思路是将高频账号拆分为多个子账号（资金池），加减款时随机找一个子账号扣款
+但是和秒杀/减库存不同，在资金的加减上，拆分子账号会引入许多问题：&lt;/p>
+&lt;ol>
+&lt;li>如何调度平衡各个子账号之间的资金？&lt;/li>
+&lt;li>流水无法记录变动前后的总余额&lt;/li>
+&lt;li>扣款时如果一个子账号的余额不够，需要扣多个子账号怎么办？&lt;/li>
+&lt;/ol>
+&lt;p>想到这里，除非整个业务体系能改造，我已经基本放弃此方案了&lt;/p>
+&lt;h3 id="批量提交与异步">批量提交与异步&lt;/h3>
+&lt;p>批量提交与异步，是提高单点吞吐量的绝佳法宝，比如很多数据库都有通过批量commit事务来提高吞吐量&lt;/p>
+&lt;p>回到问题本身，资金的变动分为a)加款 b)减款&lt;/p>
+&lt;p>对于加款，它属于必定会成功的操作，可以直接把它丢进一个&lt;em>可靠的&lt;/em>队列里去执行
+出队时，缓冲若干个加款命令，合并成一个批量提交&lt;/p>
+&lt;p>而减款是有可能会失败的（余额不足），我们需要一个手段把减款的结果通知给请求方&lt;/p>
+&lt;p>如果请求是同步的（如HTTP请求），我们只能挂起相应的HTTP请求，等到扣款有结果了再唤醒，返回响应，但是这种在分布式系统中实现起来会非常麻烦
+相反，如果能够将接口改造成为异步的话，实现起来就比较简单了&lt;/p>
+&lt;ol>
+&lt;li>接到扣款请求&lt;/li>
+&lt;li>将请求添加进队列，并直接返回响应，表示已收到请求&lt;/li>
+&lt;li>请求方主动查询请求结果，或处理方回调通知结果&lt;/li>
+&lt;/ol>
+&lt;p>这种实现并不怎么合适，因为有时上游调用方需要根据调用的结果来决定下一步的流程，比如冻结成功后才能发起付款，如果失败则需要告知用户/管理员等
+所以也许使用一个异步的事件系统来控制整个业务流程会比较合适
+但是这就是后话了&lt;/p></description></item><item><title>为Kubernetes集群添加用户</title><link>http://suraciii.github.io/posts/add-user-for-k8s/</link><pubDate>Wed, 29 Aug 2018 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/add-user-for-k8s/</guid><description>&lt;h2 id="kubernetes中的用户">Kubernetes中的用户&lt;/h2>
+&lt;p>K8S中有两种用户(User)——服务账号(ServiceAccount)和普通意义上的用户(User)&lt;br>
+ServiceAccount是由K8S管理的，而User通常是在外部管理，K8S不存储用户列表——也就是说，添加/编辑/删除用户都是在外部进行，无需与K8S API交互，虽然K8S并不管理用户，但是在K8S接收API请求时，是可以认知到发出请求的用户的，实际上，所有对K8S的API请求都需要绑定身份信息(User或者ServiceAccount)，这意味着，可以为User配置K8S集群中的请求权限&lt;/p>
+&lt;h3 id="有什么区别">有什么区别？&lt;/h3>
+&lt;p>最主要的区别上面已经说过了，即ServiceAccount是K8S内部资源，而User是独立于K8S之外的。从它们的本质可以看出：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>User通常是人来使用，而ServiceAccount是某个服务/资源/程序使用的&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>User独立在K8S之外，也就是说User是可以作用于全局的，在任何命名空间都可被认知，并且需要在全局唯一&lt;br>
+而ServiceAccount作为K8S内部的某种资源，是存在于某个命名空间之中的，在不同命名空间中的同名ServiceAccount被认为是不同的资源&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>K8S不会管理User，所以User的创建/编辑/注销等，需要依赖外部的管理机制，K8S所能认知的只有一个用户名
+ServiceAccount是由K8S管理的，创建等操作，都通过K8S完成&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;p>这里说的添加用户指的是普通意义上的用户，即存在于集群外的用户，为k8s的使用者。&lt;br>
+实际上叫做添加用户也不准确，用户早已存在，这里所做的只是使K8S能够识别此用户，并且控制此用户在集群内的权限&lt;/p>
+&lt;h2 id="用户验证">用户验证&lt;/h2>
+&lt;p>尽管K8S认知用户靠的只是用户的名字，但是只需要一个名字就能请求K8S的API显然是不合理的，所以依然需要验证此用户的身份
+在K8S中，有以下几种验证方式：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>X509客户端证书&lt;br>
+客户端证书验证通过为API Server指定&lt;code>--client-ca-file=xxx&lt;/code>选项启用，API Server通过此ca文件来验证API请求携带的客户端证书的有效性，一旦验证成功，API Server就会将客户端证书Subject里的CN属性作为此次请求的用户名&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>静态token文件&lt;br>
+通过指定&lt;code>--token-auth-file=SOMEFILE &lt;/code>选项来启用bearer token验证方式，引用的文件是一个包含了 token,用户名,用户ID 的csv文件
+请求时，带上&lt;code>Authorization: Bearer 31ada4fd-adec-460c-809a-9e56ceb75269&lt;/code>头信息即可通过bearer token验证&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>静态密码文件&lt;br>
+通过指定&lt;code>--basic-auth-file=SOMEFILE&lt;/code>选项启用密码验证，类似的，引用的文件时一个包含 密码,用户名,用户ID 的csv文件
+请求时需要将&lt;code>Authorization&lt;/code>头设置为&lt;code>Basic BASE64ENCODED(USER:PASSWORD)&lt;/code>&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;p>这里只介绍客户端验证&lt;/p>
+&lt;h2 id="为用户生成证书">为用户生成证书&lt;/h2>
+&lt;p>假设我们操作的用户名为tom&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>首先需要为此用户创建一个私钥&lt;br>
+&lt;code>openssl genrsa -out tom.key 2048&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>接着用此私钥创建一个csr(证书签名请求)文件，其中我们需要在subject里带上用户信息(CN为用户名，O为用户组)&lt;br>
+&lt;code>openssl req -new -key tom.key -out tom.csr -subj &amp;quot;/CN=tom/O=MGM&amp;quot;&lt;/code>&lt;br>
+其中/O参数可以出现多次，即可以有多个用户组&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>找到K8S集群(API Server)的CA证书文件，其位置取决于安装集群的方式，通常会在&lt;code>/etc/kubernetes/pki/&lt;/code>路径下，会有两个文件，一个是CA证书(ca.crt)，一个是CA私钥(ca.key)&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>通过集群的CA证书和之前创建的csr文件，来为用户颁发证书&lt;br>
+&lt;code>openssl x509 -req -in tom.csr -CA path/to/ca.crt -CAkey path/to/ca.key -CAcreateserial -out tom.crt -days 365&lt;/code>&lt;br>
+-CA和-CAkey参数需要指定集群CA证书所在位置，-days参数指定此证书的过期时间，这里为365天&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>最后将证书(tom.crt)和私钥(tom.key)保存起来，这两个文件将被用来验证API请求&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;h2 id="为用户添加基于角色的访问控制rbac">为用户添加基于角色的访问控制(RBAC)&lt;/h2>
+&lt;h3 id="角色role">角色(Role)&lt;/h3>
+&lt;p>在RBAC中，角色有两种——普通角色(Role)和集群角色(ClusterRole)，ClusterRole是特殊的Role，相对于Role来说：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>Role属于某个命名空间，而ClusterRole属于整个集群，其中包括所有的命名空间&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>ClusterRole能够授予集群范围的权限，比如node资源的管理，比如非资源类型的接口请求(如&amp;quot;/healthz&amp;quot;)，比如可以请求全命名空间的资源(通过指定 &amp;ndash;all-namespaces)&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="为用户添加角色">为用户添加角色&lt;/h3>
+&lt;h4 id="首先创造一个角色">首先创造一个角色&lt;/h4>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-yaml" data-lang="yaml">&lt;span style="color:#f92672">kind&lt;/span>: &lt;span style="color:#ae81ff">Role&lt;/span>
+&lt;span style="color:#f92672">apiVersion&lt;/span>: &lt;span style="color:#ae81ff">rbac.authorization.k8s.io/v1beta1&lt;/span>
+&lt;span style="color:#f92672">metadata&lt;/span>:
+&lt;span style="color:#f92672">namespace&lt;/span>: &lt;span style="color:#ae81ff">a-1&lt;/span>
+&lt;span style="color:#f92672">name&lt;/span>: &lt;span style="color:#ae81ff">admin&lt;/span>
+&lt;span style="color:#f92672">rules&lt;/span>:
+- &lt;span style="color:#f92672">apiGroups&lt;/span>: [&lt;span style="color:#e6db74">&amp;#34;&amp;#34;&lt;/span>]
+&lt;span style="color:#f92672">resources&lt;/span>: [&lt;span style="color:#e6db74">&amp;#34;*&amp;#34;&lt;/span>]
+&lt;span style="color:#f92672">verbs&lt;/span>: [&lt;span style="color:#e6db74">&amp;#34;*&amp;#34;&lt;/span>]
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>这是在a-1命名空间内创建了一个admin管理员角色，这里只是用admin角色举例，实际上如果只是为了授予用户某命名空间管理员的权限的话，是不需要新建一个角色的，K8S已经内置了一个名为admin的ClusterRole&lt;/p>
+&lt;h4 id="将角色和用户绑定">将角色和用户绑定&lt;/h4>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-yaml" data-lang="yaml">&lt;span style="color:#f92672">kind&lt;/span>: &lt;span style="color:#ae81ff">RoleBinding&lt;/span>
+&lt;span style="color:#f92672">apiVersion&lt;/span>: &lt;span style="color:#ae81ff">rbac.authorization.k8s.io/v1beta1&lt;/span>
+&lt;span style="color:#f92672">metadata&lt;/span>:
+&lt;span style="color:#f92672">name&lt;/span>: &lt;span style="color:#ae81ff">admin-binding&lt;/span>
+&lt;span style="color:#f92672">namespace&lt;/span>: &lt;span style="color:#ae81ff">a-1&lt;/span>
+&lt;span style="color:#f92672">subjects&lt;/span>:
+- &lt;span style="color:#f92672">kind&lt;/span>: &lt;span style="color:#ae81ff">User&lt;/span>
+&lt;span style="color:#f92672">name&lt;/span>: &lt;span style="color:#ae81ff">tom&lt;/span>
+&lt;span style="color:#f92672">apiGroup&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;&amp;#34;&lt;/span>
+&lt;span style="color:#f92672">roleRef&lt;/span>:
+&lt;span style="color:#f92672">kind&lt;/span>: &lt;span style="color:#ae81ff">Role&lt;/span>
+&lt;span style="color:#f92672">name&lt;/span>: &lt;span style="color:#ae81ff">admin&lt;/span>
+&lt;span style="color:#f92672">apiGroup&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;&amp;#34;&lt;/span>
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>如yaml中所示，RoleBinding资源创建了一个 Role-User 之间的关系，&lt;code>roleRef&lt;/code>节点指定此RoleBinding所引用的角色，&lt;code>subjects&lt;/code>节点指定了此RoleBinding的受体，可以是User，也可以是前面说过的ServiceAccount，在这里只包含了名为 tom 的用户&lt;/p>
+&lt;h4 id="添加命名空间管理员的另一种方式">添加命名空间管理员的另一种方式&lt;/h4>
+&lt;p>前面说过，K8S内置了一个名为admin的ClusterRole，所以实际上我们无需创建一个admin Role，直接对集群默认的admin ClusterRole添加RoleBinding就可以了&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-yaml" data-lang="yaml">&lt;span style="color:#f92672">kind&lt;/span>: &lt;span style="color:#ae81ff">RoleBinding&lt;/span>
+&lt;span style="color:#f92672">apiVersion&lt;/span>: &lt;span style="color:#ae81ff">rbac.authorization.k8s.io/v1beta1&lt;/span>
+&lt;span style="color:#f92672">metadata&lt;/span>:
+&lt;span style="color:#f92672">name&lt;/span>: &lt;span style="color:#ae81ff">admin-binding&lt;/span>
+&lt;span style="color:#f92672">namespace&lt;/span>: &lt;span style="color:#ae81ff">a-1&lt;/span>
+&lt;span style="color:#f92672">subjects&lt;/span>:
+- &lt;span style="color:#f92672">kind&lt;/span>: &lt;span style="color:#ae81ff">User&lt;/span>
+&lt;span style="color:#f92672">name&lt;/span>: &lt;span style="color:#ae81ff">tom&lt;/span>
+&lt;span style="color:#f92672">apiGroup&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;&amp;#34;&lt;/span>
+&lt;span style="color:#f92672">roleRef&lt;/span>:
+&lt;span style="color:#f92672">kind&lt;/span>: &lt;span style="color:#ae81ff">ClusterRole&lt;/span>
+&lt;span style="color:#f92672">name&lt;/span>: &lt;span style="color:#ae81ff">admin&lt;/span>
+&lt;span style="color:#f92672">apiGroup&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;&amp;#34;&lt;/span>
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>这里虽然引用的是作为ClusterRole的admin角色，但是其权限被限制在RoleBinding admin-binding所处的命名空间，即a-1内
+如果想要添加全命名空间或者说全集群的管理员，可以使用cluster-admin角色&lt;/p>
+&lt;p>到此为止，我们已经：&lt;/p>
+&lt;ul>
+&lt;li>为tom用户提供了基于X509证书的验证&lt;/li>
+&lt;li>为a-1命名空间创造了一个admin角色&lt;/li>
+&lt;li>为用户tom和角色admin创建了绑定关系&lt;/li>
+&lt;/ul>
+&lt;h2 id="为kubectl配置用户">为kubectl配置用户&lt;/h2>
+&lt;p>tom已经是管理员了，现在我们想要通过kubectl以tom的身份来操作集群，需要将tom的认证信息添加进kubectl的配置，即~/.kube/config中&lt;/p>
+&lt;p>这里假设config中已经配置好了k8s集群&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>通过命令&lt;code>kubectl config set-credentials tom --client-certificate=path/to/tom.crt --client-key=path/to/tom.key&lt;/code>将用户tom的验证信息添加进kubectl的配置&lt;br>
+此命令会在配置中添加一个名为tom的用户&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>kubectl config set-context tom@aliyun --cluster=aliyun --namespace=a-1 --user=tom&lt;/code>&lt;br>
+此命令添加了一个context配置——设定使用aliyun集群，默认使用a-1命名空间，使用用户tom进行验证&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>在命令中带上 &lt;code>kubectl --context=tom@aliyun ...&lt;/code> 参数即可指定kubectl使用之前添加的名为tom@aliyun的context操作集群&lt;br>
+也可以通过命令 &lt;code>kubectl config use-context tom@aliyun&lt;/code> 来设置当前使用的context&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;h4 id="tips-将认证信息嵌入kubectl的配置中">Tips: 将认证信息嵌入kubectl的配置中&lt;/h4>
+&lt;p>通过&lt;code>kubectl config set-credentials&lt;/code>命令添加的用户，其默认使用的是引用证书文件路径的方式，表现在~/.kube/config中，就是：&lt;/p>
+&lt;pre tabindex="0">&lt;code>users:
+- name: tom
+user:
+client-certificate: path/to/tom.crt
+client-key: path/to/tom.key
+&lt;/code>&lt;/pre>&lt;p>如果觉得这样总是带着两个证书文件不方便的话，可以将证书内容直接放到config文件里&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>将tom.crt/tom.key的内容用BASE64编码&lt;br>
+&lt;code>cat tom.crt | base64 --wrap=0&lt;/code>&lt;br>
+&lt;code>cat tom.key | base64 --wrap=0&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>将获取的编码后的文本复制进config文件中&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;pre tabindex="0">&lt;code>users:
+- name: ich
+user:
+client-certificate-data: ...
+client-key-data: ...
+&lt;/code>&lt;/pre>&lt;p>这样就不再需要证书和私钥文件了，当然这两个文件还是保存起来比较好&lt;/p>
+&lt;p>&lt;em>参考资料：&lt;/em>&lt;br>
+&lt;em>&lt;a href="https://kubernetes.io/docs/reference/access-authn-authz/authentication/">Authenticating - Kubernetes Docs&lt;/a>&lt;/em>&lt;br>
+&lt;em>&lt;a href="https://docs.bitnami.com/kubernetes/how-to/configure-rbac-in-your-kubernetes-cluster/">Configure RBAC in your Kubernetes Cluster&lt;/a>&lt;/em>&lt;br>
+&lt;em>&lt;a href="https://kubernetes.io/docs/reference/access-authn-authz/rbac/">Using RBAC Authorization - Kubernetes Docs&lt;/a>&lt;/em>&lt;br>
+&lt;em>&lt;a href="https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#config">Kubectl Reference Docs#config&lt;/a>&lt;/em>&lt;br>
+&lt;em>&lt;a href="https://brancz.com/2017/10/16/kubernetes-auth-x509-client-certificates/">Kubernetes auth: X509 client certificates&lt;/a>&lt;/em>&lt;/p></description></item></channel></rss>
