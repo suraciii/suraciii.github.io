@@ -66,7 +66,13 @@
 除了上面介绍的.NET线程池调度，对于任务调度这个领域，还有很多值得参考的案例，比如一些CI/CD任务的调度，如Azure DevOps、GitLab和GitHub的CI/CD agent，都能提供非常有价值的参考和启发，又比如在Hangfire项目中，其也有着类似的“多通道”任务调度的设计，任务队列的具体实现就可以参考它。
 另外这个设计里还使用了一些其它设计模式，比如一开始的manager/worker模式，比如worker获取任务时使用的竞争消费者模式等。&lt;/p>
 &lt;p>而这些模式基本也都是从一些项目中学习来的，比如manager/worker是从Azure DevOps Agent中学到的，竞争消费者是从kafka的消费行为中学到的。&lt;/p>
-&lt;p>所以平常对于一些工具，除了学习如何使用它们，学习它们的设计也十分有价值，在遇到类似的问题时经常可以用得上。&lt;/p></description></item><item><title>更有效率地生产更好的应用</title><link>http://suraciii.github.io/posts/build-better-apps/</link><pubDate>Thu, 20 Jan 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/build-better-apps/</guid><description>&lt;p>想象一个产品，比如一辆汽车，它是如何出现，又是如何成为我们在街上见到的那样，而它又结束在何处呢？&lt;/p>
+&lt;p>所以平常对于一些工具，除了学习如何使用它们，学习它们的设计也十分有价值，在遇到类似的问题时经常可以用得上。&lt;/p>
+&lt;p>&lt;em>&lt;strong>参考：&lt;/strong>&lt;/em>&lt;/p>
+&lt;ol>
+&lt;li>&lt;a href="https://en.wikipedia.org/wiki/Work_stealing">Work stealing (Wikipedia)&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://docs.microsoft.com/en-us/dotnet/api/system.threading.tasks.taskscheduler?view=net-6.0#the-default-task-scheduler-and-the-thread-pool">.NET TaskScheduler&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://levelup.gitconnected.com/manager-worker-communication-patterns-c3580b9db5db">Manager-Worker Communication Patterns&lt;/a>&lt;/li>
+&lt;/ol></description></item><item><title>更有效率地生产更好的应用</title><link>http://suraciii.github.io/posts/build-better-apps/</link><pubDate>Thu, 20 Jan 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/build-better-apps/</guid><description>&lt;p>想象一个产品，比如一辆汽车，它是如何出现，又是如何成为我们在街上见到的那样，而它又结束在何处呢？&lt;/p>
 &lt;p>首先，任何产品都不是凭空出现的，它们都是凝结了人类的智慧和劳动，被人们生产出来的，那么，这些产品最开始都是出现在人类的大脑中。&lt;/p>
 &lt;blockquote>
 &lt;p>蜘蛛的活动与织工的活动相似，蜜蜂建筑蜂房的本领使人间的许多建筑师感到惭愧。但是，最蹩脚的建筑师从一开始就比最灵巧的蜜蜂高明的地方，是他在建筑蜂房以前，已经在自己的头脑中把它建成了。&lt;/p>

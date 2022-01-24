@@ -88,6 +88,12 @@
 另外这个设计里还使用了一些其它设计模式，比如一开始的manager/worker模式，比如worker获取任务时使用的竞争消费者模式等。</p>
 <p>而这些模式基本也都是从一些项目中学习来的，比如manager/worker是从Azure DevOps Agent中学到的，竞争消费者是从kafka的消费行为中学到的。</p>
 <p>所以平常对于一些工具，除了学习如何使用它们，学习它们的设计也十分有价值，在遇到类似的问题时经常可以用得上。</p>
+<p><em><strong>参考：</strong></em></p>
+<ol>
+<li><a href=https://en.wikipedia.org/wiki/Work_stealing>Work stealing (Wikipedia)</a></li>
+<li><a href="https://docs.microsoft.com/en-us/dotnet/api/system.threading.tasks.taskscheduler?view=net-6.0#the-default-task-scheduler-and-the-thread-pool">.NET TaskScheduler</a></li>
+<li><a href=https://levelup.gitconnected.com/manager-worker-communication-patterns-c3580b9db5db>Manager-Worker Communication Patterns</a></li>
+</ol>
 </article>
 </main><footer id=footer>
 </footer>
