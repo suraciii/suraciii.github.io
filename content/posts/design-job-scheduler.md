@@ -96,3 +96,10 @@ date: 2022-01-22T00:00:00Z
 而这些模式基本也都是从一些项目中学习来的，比如manager/worker是从Azure DevOps Agent中学到的，竞争消费者是从kafka的消费行为中学到的。
 
 所以平常对于一些工具，除了学习如何使用它们，学习它们的设计也十分有价值，在遇到类似的问题时经常可以用得上。
+
+
+***参考：***
+1. [Work stealing (Wikipedia)](https://en.wikipedia.org/wiki/Work_stealing)
+2. [.NET TaskScheduler](https://docs.microsoft.com/en-us/dotnet/api/system.threading.tasks.taskscheduler?view=net-6.0#the-default-task-scheduler-and-the-thread-pool)
+3. [Manager-Worker Communication Patterns](https://levelup.gitconnected.com/manager-worker-communication-patterns-c3580b9db5db)
+
