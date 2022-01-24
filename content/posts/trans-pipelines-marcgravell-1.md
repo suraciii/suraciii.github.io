@@ -1,7 +1,6 @@
 ---
 title: Pipelines - .NET中的新IO API指引(一)
 date: 2018-07-01T00:00:00Z
-draft: true
 ---
 
 原文：[Pipelines - a guided tour of the new IO API in .NET, part 1](https://blog.marcgravell.com/2018/07/pipe-dreams-part-1.html)

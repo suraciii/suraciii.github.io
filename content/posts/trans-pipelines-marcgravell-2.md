@@ -1,7 +1,6 @@
 ---
 title: Pipelines - .NET中的新IO API指引(二)
 date: 2018-07-17T00:00:00Z
-draft: true
 ---
 
 
