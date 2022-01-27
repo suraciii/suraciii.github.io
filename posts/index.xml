@@ -1,4 +1,65 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on The Dice Maker</title><link>http://suraciii.github.io/posts/</link><description>Recent content in Posts on The Dice Maker</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sat, 22 Jan 2022 00:00:00 +0000</lastBuildDate><atom:link href="http://suraciii.github.io/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>设计案例：多优先级规则的分布式任务调度</title><link>http://suraciii.github.io/posts/design-job-scheduler/</link><pubDate>Sat, 22 Jan 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/design-job-scheduler/</guid><description>&lt;h2 id="项目背景">项目背景&lt;/h2>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on The Dice Maker</title><link>http://suraciii.github.io/posts/</link><description>Recent content in Posts on The Dice Maker</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Thu, 27 Jan 2022 00:00:00 +0000</lastBuildDate><atom:link href="http://suraciii.github.io/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>.NET Activity API中的一个小陷阱</title><link>http://suraciii.github.io/posts/dotnet-activity-pitfall/</link><pubDate>Thu, 27 Jan 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/dotnet-activity-pitfall/</guid><description>&lt;p>最近在为Orleans改进其分布式追踪组件(&lt;a href="https://github.com/dotnet/orleans/pull/7443">Use DistributedContextPropagator to propagate Activities&lt;/a>)的时候，从AspNetCore中抄了一些代码:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#75715e">// https://github.com/dotnet/aspnetcore/blob/9da42b9fab4c61fe46627ac0c6877905ec845d5a/src/Hosting/Hosting/src/Internal/HostingApplicationDiagnostics.cs#L272
+&lt;/span>&lt;span style="color:#75715e">&lt;/span>
+&lt;span style="color:#66d9ef">private&lt;/span> Activity? StartActivity(HttpContext httpContext, &lt;span style="color:#66d9ef">bool&lt;/span> loggingEnabled, &lt;span style="color:#66d9ef">bool&lt;/span> diagnosticListenerActivityCreationEnabled, &lt;span style="color:#66d9ef">out&lt;/span> &lt;span style="color:#66d9ef">bool&lt;/span> hasDiagnosticListener)
+{
+&lt;span style="color:#66d9ef">var&lt;/span> activity = &lt;span style="color:#ae81ff">_&lt;/span>activitySource.CreateActivity(ActivityName, ActivityKind.Server);
+&lt;span style="color:#75715e">// ...
+&lt;/span>&lt;span style="color:#75715e">&lt;/span> &lt;span style="color:#66d9ef">var&lt;/span> headers = httpContext.Request.Headers;
+&lt;span style="color:#ae81ff">_&lt;/span>propagator.ExtractTraceIdAndState(headers,
+&lt;span style="color:#66d9ef">static&lt;/span> (&lt;span style="color:#66d9ef">object?&lt;/span> carrier, &lt;span style="color:#66d9ef">string&lt;/span> fieldName, &lt;span style="color:#66d9ef">out&lt;/span> &lt;span style="color:#66d9ef">string?&lt;/span> fieldValue, &lt;span style="color:#66d9ef">out&lt;/span> IEnumerable&amp;lt;&lt;span style="color:#66d9ef">string&lt;/span>&amp;gt;? fieldValues) =&amp;gt;
+{
+fieldValues = &lt;span style="color:#66d9ef">default&lt;/span>;
+&lt;span style="color:#66d9ef">var&lt;/span> headers = (IHeaderDictionary)carrier!;
+fieldValue = headers[fieldName];
+},
+&lt;span style="color:#66d9ef">out&lt;/span> &lt;span style="color:#66d9ef">var&lt;/span> requestId,
+&lt;span style="color:#66d9ef">out&lt;/span> &lt;span style="color:#66d9ef">var&lt;/span> traceState);
+&lt;span style="color:#75715e">// ...
+&lt;/span>&lt;span style="color:#75715e">&lt;/span> activity.SetParentId(requestId);
+&lt;span style="color:#66d9ef">if&lt;/span> (!&lt;span style="color:#66d9ef">string&lt;/span>.IsNullOrEmpty(traceState))
+{
+activity.TraceStateString = traceState;
+}
+}
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>这段代码的作用是，创建Activity后，从请求头中尝试获取追踪信息（traceid等），如果存在的话，就通过&lt;code>activity.SetParentId(requestId)&lt;/code>将这个新创建的Activity与请求头中的追踪上下文关联，即进入链路成为其中的一个子片段。&lt;/p>
+&lt;p>这个逻辑看起来没什么问题，也有相关的单元测试覆盖，于是我把这段代码抄到了Orleans里并最终合并进主干，但是不久后有一个开发者提了issue，报告了其中的问题——&lt;/p>
+&lt;blockquote>
+&lt;p>在使用OpenTelemetry SDK捕获Activities从而产生分布式追踪信息后，这些Activity所代表的Span并没有根据请求链路关联起来，而是各自成为了独立的链路。&lt;/p>
+&lt;/blockquote>
+&lt;p>这就十分令人好奇了——这是从AspNetCore代码库里抄来的代码，也有相关测试覆盖，为什么还会有问题？
+于是使用OpenTelemetry SDK重现了这个bug并仔细调试后，发现了问题出现的原因：&lt;/p>
+&lt;p>OpenTelemetry SDK记录应用的Activity时，有一个默认的采样器(Sampler)，在这个采样器中它会在创建Activity时访问相关&lt;code>ActivityCreationOptions&lt;/code>中的&lt;code>.TraceId&lt;/code>属性，再看其源码：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#75715e">// https://github.com/dotnet/runtime/blob/970d347a1b06951692cfecc1cc12a500158708b1/src/libraries/System.Diagnostics.DiagnosticSource/src/System/Diagnostics/ActivityCreationOptions.cs#L128
+&lt;/span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#66d9ef">public&lt;/span> ActivityTraceId TraceId
+{
+&lt;span style="color:#66d9ef">get&lt;/span>
+{
+&lt;span style="color:#66d9ef">if&lt;/span> (Parent &lt;span style="color:#66d9ef">is&lt;/span> ActivityContext &amp;amp;&amp;amp; IdFormat == ActivityIdFormat.W3C &amp;amp;&amp;amp; &lt;span style="color:#ae81ff">_&lt;/span>context == &lt;span style="color:#66d9ef">default&lt;/span>)
+{
+Func&amp;lt;ActivityTraceId&amp;gt;? traceIdGenerator = Activity.TraceIdGenerator;
+ActivityTraceId id = traceIdGenerator == &lt;span style="color:#66d9ef">null&lt;/span> ? ActivityTraceId.CreateRandom() : traceIdGenerator();
+Unsafe.AsRef(&lt;span style="color:#66d9ef">in&lt;/span> &lt;span style="color:#ae81ff">_&lt;/span>context) = &lt;span style="color:#66d9ef">new&lt;/span> ActivityContext(id, &lt;span style="color:#66d9ef">default&lt;/span>, ActivityTraceFlags.None);
+}
+&lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#ae81ff">_&lt;/span>context.TraceId;
+}
+}
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>也就是说，访问&lt;code>.TraceId&lt;/code>时，如果它还没有traceid，就生成一个并返回，最终被配置到新创建的Activity中，而Activity的TraceId只能被配置一次，也就是说如果traceid已经存在，后面的&lt;code>activity.SetParentId(requestId)&lt;/code>就不会产生作用。&lt;/p>
+&lt;p>所以最终，每个Activity都单独生成了自己的traceid，没有使用进入父级链路。&lt;/p>
+&lt;p>查看&lt;code>SetParentId&lt;/code>这个API的文档时，也发现了建议谨慎使用的注释：&lt;/p>
+&lt;blockquote>
+&lt;p>This is intended to be used only at &amp;lsquo;boundary&amp;rsquo; scenarios where an activity from another process logically started this activity.&lt;/p>
+&lt;/blockquote>
+&lt;h4 id="为什么单元测试里没有问题">为什么单元测试里没有问题？&lt;/h4>
+&lt;p>单元测试里虽然也使用了采样器，但是并没有在采样器中访问&lt;code>TraceId&lt;/code>，所以不会出现上述问题，而在采样器中加入了对&lt;code>TraceId&lt;/code>的访问后，也成功复现了这个bug&lt;/p>
+&lt;h4 id="为什么opentelemetry-sdk采集aspnetcore的activities就没有这个问题">为什么OpenTelemetry SDK采集AspNetCore的Activities就没有这个问题？&lt;/h4>
+&lt;p>因为OpenTelemetry SDK没有直接采集AspNetCore生成的Activities，而是hook了相关生命周期事件，生成并采集自定义的Activities，如果它直接采集AspNetCore产生的Activities，也会有这个问题，这是AspNetCore代码中的一个缺陷，有一个&lt;a href="https://github.com/dotnet/aspnetcore/issues/37471#issuecomment-972083624">issue&lt;/a>记录了它&lt;/p>
+&lt;p>总结和教训：&lt;/p>
+&lt;ul>
+&lt;li>只有单元测试是不够的，还要进行端到端的测试&lt;/li>
+&lt;li>不能盲目信任“权威”代码，它也有bug&lt;/li>
+&lt;li>这种明明只是访问一个属性却产生了副作用的做法是不好的，一方面它容易引入错误，另一方面出错后也很难进行相关的debug&lt;/li>
+&lt;/ul></description></item><item><title>设计案例：多优先级规则的分布式任务调度</title><link>http://suraciii.github.io/posts/design-job-scheduler/</link><pubDate>Sat, 22 Jan 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/design-job-scheduler/</guid><description>&lt;h2 id="项目背景">项目背景&lt;/h2>
 &lt;p>&lt;em>&lt;strong>这个项目我并未全程参与，只是在方案设计遇到问题时参与了讨论，所以文中对于业务场景和需求的描述并不全面，只记录了讨论中获取到的信息&lt;/strong>&lt;/em>&lt;/p>
 &lt;p>一个分布式的数据采集应用，其基本功能为采集各个电商平台上的商品信息，具体要求如下：&lt;/p>
 &lt;ul>
