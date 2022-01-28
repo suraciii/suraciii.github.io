@@ -1,0 +1,204 @@
+<!doctype html><html><head>
+<meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<link rel="shortcut icon" href=http://suraciii.github.io/favicon.ico>
+<link rel=stylesheet href=/css/style.min.css>
+<title>使用Pulumi在Kubernetes中部署应用</title>
+</head>
+<body><header id=banner>
+<h2><a href=http://suraciii.github.io/>The Dice Maker</a></h2>
+<nav>
+<ul>
+</ul>
+</nav>
+</header>
+<main id=content>
+<article>
+<header id=post-header>
+<h1>使用Pulumi在Kubernetes中部署应用</h1>
+<div>
+<time>January 28, 2022</time>
+</div>
+</header><p>Pulumi是一个现代<code>基础设施即代码(infrastructure as code)</code>平台，通过它，我们可以使用我们熟悉的编程语言和工具来构建、部署和管理云及云原生基础设施。</p>
+<p>来看一个最简单的例子，准备如下typescript代码：</p>
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#000;font-weight:700>import</span> <span style=color:#000;font-weight:700>*</span> <span style=color:#000;font-weight:700>as</span> pulumi <span style=color:#000;font-weight:700>from</span> <span style=color:#d14>&#34;@pulumi/pulumi&#34;</span>;
+<span style=color:#000;font-weight:700>import</span> <span style=color:#000;font-weight:700>*</span> <span style=color:#000;font-weight:700>as</span> aws <span style=color:#000;font-weight:700>from</span> <span style=color:#d14>&#34;@pulumi/aws&#34;</span>;
+
+<span style=color:#000;font-weight:700>const</span> group <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>new</span> aws.ec2.SecurityGroup(<span style=color:#d14>&#34;web-sg&#34;</span>, {
+    description<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;Enable HTTP access&#34;</span>,
+    ingress<span style=color:#000;font-weight:700>:</span> [{ protocol<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;tcp&#34;</span>, fromPort: <span style=color:#458;font-weight:700>80</span>, toPort: <span style=color:#458;font-weight:700>80</span>, cidrBlocks<span style=color:#000;font-weight:700>:</span> [<span style=color:#d14>&#34;0.0.0.0/0&#34;</span>] }],
+});
+
+<span style=color:#000;font-weight:700>const</span> server <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>new</span> aws.ec2.Instance(<span style=color:#d14>&#34;web-server&#34;</span>, {
+    ami<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;ami-6869aa05&#34;</span>,
+    instanceType<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;t2.micro&#34;</span>,
+    vpcSecurityGroupIds<span style=color:#000;font-weight:700>:</span> [ group.name ], <span style=color:#998;font-style:italic>// reference the security group resource above
+</span><span style=color:#998;font-style:italic></span>});
+</code></pre></div><p>运行<code>pulumi up</code>命令，即可在AWS中创建一个ec2实例并配置其安全组。</p>
+<p>如果我们需要修改其安全组配置，加上443端口的入口，那么只需要更改代码:</p>
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#000;font-weight:700>const</span> group <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>new</span> aws.ec2.SecurityGroup(<span style=color:#d14>&#34;web-sg&#34;</span>, {
+    description<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;Enable HTTP access&#34;</span>,
+    ingress<span style=color:#000;font-weight:700>:</span> [{ protocol<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;tcp&#34;</span>, fromPort: <span style=color:#458;font-weight:700>80</span>, toPort: <span style=color:#458;font-weight:700>80</span>, cidrBlocks<span style=color:#000;font-weight:700>:</span> [<span style=color:#d14>&#34;0.0.0.0/0&#34;</span>] },
+		{ protocol<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;tcp&#34;</span>, fromPort: <span style=color:#458;font-weight:700>443</span>, toPort: <span style=color:#458;font-weight:700>443</span>, cidrBlocks<span style=color:#000;font-weight:700>:</span> [<span style=color:#d14>&#34;0.0.0.0/0&#34;</span>] }],
+});
+</code></pre></div><p>再次运行<code>pulumi up</code>命令，即可对相关安全组进行更新。</p>
+<p>这里的例子是使用tyescript代码管理AWS中的资源，此外，Pulumi还支持python、C#、go等编程语言，以及Azure、GCP、阿里云、Kubernetes等平台。</p>
+<p>Pulumi作为一个基础设施即代码工具，首先其当然也具备基础设施即代码这种实践的优点，如：</p>
+<ul>
+<li>基础设施的定义作为代码可以被版本控制</li>
+<li>因此可以被review和revert</li>
+<li>实践基础设施即代码可以帮助团队以可靠、可重复、可控制的方式部署系统资源</li>
+<li>也可以为自动化部署和减少人工出错提供帮助</li>
+<li>此外还有：提高不同环境中的基础设施的一致性，降低基础设施及其部署过程的复杂性等</li>
+</ul>
+<p>具体关于基础设施即代码这里不再赘述，重点是，Pulumi相对于其它基础设施即代码的平台和工具，如Terraform、ARM、Ksonnet等，具备如何的优势呢？</p>
+<h3 id=pulumi的优势>Pulumi的优势</h3>
+<p>首先Pulumi最大的优点是其学习成本低，学习曲线平缓。<br>
+能够采用基础设施即代码实践的团队，基本上要么就是实践的DevOps，授权开发者来管理产品基础设施，要么团队运维人员也会掌握编程技能，而Pulumi使用go、typescript等常用的编程语言作为其管理基础设施的代码，这些语言对于上面说的使用者来说算得上是轻车熟路了，只需要使用自己常用的编程语言，不需要面对任何自创的五花八门奇奇怪怪的语法和模板。</p>
+<p>另外，如typescript、go、C#这些编程语言，功能上都十分完备，也有着非常完善的IDE支持，比如我们可以在代码中使用栈和队列等数据结构，可以进行抽象、封装，定义类和函数等，甚至我们可以对这些基础设施代码进行调试和单元测试，这在其它依靠Json/Yaml或者模板为主的工具上基本是无法做到的。</p>
+<h3 id=使用pulumi在kubernetes中部署应用>使用Pulumi在Kubernetes中部署应用</h3>
+<p>这里简单演示如何使用Pulumi在Kubernetes中部署应用。</p>
+<p>首先我们需要安装Pulumi CLI，通过macOS上的Homebrew和Windows上的Chocolatey等工具都可以直接安装Pulumi CLI，Linux下可以通过<code>curl -fsSL https://get.pulumi.com | sh</code>命令安装。</p>
+<p>安装完成后，我们需要配置Pulumi存储资源状态的方式及路径，可以选择<code>pulumi login https://api.pulumi.com</code>使用Pulumi平台存储状态，也可以选择<code>pulumi login file://.</code>将状态保存到本地<code>.pulumi</code>（相对或绝对）路径下，也支持通过Azure KeyVault等密文管理产品来存储</p>
+<p>然后选择一个合适的路径，运行：</p>
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ pulumi new kubernetes-typescript
+</code></pre></div><p>（这里以使用typescript为例，也可以使用其它编程语言。）</p>
+<p>跟着指引一步步填写相关信息，如：</p>
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>project name: demo-meetingsvc
+project description: A meeting service
+stack name: dev <span style=color:#998;font-style:italic># stack可以简单理解为环境</span>
+</code></pre></div><p>执行完成后，Pulumi会在目录中生成项目以及初始实例代码，可以打开<code>index.ts</code>查看：</p>
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#000;font-weight:700>import</span> <span style=color:#000;font-weight:700>*</span> <span style=color:#000;font-weight:700>as</span> k8s <span style=color:#000;font-weight:700>from</span> <span style=color:#d14>&#34;@pulumi/kubernetes&#34;</span>;
+
+<span style=color:#000;font-weight:700>const</span> appLabels <span style=color:#000;font-weight:700>=</span> { app<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;nginx&#34;</span> };
+<span style=color:#000;font-weight:700>const</span> deployment <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>new</span> k8s.apps.v1.Deployment(<span style=color:#d14>&#34;nginx&#34;</span>, {
+    spec<span style=color:#000;font-weight:700>:</span> {
+        selector<span style=color:#000;font-weight:700>:</span> { matchLabels: <span style=color:#458;font-weight:700>appLabels</span> },
+        replicas: <span style=color:#458;font-weight:700>1</span>,
+        template<span style=color:#000;font-weight:700>:</span> {
+            metadata<span style=color:#000;font-weight:700>:</span> { labels: <span style=color:#458;font-weight:700>appLabels</span> },
+            spec<span style=color:#000;font-weight:700>:</span> { containers<span style=color:#000;font-weight:700>:</span> [{ name<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;nginx&#34;</span>, image<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;nginx&#34;</span> }] }
+        }
+    }
+});
+<span style=color:#000;font-weight:700>export</span> <span style=color:#000;font-weight:700>const</span> name <span style=color:#000;font-weight:700>=</span> deployment.metadata.name;
+</code></pre></div><p>上面代码的作用是创建一个nginx部署，我们可以删掉这段代码，改成我们想要的。</p>
+<p>首先，新建一个命名空间：</p>
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#000;font-weight:700>import</span> <span style=color:#000;font-weight:700>*</span> <span style=color:#000;font-weight:700>as</span> pulumi <span style=color:#000;font-weight:700>from</span> <span style=color:#d14>&#34;@pulumi/pulumi&#34;</span>;
+<span style=color:#000;font-weight:700>import</span> <span style=color:#000;font-weight:700>*</span> <span style=color:#000;font-weight:700>as</span> kubernetes <span style=color:#000;font-weight:700>from</span> <span style=color:#d14>&#34;@pulumi/kubernetes&#34;</span>;
+
+<span style=color:#000;font-weight:700>const</span> <span style=color:#000;font-weight:700>namespace</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>new</span> kubernetes.core.v1.Namespace(<span style=color:#d14>&#34;my-namespace&#34;</span>);
+</code></pre></div><p>运行<code>pulumi up</code>，会首先进行变更预览：</p>
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>Previewing update <span style=color:#000;font-weight:700>(</span>dev<span style=color:#000;font-weight:700>)</span>                                                                   
+                                                                                          
+     Type                             Name                 Plan                           
+ +   pulumi:pulumi:Stack              demo-meetingsvc-dev  create                         
+ +   └─ kubernetes:core/v1:Namespace  my-namespace         create                         
+                                                                                          
+Resources:                                                                                
+    + <span style=color:#099>2</span> to create                                                                         
+                                                                                          
+Do you want to perform this update?  <span style=color:#000;font-weight:700>[</span>Use arrows to move, enter to <span style=color:#000;font-weight:700>select</span>, <span style=color:#0086b3>type</span> to filter<span style=color:#000;font-weight:700>]</span>
+  yes                                                                                     
+&gt; no                                                                                      
+  details                                                                                 
+</code></pre></div><p>选择<code>details</code>可以查看即将进行的改动详情：</p>
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>Do you want to perform this update? details
++ pulumi:pulumi:Stack: <span style=color:#000;font-weight:700>(</span>create<span style=color:#000;font-weight:700>)</span>
+    <span style=color:#000;font-weight:700>[</span><span style=color:teal>urn</span><span style=color:#000;font-weight:700>=</span>urn:pulumi:dev::demo-meetingsvc::pulumi:pulumi:Stack::demo-meetingsvc-dev<span style=color:#000;font-weight:700>]</span>
+    + kubernetes:core/v1:Namespace: <span style=color:#000;font-weight:700>(</span>create<span style=color:#000;font-weight:700>)</span>
+        <span style=color:#000;font-weight:700>[</span><span style=color:teal>urn</span><span style=color:#000;font-weight:700>=</span>urn:pulumi:dev::demo-meetingsvc::kubernetes:core/v1:Namespace::my-namespace<span style=color:#000;font-weight:700>]</span>
+        <span style=color:#000;font-weight:700>[</span><span style=color:teal>provider</span><span style=color:#000;font-weight:700>=</span>urn:pulumi:dev::demo-meetingsvc::pulumi:providers:kubernetes::default_3_14_1::04da6b54-80e4-46f7-96ec-b56ff0331ba9<span style=color:#000;font-weight:700>]</span>
+        apiVersion: <span style=color:#d14>&#34;v1&#34;</span>
+        kind      : <span style=color:#d14>&#34;Namespace&#34;</span>
+        metadata  : <span style=color:#000;font-weight:700>{</span>
+            annotations: <span style=color:#000;font-weight:700>{</span>
+                pulumi.com/autonamed: <span style=color:#d14>&#34;true&#34;</span>
+            <span style=color:#000;font-weight:700>}</span>
+            labels     : <span style=color:#000;font-weight:700>{</span>
+                app.kubernetes.io/managed-by: <span style=color:#d14>&#34;pulumi&#34;</span>
+            <span style=color:#000;font-weight:700>}</span>
+            name       : <span style=color:#d14>&#34;my-namespace-20a6saph&#34;</span>
+        <span style=color:#000;font-weight:700>}</span>
+</code></pre></div><p>选择<code>yes</code>便会真正进行相应的改动:</p>
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>Do you want to perform this update? yes
+Updating <span style=color:#000;font-weight:700>(</span>dev<span style=color:#000;font-weight:700>)</span>
+
+     Type                             Name                 Status
+ +   pulumi:pulumi:Stack              demo-meetingsvc-dev  created
+ +   └─ kubernetes:core/v1:Namespace  my-namespace         created
+
+Resources:
+    + <span style=color:#099>2</span> created
+
+Duration: 4s
+</code></pre></div><p>使用kubectl查看，可以看到创建出了一个新的namespace：</p>
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get ns
+NAME           STATUS   AGE
+my-namespace-ifywo1p0   Active   1m
+</code></pre></div><p>可以看到新创建的namespace带了一个后缀，这是Pulumi为了维护<code>不可变基础设施</code>而故意设计的一种行为，它的好处这里先不做介绍，如果不想要这个后缀，可以显示指定资源名字而非自动生成：</p>
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#000;font-weight:700>const</span> <span style=color:#000;font-weight:700>namespace</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>new</span> k8s.core.v1.Namespace(<span style=color:#d14>&#34;my-namespace&#34;</span>, {
+  metadata<span style=color:#000;font-weight:700>:</span>{
+    name<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;my-namespace&#34;</span>,
+  }
+});
+</code></pre></div><p>命名空间创建好后，接着添加deployment和service：</p>
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#000;font-weight:700>const</span> appName <span style=color:#000;font-weight:700>=</span> <span style=color:#d14>&#34;meetingsvc&#34;</span>;
+<span style=color:#000;font-weight:700>const</span> image <span style=color:#000;font-weight:700>=</span> <span style=color:#d14>`</span><span style=color:#d14>${</span>imageRepo<span style=color:#d14>}</span><span style=color:#d14>/</span><span style=color:#d14>${</span>imageName<span style=color:#d14>}</span><span style=color:#d14>:</span><span style=color:#d14>${</span>imageTag<span style=color:#d14>}</span><span style=color:#d14>`</span>;
+
+<span style=color:#000;font-weight:700>const</span> selector <span style=color:#000;font-weight:700>=</span> {
+  <span style=color:#d14>&#34;app.kubernetes.io/app&#34;</span><span style=color:#000;font-weight:700>:</span> appName,
+}
+<span style=color:#000;font-weight:700>const</span> labels <span style=color:#000;font-weight:700>=</span> {
+  <span style=color:#d14>&#34;app.kubernetes.io/part-of&#34;</span><span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;demo&#34;</span>,
+  ...selector
+};
+
+<span style=color:#000;font-weight:700>const</span> deployment <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>new</span> k8s.apps.v1.Deployment(appName, {
+  metadata<span style=color:#000;font-weight:700>:</span> {
+    <span style=color:#000;font-weight:700>namespace</span><span style=color:#000;font-weight:700>:</span> <span style=color:#000;font-weight:700>namespace</span>.metadata.name,
+    labels
+  },
+  spec<span style=color:#000;font-weight:700>:</span> {
+    selector<span style=color:#000;font-weight:700>:</span> { matchLabels: <span style=color:#458;font-weight:700>selector</span> },
+    template<span style=color:#000;font-weight:700>:</span> {
+      metadata<span style=color:#000;font-weight:700>:</span> { labels },
+      spec<span style=color:#000;font-weight:700>:</span> {
+        containers<span style=color:#000;font-weight:700>:</span> [{
+          name: <span style=color:#458;font-weight:700>appName</span>,
+          image,
+          ports<span style=color:#000;font-weight:700>:</span> [{
+            containerPort: <span style=color:#458;font-weight:700>80</span>,
+            name<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;http&#34;</span>,
+          }],
+        }]
+      }
+    }
+  }
+});
+
+<span style=color:#000;font-weight:700>const</span> svc <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>new</span> k8s.core.v1.Service(appName, {
+  metadata<span style=color:#000;font-weight:700>:</span> {
+    <span style=color:#000;font-weight:700>namespace</span><span style=color:#000;font-weight:700>:</span> <span style=color:#000;font-weight:700>namespace</span>.metadata.name,
+    labels
+  },
+  spec<span style=color:#000;font-weight:700>:</span> {
+    ports<span style=color:#000;font-weight:700>:</span> [{
+      port: <span style=color:#458;font-weight:700>80</span>,
+      targetPort<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;http&#34;</span>,
+    }],
+    selector,
+  },
+}, { dependsOn: <span style=color:#458;font-weight:700>deployment</span> });
+
+</code></pre></div><p>运行<code>pulumi up</code>即可预览并进行相关变更。
+如果应用需要ingress，也可以通过相同的方式创建。</p>
+<h2 id=最后>最后</h2>
+<p>虽说Pulumi支持多种编程语言及运行时(node.js上的javascript、typescript，.net core上的C#、vb、F#，以及go和python），但是就个人经验来说，用起来最得心应手的还是typescript，主要是因为typescript有着十分完备、强大的类型系统，也一定程度上继承了javascript的灵活性，能用上一些很有意思的小花招，后面可以慢慢介绍。</p>
+<p>这篇就先写到这，后面准备写一下怎么用Pulumi做自动化部署，用Pulumi做更复杂的部署，组件的封装和打包等。</p>
+<p>如果有任何疑惑或者想法，欢迎找我交流~</p>
+</article>
+</main><footer id=footer>
+</footer>
+</body>
+</html>

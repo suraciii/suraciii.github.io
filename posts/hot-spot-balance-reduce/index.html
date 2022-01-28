@@ -50,22 +50,22 @@
 <li>更新余额</li>
 </ul>
 <p>即</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sql data-lang=sql><span style=color:#66d9ef>SELECT</span> <span style=color:#f92672>*</span> <span style=color:#66d9ef>FROM</span> <span style=color:#f92672>`</span>Accounts<span style=color:#f92672>`</span> <span style=color:#66d9ef>WHERE</span> <span style=color:#f92672>`</span>Id<span style=color:#f92672>`=@</span>Id <span style=color:#66d9ef>FOR</span> <span style=color:#66d9ef>UPDATE</span>;
-<span style=color:#75715e>/* 检查余额 */</span>
-<span style=color:#66d9ef>Update</span> <span style=color:#f92672>`</span>Accounts<span style=color:#f92672>`</span> <span style=color:#66d9ef>SET</span> <span style=color:#f92672>`</span>Balance<span style=color:#f92672>`=@</span>Balance;
-</code></pre></div><p>由于“多数用户均为高频账号”，在高频校验更新余额时势必会产生性能问题，而在某些特殊场景下，甚至会产生死锁的问题</p>
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sql data-lang=sql><span style=color:#000;font-weight:700>SELECT</span><span style=color:#bbb> </span><span style=color:#000;font-weight:700>*</span><span style=color:#bbb> </span><span style=color:#000;font-weight:700>FROM</span><span style=color:#bbb> </span><span style=color:#000;font-weight:700>`</span>Accounts<span style=color:#000;font-weight:700>`</span><span style=color:#bbb> </span><span style=color:#000;font-weight:700>WHERE</span><span style=color:#bbb> </span><span style=color:#000;font-weight:700>`</span>Id<span style=color:#000;font-weight:700>`=@</span>Id<span style=color:#bbb> </span><span style=color:#000;font-weight:700>FOR</span><span style=color:#bbb> </span><span style=color:#000;font-weight:700>UPDATE</span>;<span style=color:#bbb>
+</span><span style=color:#bbb></span><span style=color:#998;font-style:italic>/* 检查余额 */</span><span style=color:#bbb>
+</span><span style=color:#bbb></span><span style=color:#000;font-weight:700>Update</span><span style=color:#bbb> </span><span style=color:#000;font-weight:700>`</span>Accounts<span style=color:#000;font-weight:700>`</span><span style=color:#bbb> </span><span style=color:#000;font-weight:700>SET</span><span style=color:#bbb> </span><span style=color:#000;font-weight:700>`</span>Balance<span style=color:#000;font-weight:700>`=@</span>Balance;<span style=color:#bbb>
+</span></code></pre></div><p>由于“多数用户均为高频账号”，在高频校验更新余额时势必会产生性能问题，而在某些特殊场景下，甚至会产生死锁的问题</p>
 <p>那么这里的主要思路就是减少降低锁的使用频率：</p>
 <h4 id=a-只在减款校验时加锁>a) 只在减款校验时加锁</h4>
 <p>余额的更新中，只有减款时需要校验当前实时余额，而加款则不需要</p>
 <p>减款时流程不变，加款时直接对余额进行加操作</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sql data-lang=sql><span style=color:#66d9ef>Update</span> <span style=color:#f92672>`</span>Accounts<span style=color:#f92672>`</span> <span style=color:#66d9ef>SET</span> <span style=color:#f92672>`</span>Balance<span style=color:#f92672>`=@</span>Balance<span style=color:#f92672>+@</span>Amount;
-</code></pre></div><h4 id=b-先减款再校验>b) 先减款，再校验</h4>
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sql data-lang=sql><span style=color:#000;font-weight:700>Update</span><span style=color:#bbb> </span><span style=color:#000;font-weight:700>`</span>Accounts<span style=color:#000;font-weight:700>`</span><span style=color:#bbb> </span><span style=color:#000;font-weight:700>SET</span><span style=color:#bbb> </span><span style=color:#000;font-weight:700>`</span>Balance<span style=color:#000;font-weight:700>`=@</span>Balance<span style=color:#000;font-weight:700>+@</span>Amount;<span style=color:#bbb>
+</span></code></pre></div><h4 id=b-先减款再校验>b) 先减款，再校验</h4>
 <p>加款操作去掉了锁，减款是否也能去掉呢？
 我们在减款中加锁，是为了避免在减款操作时余额被并发更改，出现校验时账号有充足的余额，但是减款时余额却变成了负数
 如果我们按照之前的流程 加锁-查询-更新，的确是需要锁住这一行记录，但是如果先减款，再判断余额是否小于0，就可以避免锁的需求</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sql data-lang=sql><span style=color:#66d9ef>Update</span> <span style=color:#f92672>`</span>Accounts<span style=color:#f92672>`</span> <span style=color:#66d9ef>SET</span> <span style=color:#f92672>`</span>Balance<span style=color:#f92672>`=@</span>Balance<span style=color:#f92672>-@</span>Amount RETURNING <span style=color:#f92672>`</span>Balance<span style=color:#f92672>`</span>;
-<span style=color:#75715e>/* 判断Balance是否小于0，如果小于0，则回滚事务 */</span>
-</code></pre></div><p>这样在减款操作时也避免了显式锁行</p>
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sql data-lang=sql><span style=color:#000;font-weight:700>Update</span><span style=color:#bbb> </span><span style=color:#000;font-weight:700>`</span>Accounts<span style=color:#000;font-weight:700>`</span><span style=color:#bbb> </span><span style=color:#000;font-weight:700>SET</span><span style=color:#bbb> </span><span style=color:#000;font-weight:700>`</span>Balance<span style=color:#000;font-weight:700>`=@</span>Balance<span style=color:#000;font-weight:700>-@</span>Amount<span style=color:#bbb> </span>RETURNING<span style=color:#bbb> </span><span style=color:#000;font-weight:700>`</span>Balance<span style=color:#000;font-weight:700>`</span>;<span style=color:#bbb>
+</span><span style=color:#bbb></span><span style=color:#998;font-style:italic>/* 判断Balance是否小于0，如果小于0，则回滚事务 */</span><span style=color:#bbb>
+</span></code></pre></div><p>这样在减款操作时也避免了显式锁行</p>
 <p>解冻校验也可以用类似方法，比如将冻结记录的校验与更新，使用<code>WHERE</code>语句合成一条SQL语句，来避免锁的使用</p>
 <h3 id=尝试摆脱数据库事务>尝试摆脱数据库事务</h3>
 <p>上一步里去除了更新余额时的显式行锁，但是对于高频账号来说，数据库事务自带的锁/隔离机制仍然会是其并发性能的一大阻碍
