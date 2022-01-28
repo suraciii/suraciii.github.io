@@ -8,3 +8,7 @@ enableInlineShortcodes = true
 [params]
   dark = "off"
   highlight = true
+
+[markup]
+  [markup.highlight]
+    style = 'github'
