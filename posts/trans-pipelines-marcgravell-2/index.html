@@ -59,10 +59,10 @@
 <li>它带来了<em>几乎所有</em>我们之前提到过的优点</li>
 </ul>
 <p>所以，让我们开始吧！我们首先要思考的是：这里的<em>方向</em>是什么？就像刚才提到的一样，<code>Stream</code>是模糊不清的——可能只读，只写，或可读可写。来假设我们想解决的是最通常的问题：一个可读可写表现为双工行为的stream——这可以让我们访问如sockets(通过<code>NetworkStream</code>)之类的东西。这意味着我们实际上将会需要<em>两个</em>pipe——一个用来输入，一个用来输出。Pipelines通过明确地声明<code>IDuplexPipe</code>接口来帮助我们指明道路。这是一个非常简单的接口，数据传输给<code>IDuplexPipe</code>就像传输给两个pipe的端点一样——一个标记为"in"，一个标记为"out"：</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#000;font-weight:700>interface</span> IDuplexPipe
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#728e00>interface</span> <span style=color:#434f54>IDuplexPipe</span>
 {
-    PipeReader Input { <span style=color:#000;font-weight:700>get</span>; }
-    PipeWriter Output { <span style=color:#000;font-weight:700>get</span>; }
+    <span style=color:#434f54>PipeReader</span> <span style=color:#434f54>Input</span> { <span style=color:#728e00>get</span>; }
+    <span style=color:#434f54>PipeWriter</span> <span style=color:#434f54>Output</span> { <span style=color:#728e00>get</span>; }
 }
 </code></pre></div><p>我们接下来想要做的是创建一个类来实现 <code>IDuplexPipe</code>，但是其内部使用两个<code>Pipe</code>实例：</p>
 <ul>
@@ -79,54 +79,54 @@
 </ul>
 <h3 id=那么它看起来会是什么样>那么它看起来会是什么样？</h3>
 <p>基本上，我们需要做的就是这样：</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#000;font-weight:700>class</span> <span style=color:#458;font-weight:700>StreamDuplexPipe</span> : IDuplexPipe
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#728e00>class</span> <span style=color:#434f54>StreamDuplexPipe</span> : <span style=color:#434f54>IDuplexPipe</span>
 {
-    Stream <span style=color:#099>_</span>stream;
-    Pipe <span style=color:#099>_</span>readPipe, <span style=color:#099>_</span>writePipe;
+    <span style=color:#434f54>Stream</span> <span style=color:#8a7b52>_</span><span style=color:#434f54>stream</span>;
+    <span style=color:#434f54>Pipe</span> <span style=color:#8a7b52>_</span><span style=color:#434f54>readPipe</span>, <span style=color:#8a7b52>_</span><span style=color:#434f54>writePipe</span>;
 
-    <span style=color:#000;font-weight:700>public</span> PipeReader Input =&gt; <span style=color:#099>_</span>readPipe.Reader;
-    <span style=color:#000;font-weight:700>public</span> PipeWriter Output =&gt; <span style=color:#099>_</span>writePipe.Writer;
+    <span style=color:#728e00>public</span> <span style=color:#434f54>PipeReader</span> <span style=color:#434f54>Input</span> =&gt; <span style=color:#8a7b52>_</span><span style=color:#434f54>readPipe</span>.<span style=color:#434f54>Reader</span>;
+    <span style=color:#728e00>public</span> <span style=color:#434f54>PipeWriter</span> <span style=color:#434f54>Output</span> =&gt; <span style=color:#8a7b52>_</span><span style=color:#434f54>writePipe</span>.<span style=color:#434f54>Writer</span>;
     
-    <span style=color:#998;font-style:italic>// ... more here
-</span><span style=color:#998;font-style:italic></span>}
+    <span style=color:#95a5a6>// ... more here
+</span><span style=color:#95a5a6></span>}
 </code></pre></div><p>注意我们有两个不同的pipe；调用者获取每个pipe的一个端点——然后我们的代码将会操作每个pipe的<em>另一个</em>端点。</p>
 <h3 id=对pipe进行抽取>对pipe进行抽取</h3>
 <p>那么我们与stream交互的代码是什么样的呢？像之前说过的那样，我们需要两个方法。首先——很简单——一个循环，从<code>_stream</code>中读取数据并且将其推入<code>_readPipe</code>，然后被调用代码所消费；这个方法的核心类似这样：</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#000;font-weight:700>while</span> (<span style=color:#000;font-weight:700>true</span>)
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#728e00>while</span> (<span style=color:#728e00>true</span>)
 {
-    <span style=color:#998;font-style:italic>// note we&#39;ll usually get *much* more than we ask for
-</span><span style=color:#998;font-style:italic></span>    <span style=color:#458;font-weight:700>var</span> buffer = <span style=color:#099>_</span>readPipe.Writer.GetMemory(<span style=color:#099>1</span>);
-    <span style=color:#458;font-weight:700>int</span> bytes = <span style=color:#000;font-weight:700>await</span> <span style=color:#099>_</span>stream.ReadAsync(buffer);
-    <span style=color:#099>_</span>readPipe.Writer.Advance(bytes);
-    <span style=color:#000;font-weight:700>if</span> (bytes == <span style=color:#099>0</span>) <span style=color:#000;font-weight:700>break</span>; <span style=color:#998;font-style:italic>// source EOF
-</span><span style=color:#998;font-style:italic></span>    <span style=color:#458;font-weight:700>var</span> flush = <span style=color:#000;font-weight:700>await</span> <span style=color:#099>_</span>readPipe.Writer.FlushAsync();
-    <span style=color:#000;font-weight:700>if</span> (flush.IsCompleted || flush.IsCanceled) <span style=color:#000;font-weight:700>break</span>;
+    <span style=color:#95a5a6>// note we&#39;ll usually get *much* more than we ask for
+</span><span style=color:#95a5a6></span>    <span style=color:#00979d>var</span> <span style=color:#434f54>buffer</span> = <span style=color:#8a7b52>_</span><span style=color:#434f54>readPipe</span>.<span style=color:#434f54>Writer</span>.<span style=color:#434f54>GetMemory</span>(<span style=color:#8a7b52>1</span>);
+    <span style=color:#00979d>int</span> <span style=color:#434f54>bytes</span> = <span style=color:#728e00>await</span> <span style=color:#8a7b52>_</span><span style=color:#434f54>stream</span>.<span style=color:#434f54>ReadAsync</span>(<span style=color:#434f54>buffer</span>);
+    <span style=color:#8a7b52>_</span><span style=color:#434f54>readPipe</span>.<span style=color:#434f54>Writer</span>.<span style=color:#434f54>Advance</span>(<span style=color:#434f54>bytes</span>);
+    <span style=color:#728e00>if</span> (<span style=color:#434f54>bytes</span> == <span style=color:#8a7b52>0</span>) <span style=color:#728e00>break</span>; <span style=color:#95a5a6>// source EOF
+</span><span style=color:#95a5a6></span>    <span style=color:#00979d>var</span> <span style=color:#434f54>flush</span> = <span style=color:#728e00>await</span> <span style=color:#8a7b52>_</span><span style=color:#434f54>readPipe</span>.<span style=color:#434f54>Writer</span>.<span style=color:#434f54>FlushAsync</span>();
+    <span style=color:#728e00>if</span> (<span style=color:#434f54>flush</span>.<span style=color:#434f54>IsCompleted</span> || <span style=color:#434f54>flush</span>.<span style=color:#434f54>IsCanceled</span>) <span style=color:#728e00>break</span>;
 }
 </code></pre></div><p>这个循环向pipie请求一个缓冲区，然后用 <code>netcoreapp2.1</code> 中<code>Stream.ReadAsync</code> 的新重载接收一个 <code>Memory&lt;byte></code> 来填充缓冲区——我们一会儿讨论如果你现在没有一个能接收 <code>Memory&lt;byte></code> 的API该怎么办。当读取完成后，它使用<code>Advance</code>向pipe提交这个数量的字节，然后它在pipe上调用 <code>FlushAsync()</code> 来（如果需要的话）唤醒reader，或者在背压减轻时暂停写循环。注意我们还需要检查<code>Pipe</code>的 <code>FlushAsync()</code>的结果——它可以告诉我们pipe的消费者已经告知其已经读取完了所有想要的数据（<code>Iscompleted</code>），或者pipe本身被关闭（<code>IsCanceled</code>）。</p>
 <p>注意在这两种情况下，我们都希望确保在此循环退出时告诉管道，这样我们就不会最终在没有数据到来时永远在调用端等待下去。意外发生时，或者有时在调用 <code>_stream.ReadAsync</code> （或其它方法）时，可能会有异常抛出，所以最好是利用<code>try</code>/<code>finally</code>：</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp>Exception error = <span style=color:#000;font-weight:700>null</span>;
-<span style=color:#000;font-weight:700>try</span>
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#434f54>Exception</span> <span style=color:#434f54>error</span> = <span style=color:#728e00>null</span>;
+<span style=color:#728e00>try</span>
 {
-    <span style=color:#998;font-style:italic>// our loop from the previous sample
-</span><span style=color:#998;font-style:italic></span>}
-<span style=color:#000;font-weight:700>catch</span>(Exception ex) { error = ex; }
-<span style=color:#000;font-weight:700>finally</span> { <span style=color:#099>_</span>readPipe.Writer.Complete(error); }
+    <span style=color:#95a5a6>// our loop from the previous sample
+</span><span style=color:#95a5a6></span>}
+<span style=color:#728e00>catch</span>(<span style=color:#434f54>Exception</span> <span style=color:#434f54>ex</span>) { <span style=color:#434f54>error</span> = <span style=color:#434f54>ex</span>; }
+<span style=color:#728e00>finally</span> { <span style=color:#8a7b52>_</span><span style=color:#434f54>readPipe</span>.<span style=color:#434f54>Writer</span>.<span style=color:#434f54>Complete</span>(<span style=color:#434f54>error</span>); }
 </code></pre></div><p>如果你愿意的话，你可以使用两个 <code>Complete</code> ——一个在try末尾（成功时），一个在catch中（失败时）。</p>
 <p>我们需要的第二个方法会比较复杂。我们需要一个循环来从<code>_writePipe</code>中消费数据，然后将其推入<code>_stream</code>。核心代码会像这样：</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#000;font-weight:700>while</span> (<span style=color:#000;font-weight:700>true</span>)
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#728e00>while</span> (<span style=color:#728e00>true</span>)
 {
-    <span style=color:#458;font-weight:700>var</span> read = <span style=color:#000;font-weight:700>await</span> <span style=color:#099>_</span>writePipe.Reader.ReadAsync();
-    <span style=color:#458;font-weight:700>var</span> buffer = read.Buffer;
-    <span style=color:#000;font-weight:700>if</span> (buffer.IsCanceled) <span style=color:#000;font-weight:700>break</span>;
-    <span style=color:#000;font-weight:700>if</span> (buffer.IsEmpty &amp;&amp; read.IsCompleted) <span style=color:#000;font-weight:700>break</span>;
+    <span style=color:#00979d>var</span> <span style=color:#434f54>read</span> = <span style=color:#728e00>await</span> <span style=color:#8a7b52>_</span><span style=color:#434f54>writePipe</span>.<span style=color:#434f54>Reader</span>.<span style=color:#434f54>ReadAsync</span>();
+    <span style=color:#00979d>var</span> <span style=color:#434f54>buffer</span> = <span style=color:#434f54>read</span>.<span style=color:#434f54>Buffer</span>;
+    <span style=color:#728e00>if</span> (<span style=color:#434f54>buffer</span>.<span style=color:#434f54>IsCanceled</span>) <span style=color:#728e00>break</span>;
+    <span style=color:#728e00>if</span> (<span style=color:#434f54>buffer</span>.<span style=color:#434f54>IsEmpty</span> &amp;&amp; <span style=color:#434f54>read</span>.<span style=color:#434f54>IsCompleted</span>) <span style=color:#728e00>break</span>;
 
-    <span style=color:#998;font-style:italic>// write everything we got to the stream
-</span><span style=color:#998;font-style:italic></span>    <span style=color:#000;font-weight:700>foreach</span> (<span style=color:#458;font-weight:700>var</span> segment <span style=color:#000;font-weight:700>in</span> buffer)
+    <span style=color:#95a5a6>// write everything we got to the stream
+</span><span style=color:#95a5a6></span>    <span style=color:#728e00>foreach</span> (<span style=color:#00979d>var</span> <span style=color:#434f54>segment</span> <span style=color:#728e00>in</span> <span style=color:#434f54>buffer</span>)
     {
-        <span style=color:#000;font-weight:700>await</span> <span style=color:#099>_</span>stream.WriteAsync(segment);
+        <span style=color:#728e00>await</span> <span style=color:#8a7b52>_</span><span style=color:#434f54>stream</span>.<span style=color:#434f54>WriteAsync</span>(<span style=color:#434f54>segment</span>);
     }
-    <span style=color:#099>_</span>writePipe.AdvanceTo(buffer.End);
-    <span style=color:#000;font-weight:700>await</span> <span style=color:#099>_</span>stream.FlushAsync();    
+    <span style=color:#8a7b52>_</span><span style=color:#434f54>writePipe</span>.<span style=color:#434f54>AdvanceTo</span>(<span style=color:#434f54>buffer</span>.<span style=color:#434f54>End</span>);
+    <span style=color:#728e00>await</span> <span style=color:#8a7b52>_</span><span style=color:#434f54>stream</span>.<span style=color:#434f54>FlushAsync</span>();    
 }
 </code></pre></div><p>这会等待一些数据（可能在多个缓冲区里），然后进行一些退出判断检查；像之前一样，我们可以在<code>IsCanceled</code>时放弃，但是下一个检查会比较微妙：我们不希望只因为<em>producer</em>表示它们已经写入了所有想要的数据（<code>Iscompleted</code>）就停止写入，不然我们也许会丢失它们末尾几段数据——我们需要继续直到我们已经写入了它们所有的数据，直到<code>buffer.IsEmpty</code>。这是个简化后的例子，因为我们一直写入所有数据——我们之后会看到更复杂的例子。一旦我们有了数据，我们按顺序将每个非连续缓冲区写入stream中——因为<code>Stream</code>一次只能写入一个缓冲区（同样，我使用的是<code>netcoreapp2.1</code>中的重载，接受<code>ReadOnlyMemory&lt;byte></code>参数，但是我们不限于此）。一旦它写完了缓冲区，它告诉pipe我们已经消费完了所有数据，然后刷新(flush)底层的<code>Stream</code>。</p>
 <p>在“真实”代码中，我们<em>也许</em>希望更积极地优化从而减少刷新底层stream直到我们知道再也不会有可读取地数据，也许 在<code>_writePipe.Reader.ReadAsync()</code>之外可以使用<code>_writePipe.Reader.TryRead(...)</code> 。这个方法地工作方式类似 <code>ReadAsync()</code>但是保证会同步返回——用来测试“在我忙的时候writer是否附加了什么？”。但是上面的内容已经讲述了这一点。</p>
@@ -161,82 +161,82 @@
 <h3 id=但是我当前的api不会使用span或者memory>但是我当前的API不会使用 <code>Span</code> 或者 <code>Memory</code>！</h3>
 <p>当在写将数据从pipe中泵送到其它系统（比如一个<code>Socket</code>）时，很有可能你会遇到不接收 <code>Span</code> 或者 <code>Memory</code>的API。不要慌，这没有大碍，你依然可以有很多种变通方案使其变得更……传统。</p>
 <p>在你有一个 <code>Memory</code> 或者 <code>ReadOnlyMemory</code>时，第一个技巧是<code>MemoryMarshal.TryGetArray(...)</code>。它接收一个<em>memory</em>并且尝试获取一个<code>ArraySegment</code> ，它用一个<code>T[]</code>vector和一个<code>int</code>偏移/计数对描述相同的数据。显然，这只有在这块内存<em>是基于</em>一个vector时才能用，而情况并非总是如此，所以这可能会在异种的内存池上失败。我们第二个解决办法时<code>MemoryMarshal.GetReference(...)</code>，它接受一个<em>span</em>然后返回一个原始数据起点的引用（实际上是一个“托管指针”，又叫做 <code>ref T</code>）。一旦我们有了一个 <code>ref T</code>，我们可以用<code>unsafe</code>语法来获得一个这个数据的非托管指针，在这种情况下会有用：</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp>Span&lt;<span style=color:#458;font-weight:700>byte</span>&gt; span = ...
-<span style=color:#000;font-weight:700>fixed</span>(<span style=color:#458;font-weight:700>byte</span>* ptr = &amp;MemoryMarshal.GetReference(span))
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#434f54>Span</span>&lt;<span style=color:#00979d>byte</span>&gt; <span style=color:#434f54>span</span> = ...
+<span style=color:#728e00>fixed</span>(<span style=color:#00979d>byte</span>* <span style=color:#434f54>ptr</span> = &amp;<span style=color:#434f54>MemoryMarshal</span>.<span style=color:#434f54>GetReference</span>(<span style=color:#434f54>span</span>))
 {
-    <span style=color:#998;font-style:italic>// ...
-</span><span style=color:#998;font-style:italic></span>}
+    <span style=color:#95a5a6>// ...
+</span><span style=color:#95a5a6></span>}
 </code></pre></div><p>即使span的长度是零，你依然可以这么做，其会返回一个第0项<em>将会存在</em>的位置，而且甚至在使用<code>default</code>span即根本没有实际后备内存的时候，也可以这么使用。后面这个有一点需要注意，因为<code>ref T</code><em>通常不被认为会是null</em>，但是在这里它是。实际上，只要你不去尝试对这种空引用进行解引用，不会有什么问题。如果你使用<code>fixed</code>将其转换为一个非托管指针，你会得到一个空（零）指针，这相对来说更合理（并且在一些<code>P/Invoke</code>场景中会有用），<code>MemoryMarshal</code> 本质上是<code>unsafe</code> 代码的同义词，即使你调用的那段代码并没有使用<code>unsafe</code> 关键字。使用它是完全有效的，但是如果不恰当地使用它，它可能会坑到你——所以小心就是了。</p>
 <h3 id=pipe的应用端代码是什么样的>Pipe的应用端代码是什么样的？</h3>
 <p>OK，我们有了<code>IDuplexPipe</code>，并且我们也看到了如何将两个pipe的“业务端”连接到你选择的后端数据服务。现在，我们在应用代码中如何使用它？</p>
 <p>按照我们上一章的例子，我们将从 <code>IDuplexPipe.Output</code> 中把<code>PipeWriter</code>传递给我们的出站代码，从 <code>IDuplexPipe.Input</code> 中把 <code>PipeReader</code> 传递给我们的入站代码。</p>
 <p><em>出站</em>代码相当简单，并且通常是需要直接从基于<code>Stream</code>的代码移植成基于<code>PipeWriter</code>的代码。关键的区别还是那样，即<em>你不再手动控制缓冲区</em>。下面是一个一个典型的实现：</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp>ValueTask&lt;<span style=color:#458;font-weight:700>bool</span>&gt; Write(SomeMessageType message, PipeWriter writer)
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#434f54>ValueTask</span>&lt;<span style=color:#00979d>bool</span>&gt; <span style=color:#434f54>Write</span>(<span style=color:#434f54>SomeMessageType</span> <span style=color:#434f54>message</span>, <span style=color:#434f54>PipeWriter</span> <span style=color:#434f54>writer</span>)
 {
-    <span style=color:#998;font-style:italic>// (this may be multiple GetSpan/Advance calls, or a loop,
-</span><span style=color:#998;font-style:italic></span>    <span style=color:#998;font-style:italic>// depending on what makes sense for the message/protocol)
-</span><span style=color:#998;font-style:italic></span>    <span style=color:#458;font-weight:700>var</span> span = writer.GetSpan(...);
-    <span style=color:#998;font-style:italic>// TODO: ... actually write the message
-</span><span style=color:#998;font-style:italic></span>    <span style=color:#458;font-weight:700>int</span> bytesWritten = ... <span style=color:#998;font-style:italic>// from writing
-</span><span style=color:#998;font-style:italic></span>    writer.Advance(bytesWritten);
+    <span style=color:#95a5a6>// (this may be multiple GetSpan/Advance calls, or a loop,
+</span><span style=color:#95a5a6></span>    <span style=color:#95a5a6>// depending on what makes sense for the message/protocol)
+</span><span style=color:#95a5a6></span>    <span style=color:#00979d>var</span> <span style=color:#434f54>span</span> = <span style=color:#434f54>writer</span>.<span style=color:#434f54>GetSpan</span>(...);
+    <span style=color:#95a5a6>// TODO: ... actually write the message
+</span><span style=color:#95a5a6></span>    <span style=color:#00979d>int</span> <span style=color:#434f54>bytesWritten</span> = ... <span style=color:#95a5a6>// from writing
+</span><span style=color:#95a5a6></span>    <span style=color:#434f54>writer</span>.<span style=color:#434f54>Advance</span>(<span style=color:#434f54>bytesWritten</span>);
 
-    <span style=color:#000;font-weight:700>return</span> FlushAsync(writer);
+    <span style=color:#728e00>return</span> <span style=color:#434f54>FlushAsync</span>(<span style=color:#434f54>writer</span>);
 }
-</code></pre></div><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#000;font-weight:700>private</span> <span style=color:#000;font-weight:700>static</span> <span style=color:#000;font-weight:700>async</span> ValueTask&lt;<span style=color:#458;font-weight:700>bool</span>&gt; FlushAsync(PipeWriter writer)
+</code></pre></div><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#728e00>private</span> <span style=color:#728e00>static</span> <span style=color:#728e00>async</span> <span style=color:#434f54>ValueTask</span>&lt;<span style=color:#00979d>bool</span>&gt; <span style=color:#434f54>FlushAsync</span>(<span style=color:#434f54>PipeWriter</span> <span style=color:#434f54>writer</span>)
 {
-    <span style=color:#998;font-style:italic>// apply back-pressure etc
-</span><span style=color:#998;font-style:italic></span>    <span style=color:#458;font-weight:700>var</span> flush = <span style=color:#000;font-weight:700>await</span> writer.FlushAsync();
-    <span style=color:#998;font-style:italic>// tell the calling code whether any more messages
-</span><span style=color:#998;font-style:italic></span>    <span style=color:#998;font-style:italic>// should be written
-</span><span style=color:#998;font-style:italic></span>    <span style=color:#000;font-weight:700>return</span> !(flush.IsCanceled || flush.IsCompleted);
+    <span style=color:#95a5a6>// apply back-pressure etc
+</span><span style=color:#95a5a6></span>    <span style=color:#00979d>var</span> <span style=color:#434f54>flush</span> = <span style=color:#728e00>await</span> <span style=color:#434f54>writer</span>.<span style=color:#434f54>FlushAsync</span>();
+    <span style=color:#95a5a6>// tell the calling code whether any more messages
+</span><span style=color:#95a5a6></span>    <span style=color:#95a5a6>// should be written
+</span><span style=color:#95a5a6></span>    <span style=color:#728e00>return</span> !(<span style=color:#434f54>flush</span>.<span style=color:#434f54>IsCanceled</span> || <span style=color:#434f54>flush</span>.<span style=color:#434f54>IsCompleted</span>);
 }
 </code></pre></div><p><code>Write</code> 的第一部分是我们的业务代码，我们需要把数据从writer写入到缓冲区；通常这会多次调用 <code>GetSpan(...)</code> 和 <code>Advance()</code>。当我们写完了数据，我们可以flush它从而保证启动泵送并且应用背压控制。对于那些非常大的消息体，我们<em>也可以</em>在中间点flush，但是对于大多数场景：一个消息flush一次足够了。</p>
 <p>如果你好奇为什么我将<code>FlushAsync</code> 分割到不同的代码中：那是因为我想<code>await</code> <code>FlushAsync</code>的结果来检查退出条件，所以它需要在一个<code>async</code> 方法里，在这里最有效率的访问内存方式是通过 <code>Span&lt;byte></code> API，<code>Span&lt;byte></code> 是一个 <code>ref struct</code> 类型，因此我们<a href=https://github.com/dotnet/csharplang/blob/master/proposals/csharp-7.2/span-safety.md>不能在异步方法中将 <code>Span&lt;byte></code> 作为局部变量使用</a>。一个实用的办法是简单地分割代码，这样一个方法做 <code>Span&lt;byte></code> 工作，一个方法做<code>async</code>方面的工作。</p>
 <h3 id=发散一下异步代码同步热路径和异步机制开销>发散一下：异步代码、同步热路径和异步机制开销</h3>
 <p><code>async</code> / <code>await</code> 中引入的机制非常棒，但是它仍然会是一个会产生惊人栈开销的工作——你可以从 <a href="https://sharplab.io/#v2:D4AQDABCCMCsDcBYAUCkBmKAmCB5ArgE4DCA9gCYCmKA3ihAxAA6ECWAbgIYAulU0ANigAOCADVOAG3yUQAgDwAjUqUkA+CADFpAZwAWAQR0BPAHYBjABQAFVk0oB1Nr0IQA7s8qEAlPUZ1kRiCIAHoQiE4mJkljCEVOcwBrAFoWSh0dIj5KbnM/YIguVwAzXT0IAF4oAE53T0IAOm18fSMzK28kQILQ8N5JSQhuPT5zKUlWUwBzCHMKPjcR4a8I01iAW1JCPnX0nU4p9PzgsIh9UnxJcjiF515TY6CQAHYIAEJLUpa9BoBJHWInAslEklGuwGAEC++j+ANI62iOTBnWOAF8UOjUFjTjomCpimCoVshiMIJQAB6cBGglCTFymKTYCC2exOVguWjHDDiKQyOTyZr6ABK6Uu3A0gsMJgslm8lQ0VGKnDFXUxOm4hHw5m4WjKIsykm4nO6DG5ylUEH+gOBoOuFQVlCVKq5mHNgyt8MRvDtDqdhtVQA=">sharplab.io</a> 中看到——看看<code>OurCode.FlushAsync</code> 中生成的机制——和整个 <code>struct &lt;FlushAsync>d__0</code>。现在，这些代码并<em>不是很糟糕</em>——它非常努力地尝试在同步路径上避免内存分配——但是<em>没有必要</em>。</p>
 <p>这里有两种方法可以显著地改善它；一个是压根不去 <code>await</code> ，通常如果 <code>await</code> 是在方法中地最后一行并且<strong>我们不需要去处理结果</strong>：不去 <code>await</code> ——只要去除<code>async</code>然后<code>return</code>这个task——完成或者未完成。在这里我们没办法这样做，因为我们需要去检查返回的状态，但是我们可以通过检查这个task是否<em>已经完成</em>来对成功的结果进行优化（通过 <code>.IsCompletedSuccessfully</code> ——如果它已经结束但是有错误，我们仍然需要使用<code>await</code>来让异常可以正确表现出来）。如果它<em>是</em>成功完成的，我们可以请求到<code>.Result</code>。所以我们<em>也</em>可以将<code>FlushAsync</code> 写成这样：</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#000;font-weight:700>private</span> <span style=color:#000;font-weight:700>static</span> ValueTask&lt;<span style=color:#458;font-weight:700>bool</span>&gt; Flush(PipeWriter writer)
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#728e00>private</span> <span style=color:#728e00>static</span> <span style=color:#434f54>ValueTask</span>&lt;<span style=color:#00979d>bool</span>&gt; <span style=color:#434f54>Flush</span>(<span style=color:#434f54>PipeWriter</span> <span style=color:#434f54>writer</span>)
 {
-    <span style=color:#458;font-weight:700>bool</span> GetResult(FlushResult flush)
-        <span style=color:#998;font-style:italic>// tell the calling code whether any more messages
-</span><span style=color:#998;font-style:italic></span>        <span style=color:#998;font-style:italic>// should be written
-</span><span style=color:#998;font-style:italic></span>        =&gt; !(flush.IsCanceled || flush.IsCompleted);
+    <span style=color:#00979d>bool</span> <span style=color:#434f54>GetResult</span>(<span style=color:#434f54>FlushResult</span> <span style=color:#434f54>flush</span>)
+        <span style=color:#95a5a6>// tell the calling code whether any more messages
+</span><span style=color:#95a5a6></span>        <span style=color:#95a5a6>// should be written
+</span><span style=color:#95a5a6></span>        =&gt; !(<span style=color:#434f54>flush</span>.<span style=color:#434f54>IsCanceled</span> || <span style=color:#434f54>flush</span>.<span style=color:#434f54>IsCompleted</span>);
 
-    <span style=color:#000;font-weight:700>async</span> ValueTask&lt;<span style=color:#458;font-weight:700>bool</span>&gt; Awaited(ValueTask&lt;FlushResult&gt; incomplete)
-        =&gt; GetResult(<span style=color:#000;font-weight:700>await</span> incomplete);
+    <span style=color:#728e00>async</span> <span style=color:#434f54>ValueTask</span>&lt;<span style=color:#00979d>bool</span>&gt; <span style=color:#434f54>Awaited</span>(<span style=color:#434f54>ValueTask</span>&lt;<span style=color:#434f54>FlushResult</span>&gt; <span style=color:#434f54>incomplete</span>)
+        =&gt; <span style=color:#434f54>GetResult</span>(<span style=color:#728e00>await</span> <span style=color:#434f54>incomplete</span>);
 
-    <span style=color:#998;font-style:italic>// apply back-pressure etc
-</span><span style=color:#998;font-style:italic></span>    <span style=color:#458;font-weight:700>var</span> flushTask = writer.FlushAsync();
+    <span style=color:#95a5a6>// apply back-pressure etc
+</span><span style=color:#95a5a6></span>    <span style=color:#00979d>var</span> <span style=color:#434f54>flushTask</span> = <span style=color:#434f54>writer</span>.<span style=color:#434f54>FlushAsync</span>();
 
-    <span style=color:#000;font-weight:700>return</span> flushTask.IsCompletedSuccessfully
-        ? <span style=color:#000;font-weight:700>new</span> ValueTask&lt;<span style=color:#458;font-weight:700>bool</span>&gt;(GetResult(flushTask.Result))
-        : Awaited(flushTask);
+    <span style=color:#728e00>return</span> <span style=color:#434f54>flushTask</span>.<span style=color:#434f54>IsCompletedSuccessfully</span>
+        ? <span style=color:#728e00>new</span> <span style=color:#434f54>ValueTask</span>&lt;<span style=color:#00979d>bool</span>&gt;(<span style=color:#434f54>GetResult</span>(<span style=color:#434f54>flushTask</span>.<span style=color:#434f54>Result</span>))
+        : <span style=color:#434f54>Awaited</span>(<span style=color:#434f54>flushTask</span>);
 }
 </code></pre></div><p>这在大多数情况（同步完成）下<em>完全避免</em>了<code>async</code>/<code>await</code> 机制——如我们再次在 <a href="https://sharplab.io/#v2:D4AQDABCCMCsDcBYAUCkBmKAmCB5ArgE4DCA9gCYCmKA3ihAxAA6ECWAbgIYAulU0ANggA1TgBt8lEAIA8AI1KkxAPggAxCQGcAFgAoACqyaUA6m16EIAd3OVCASnqM6yRm4gKlEAOKVuAJUpNfDFuXQ18HUDg0IgAMy1tR1d3VIB6NIheMTEs7T4AY3ExVgA7AHMIAoo+K3zufMtOUoBPCABbUkI+dqDNTnKgp1S3DIgdUhDyD1rzXlLhkYYAXlUAQl0EyO0AOgBJTWJmgsoxSmngYHjE/cPSdqYz3nJ7JFQU1JAADhFxSWl5IoVBAAIJWTisZ66UQSKSyCJRIIhbiqMrVB5PSjJJZuVY+PzRZG6EAATggaPujz8WLei1GmU4TEebTknAKAGsALQsPpEPh+Ap0xhcSxbHTSCDLay2Qg7BHaEGaFqlAq6V4oIUMEAAdmu22ktzIGOp5AAyvgCidNJo4iExC1Ne4APwQUqUKy/WEAzwqXS+AJI0KbRIGwmhezYnEMABcoPBkPOwf1AnVHwgAF8UJn3igxpomIo4ud4l08vyAB6cY0oMoWUribAQQzGMwJwi0RYYT3/eGJMMo9SJRXK1X2SWqKhxTjIt7ZzTcQgW7iD7b9jtprs+iAHI4q07FvGT6ehN5uTdA7d3Y3PccQI8zrNAA=">sharplab.io</a>中看到的一样。我要强调：如果代码是经常（或仅仅）进行<em>真正的异步行为</em>时，这样做是完全没有必要的；它<em>只</em>对于那些结果通常（或仅仅）会同步地产生时才有帮助。</p>
 <p>(译注：对于<code>ValueTask</code>的"hot path"场景的使用，这里有个视频讲过一些，以及其它一些.NET中新的优化性能的方法： <a href="https://www.youtube.com/watch?v=dVKUYP_YALg">Adam Sitnik - State of the .NET Performance</a>)</p>
 <h3 id=那么reader呢>那么Reader呢？</h3>
 <p>就像我们多次看到的一样，reader总是稍微复杂一些——我们无从得知一个单独的“读”操作是否会准确包含一个入站消息，我们也许需要开启循环直到我们获取到了所有所需的数据，并且我们也许需要推回一些<em>额外的</em>数据。因此，让我们假设我们想要消费某种单一的消息：</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#000;font-weight:700>async</span> ValueTask&lt;SomeMessageType&gt; GetNextMessage(
-    PipeReader reader,
-    CancellationToken cancellationToken = <span style=color:#000;font-weight:700>default</span>)
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#728e00>async</span> <span style=color:#434f54>ValueTask</span>&lt;<span style=color:#434f54>SomeMessageType</span>&gt; <span style=color:#434f54>GetNextMessage</span>(
+    <span style=color:#434f54>PipeReader</span> <span style=color:#434f54>reader</span>,
+    <span style=color:#434f54>CancellationToken</span> <span style=color:#434f54>cancellationToken</span> = <span style=color:#728e00>default</span>)
 {
-    <span style=color:#000;font-weight:700>while</span> (<span style=color:#000;font-weight:700>true</span>)
+    <span style=color:#728e00>while</span> (<span style=color:#728e00>true</span>)
     {
-        <span style=color:#458;font-weight:700>var</span> read = <span style=color:#000;font-weight:700>await</span> reader.ReadAsync(cancellationToken);
-        <span style=color:#000;font-weight:700>if</span> (read.IsCanceled) ThrowCanceled();
+        <span style=color:#00979d>var</span> <span style=color:#434f54>read</span> = <span style=color:#728e00>await</span> <span style=color:#434f54>reader</span>.<span style=color:#434f54>ReadAsync</span>(<span style=color:#434f54>cancellationToken</span>);
+        <span style=color:#728e00>if</span> (<span style=color:#434f54>read</span>.<span style=color:#434f54>IsCanceled</span>) <span style=color:#434f54>ThrowCanceled</span>();
 
-        <span style=color:#998;font-style:italic>// can we find a complete frame?
-</span><span style=color:#998;font-style:italic></span>        <span style=color:#458;font-weight:700>var</span> buffer = read.Buffer;
-        <span style=color:#000;font-weight:700>if</span> (TryParseFrame(
-            buffer,
-            <span style=color:#000;font-weight:700>out</span> SomeMessageType nextMessage,
-            <span style=color:#000;font-weight:700>out</span> SequencePosition consumedTo))
+        <span style=color:#95a5a6>// can we find a complete frame?
+</span><span style=color:#95a5a6></span>        <span style=color:#00979d>var</span> <span style=color:#434f54>buffer</span> = <span style=color:#434f54>read</span>.<span style=color:#434f54>Buffer</span>;
+        <span style=color:#728e00>if</span> (<span style=color:#434f54>TryParseFrame</span>(
+            <span style=color:#434f54>buffer</span>,
+            <span style=color:#728e00>out</span> <span style=color:#434f54>SomeMessageType</span> <span style=color:#434f54>nextMessage</span>,
+            <span style=color:#728e00>out</span> <span style=color:#434f54>SequencePosition</span> <span style=color:#434f54>consumedTo</span>))
         {
-            reader.AdvanceTo(consumedTo);
-            <span style=color:#000;font-weight:700>return</span> nextMessage;
+            <span style=color:#434f54>reader</span>.<span style=color:#434f54>AdvanceTo</span>(<span style=color:#434f54>consumedTo</span>);
+            <span style=color:#728e00>return</span> <span style=color:#434f54>nextMessage</span>;
         }
-        reader.AdvanceTo(buffer.Start, buffer.End);
-        <span style=color:#000;font-weight:700>if</span> (read.IsCompleted) ThrowEOF();        
+        <span style=color:#434f54>reader</span>.<span style=color:#434f54>AdvanceTo</span>(<span style=color:#434f54>buffer</span>.<span style=color:#434f54>Start</span>, <span style=color:#434f54>buffer</span>.<span style=color:#434f54>End</span>);
+        <span style=color:#728e00>if</span> (<span style=color:#434f54>read</span>.<span style=color:#434f54>IsCompleted</span>) <span style=color:#434f54>ThrowEOF</span>();        
     }
 }
 </code></pre></div><p>这里我们从pipe中获取了<em>一些</em>数据，进行退出检查（比如取消）。然后我们<em>尝试寻找一个消息</em>，这是什么意思取决于你具体的代码——它可以是：</p>
@@ -251,26 +251,26 @@
 <li>pipe已经死亡，我们<em>再也不会</em>获得足够的数据</li>
 </ul>
 <p>我们在通过 <code>read.IsCompleted</code> 检查了这些，在第二种情况时报告错误；否则我们继续循环，等待更多数据。那么剩下的，就是我们的帧解析——我们已经把复杂的IO管理降低成了简单的操作；比如，如果我们的消息是以行标记分隔：</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#000;font-weight:700>private</span> <span style=color:#000;font-weight:700>static</span> <span style=color:#458;font-weight:700>bool</span> TryParseFrame(
-    ReadOnlySequence&lt;<span style=color:#458;font-weight:700>byte</span>&gt; buffer,
-    <span style=color:#000;font-weight:700>out</span> SomeMessageType nextMessage,
-    <span style=color:#000;font-weight:700>out</span> SequencePosition consumedTo)
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#728e00>private</span> <span style=color:#728e00>static</span> <span style=color:#00979d>bool</span> <span style=color:#434f54>TryParseFrame</span>(
+    <span style=color:#434f54>ReadOnlySequence</span>&lt;<span style=color:#00979d>byte</span>&gt; <span style=color:#434f54>buffer</span>,
+    <span style=color:#728e00>out</span> <span style=color:#434f54>SomeMessageType</span> <span style=color:#434f54>nextMessage</span>,
+    <span style=color:#728e00>out</span> <span style=color:#434f54>SequencePosition</span> <span style=color:#434f54>consumedTo</span>)
 {
-    <span style=color:#998;font-style:italic>// find the end-of-line marker
-</span><span style=color:#998;font-style:italic></span>    <span style=color:#458;font-weight:700>var</span> eol = buffer.PositionOf((<span style=color:#458;font-weight:700>byte</span>)<span style=color:#d14>&#39;\n&#39;</span>);
-    <span style=color:#000;font-weight:700>if</span> (eol == <span style=color:#000;font-weight:700>null</span>)
+    <span style=color:#95a5a6>// find the end-of-line marker
+</span><span style=color:#95a5a6></span>    <span style=color:#00979d>var</span> <span style=color:#434f54>eol</span> = <span style=color:#434f54>buffer</span>.<span style=color:#434f54>PositionOf</span>((<span style=color:#00979d>byte</span>)<span style=color:#7f8c8d>&#39;\n&#39;</span>);
+    <span style=color:#728e00>if</span> (<span style=color:#434f54>eol</span> == <span style=color:#728e00>null</span>)
     {
-        nextMessage = <span style=color:#000;font-weight:700>default</span>;
-        consumedTo = <span style=color:#000;font-weight:700>default</span>;
-        <span style=color:#000;font-weight:700>return</span> <span style=color:#000;font-weight:700>false</span>;
+        <span style=color:#434f54>nextMessage</span> = <span style=color:#728e00>default</span>;
+        <span style=color:#434f54>consumedTo</span> = <span style=color:#728e00>default</span>;
+        <span style=color:#728e00>return</span> <span style=color:#728e00>false</span>;
     }
 
-    <span style=color:#998;font-style:italic>// read past the line-ending
-</span><span style=color:#998;font-style:italic></span>    consumedTo = buffer.GetPosition(<span style=color:#099>1</span>, eol.Value);
-    <span style=color:#998;font-style:italic>// consume the data
-</span><span style=color:#998;font-style:italic></span>    <span style=color:#458;font-weight:700>var</span> payload = buffer.Slice(<span style=color:#099>0</span>, eol.Value);
-    nextMessage = ReadSomeMessageType(payload);
-    <span style=color:#000;font-weight:700>return</span> <span style=color:#000;font-weight:700>true</span>;
+    <span style=color:#95a5a6>// read past the line-ending
+</span><span style=color:#95a5a6></span>    <span style=color:#434f54>consumedTo</span> = <span style=color:#434f54>buffer</span>.<span style=color:#434f54>GetPosition</span>(<span style=color:#8a7b52>1</span>, <span style=color:#434f54>eol</span>.<span style=color:#434f54>Value</span>);
+    <span style=color:#95a5a6>// consume the data
+</span><span style=color:#95a5a6></span>    <span style=color:#00979d>var</span> <span style=color:#434f54>payload</span> = <span style=color:#434f54>buffer</span>.<span style=color:#434f54>Slice</span>(<span style=color:#8a7b52>0</span>, <span style=color:#434f54>eol</span>.<span style=color:#434f54>Value</span>);
+    <span style=color:#434f54>nextMessage</span> = <span style=color:#434f54>ReadSomeMessageType</span>(<span style=color:#434f54>payload</span>);
+    <span style=color:#728e00>return</span> <span style=color:#728e00>true</span>;
 }
 </code></pre></div><p>这里<code>PositionOf</code> 尝试获取第一个行标记的位置。如果一个也找不到，我们就放弃，否则我们将<code>consumedTo</code> 设为”行标记+1“（即我们会消费行标记），然后我们分割我们的缓冲区来创建一个子集，表示<em>不包括</em>行标记的内容，这样我们就可以解析了。最终，我们报告成功，并且庆祝我们可以简单地解析Linux风格的行尾。</p>
 <h3 id=这里的重点是什么>这里的重点是什么？</h3>

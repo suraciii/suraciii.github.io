@@ -20,28 +20,28 @@
 <time>January 27, 2022</time>
 </div>
 </header><p>最近在为Orleans改进其分布式追踪组件(<a href=https://github.com/dotnet/orleans/pull/7443>Use DistributedContextPropagator to propagate Activities</a>)的时候，从AspNetCore中抄了一些代码:</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#998;font-style:italic>// https://github.com/dotnet/aspnetcore/blob/9da42b9fab4c61fe46627ac0c6877905ec845d5a/src/Hosting/Hosting/src/Internal/HostingApplicationDiagnostics.cs#L272
-</span><span style=color:#998;font-style:italic></span>
-<span style=color:#000;font-weight:700>private</span> Activity? StartActivity(HttpContext httpContext, <span style=color:#458;font-weight:700>bool</span> loggingEnabled, <span style=color:#458;font-weight:700>bool</span> diagnosticListenerActivityCreationEnabled, <span style=color:#000;font-weight:700>out</span> <span style=color:#458;font-weight:700>bool</span> hasDiagnosticListener)
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#95a5a6>// https://github.com/dotnet/aspnetcore/blob/9da42b9fab4c61fe46627ac0c6877905ec845d5a/src/Hosting/Hosting/src/Internal/HostingApplicationDiagnostics.cs#L272
+</span><span style=color:#95a5a6></span>
+<span style=color:#728e00>private</span> <span style=color:#434f54>Activity</span>? <span style=color:#434f54>StartActivity</span>(<span style=color:#434f54>HttpContext</span> <span style=color:#434f54>httpContext</span>, <span style=color:#00979d>bool</span> <span style=color:#434f54>loggingEnabled</span>, <span style=color:#00979d>bool</span> <span style=color:#434f54>diagnosticListenerActivityCreationEnabled</span>, <span style=color:#728e00>out</span> <span style=color:#00979d>bool</span> <span style=color:#434f54>hasDiagnosticListener</span>)
 {
-	<span style=color:#458;font-weight:700>var</span> activity = <span style=color:#099>_</span>activitySource.CreateActivity(ActivityName, ActivityKind.Server);
-	<span style=color:#998;font-style:italic>// ...
-</span><span style=color:#998;font-style:italic></span>	<span style=color:#458;font-weight:700>var</span> headers = httpContext.Request.Headers;
-	<span style=color:#099>_</span>propagator.ExtractTraceIdAndState(headers,
-		<span style=color:#000;font-weight:700>static</span> (<span style=color:#458;font-weight:700>object?</span> carrier, <span style=color:#458;font-weight:700>string</span> fieldName, <span style=color:#000;font-weight:700>out</span> <span style=color:#458;font-weight:700>string?</span> fieldValue, <span style=color:#000;font-weight:700>out</span> IEnumerable&lt;<span style=color:#458;font-weight:700>string</span>&gt;? fieldValues) =&gt;
+	<span style=color:#00979d>var</span> <span style=color:#434f54>activity</span> = <span style=color:#8a7b52>_</span><span style=color:#434f54>activitySource</span>.<span style=color:#434f54>CreateActivity</span>(<span style=color:#434f54>ActivityName</span>, <span style=color:#434f54>ActivityKind</span>.<span style=color:#434f54>Server</span>);
+	<span style=color:#95a5a6>// ...
+</span><span style=color:#95a5a6></span>	<span style=color:#00979d>var</span> <span style=color:#434f54>headers</span> = <span style=color:#434f54>httpContext</span>.<span style=color:#434f54>Request</span>.<span style=color:#434f54>Headers</span>;
+	<span style=color:#8a7b52>_</span><span style=color:#434f54>propagator</span>.<span style=color:#434f54>ExtractTraceIdAndState</span>(<span style=color:#434f54>headers</span>,
+		<span style=color:#728e00>static</span> (<span style=color:#00979d>object?</span> <span style=color:#434f54>carrier</span>, <span style=color:#00979d>string</span> <span style=color:#434f54>fieldName</span>, <span style=color:#728e00>out</span> <span style=color:#00979d>string?</span> <span style=color:#434f54>fieldValue</span>, <span style=color:#728e00>out</span> <span style=color:#434f54>IEnumerable</span>&lt;<span style=color:#00979d>string</span>&gt;? <span style=color:#434f54>fieldValues</span>) =&gt;
 		{
-			fieldValues = <span style=color:#000;font-weight:700>default</span>;
-			<span style=color:#458;font-weight:700>var</span> headers = (IHeaderDictionary)carrier!;
-			fieldValue = headers[fieldName];
+			<span style=color:#434f54>fieldValues</span> = <span style=color:#728e00>default</span>;
+			<span style=color:#00979d>var</span> <span style=color:#434f54>headers</span> = (<span style=color:#434f54>IHeaderDictionary</span>)<span style=color:#434f54>carrier</span>!;
+			<span style=color:#434f54>fieldValue</span> = <span style=color:#434f54>headers</span>[<span style=color:#434f54>fieldName</span>];
 		},
-		<span style=color:#000;font-weight:700>out</span> <span style=color:#458;font-weight:700>var</span> requestId,
-		<span style=color:#000;font-weight:700>out</span> <span style=color:#458;font-weight:700>var</span> traceState);
+		<span style=color:#728e00>out</span> <span style=color:#00979d>var</span> <span style=color:#434f54>requestId</span>,
+		<span style=color:#728e00>out</span> <span style=color:#00979d>var</span> <span style=color:#434f54>traceState</span>);
 
-	<span style=color:#998;font-style:italic>// ...
-</span><span style=color:#998;font-style:italic></span>	activity.SetParentId(requestId);
-	<span style=color:#000;font-weight:700>if</span> (!<span style=color:#458;font-weight:700>string</span>.IsNullOrEmpty(traceState))
+	<span style=color:#95a5a6>// ...
+</span><span style=color:#95a5a6></span>	<span style=color:#434f54>activity</span>.<span style=color:#434f54>SetParentId</span>(<span style=color:#434f54>requestId</span>);
+	<span style=color:#728e00>if</span> (!<span style=color:#00979d>string</span>.<span style=color:#434f54>IsNullOrEmpty</span>(<span style=color:#434f54>traceState</span>))
 	{
-		activity.TraceStateString = traceState;
+		<span style=color:#434f54>activity</span>.<span style=color:#434f54>TraceStateString</span> = <span style=color:#434f54>traceState</span>;
 	}
 }
 </code></pre></div><p>这段代码的作用是，创建Activity后，从请求头中尝试获取追踪信息（traceid等），如果存在的话，就通过<code>activity.SetParentId(requestId)</code>将这个新创建的Activity与请求头中的追踪上下文关联，即进入链路成为其中的一个子片段。</p>
@@ -52,20 +52,20 @@
 <p>这就十分令人好奇了——这是从AspNetCore代码库里抄来的代码，也有相关测试覆盖，为什么还会有问题？
 于是使用OpenTelemetry SDK重现了这个bug并仔细调试后，发现了问题出现的原因：</p>
 <p>OpenTelemetry SDK记录应用的Activity时，有一个默认的采样器(Sampler)，在这个采样器中它会在创建Activity时访问相关<code>ActivityCreationOptions</code>中的<code>.TraceId</code>属性，再看其源码：</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#998;font-style:italic>// https://github.com/dotnet/runtime/blob/970d347a1b06951692cfecc1cc12a500158708b1/src/libraries/System.Diagnostics.DiagnosticSource/src/System/Diagnostics/ActivityCreationOptions.cs#L128
-</span><span style=color:#998;font-style:italic></span><span style=color:#000;font-weight:700>public</span> ActivityTraceId TraceId
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#95a5a6>// https://github.com/dotnet/runtime/blob/970d347a1b06951692cfecc1cc12a500158708b1/src/libraries/System.Diagnostics.DiagnosticSource/src/System/Diagnostics/ActivityCreationOptions.cs#L128
+</span><span style=color:#95a5a6></span><span style=color:#728e00>public</span> <span style=color:#434f54>ActivityTraceId</span> <span style=color:#434f54>TraceId</span>
 {
-	<span style=color:#000;font-weight:700>get</span>
+	<span style=color:#728e00>get</span>
 	{
-		<span style=color:#000;font-weight:700>if</span> (Parent <span style=color:#000;font-weight:700>is</span> ActivityContext &amp;&amp; IdFormat == ActivityIdFormat.W3C &amp;&amp; <span style=color:#099>_</span>context == <span style=color:#000;font-weight:700>default</span>)
+		<span style=color:#728e00>if</span> (<span style=color:#434f54>Parent</span> <span style=color:#728e00>is</span> <span style=color:#434f54>ActivityContext</span> &amp;&amp; <span style=color:#434f54>IdFormat</span> == <span style=color:#434f54>ActivityIdFormat</span>.<span style=color:#434f54>W3C</span> &amp;&amp; <span style=color:#8a7b52>_</span><span style=color:#434f54>context</span> == <span style=color:#728e00>default</span>)
 		{
-			Func&lt;ActivityTraceId&gt;? traceIdGenerator = Activity.TraceIdGenerator;
-			ActivityTraceId id = traceIdGenerator == <span style=color:#000;font-weight:700>null</span> ? ActivityTraceId.CreateRandom() : traceIdGenerator();
+			<span style=color:#434f54>Func</span>&lt;<span style=color:#434f54>ActivityTraceId</span>&gt;? <span style=color:#434f54>traceIdGenerator</span> = <span style=color:#434f54>Activity</span>.<span style=color:#434f54>TraceIdGenerator</span>;
+			<span style=color:#434f54>ActivityTraceId</span> <span style=color:#434f54>id</span> = <span style=color:#434f54>traceIdGenerator</span> == <span style=color:#728e00>null</span> ? <span style=color:#434f54>ActivityTraceId</span>.<span style=color:#434f54>CreateRandom</span>() : <span style=color:#434f54>traceIdGenerator</span>();
 
-			Unsafe.AsRef(<span style=color:#000;font-weight:700>in</span> <span style=color:#099>_</span>context) = <span style=color:#000;font-weight:700>new</span> ActivityContext(id, <span style=color:#000;font-weight:700>default</span>, ActivityTraceFlags.None);
+			<span style=color:#434f54>Unsafe</span>.<span style=color:#434f54>AsRef</span>(<span style=color:#728e00>in</span> <span style=color:#8a7b52>_</span><span style=color:#434f54>context</span>) = <span style=color:#728e00>new</span> <span style=color:#434f54>ActivityContext</span>(<span style=color:#434f54>id</span>, <span style=color:#728e00>default</span>, <span style=color:#434f54>ActivityTraceFlags</span>.<span style=color:#434f54>None</span>);
 		}
 
-		<span style=color:#000;font-weight:700>return</span> <span style=color:#099>_</span>context.TraceId;
+		<span style=color:#728e00>return</span> <span style=color:#8a7b52>_</span><span style=color:#434f54>context</span>.<span style=color:#434f54>TraceId</span>;
 	}
 }
 </code></pre></div><p>也就是说，访问<code>.TraceId</code>时，如果它还没有traceid，就生成一个并返回，最终被配置到新创建的Activity中，而Activity的TraceId只能被配置一次，也就是说如果traceid已经存在，后面的<code>activity.SetParentId(requestId)</code>就不会产生作用。</p>

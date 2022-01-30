@@ -96,47 +96,47 @@ ServiceAccount是由K8S管理的，创建等操作，都通过K8S完成</p>
 </ul>
 <h3 id=为用户添加角色>为用户添加角色</h3>
 <h4 id=首先创造一个角色>首先创造一个角色</h4>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:navy>kind</span>:<span style=color:#bbb> </span>Role<span style=color:#bbb>
-</span><span style=color:#bbb></span><span style=color:navy>apiVersion</span>:<span style=color:#bbb> </span>rbac.authorization.k8s.io/v1beta1<span style=color:#bbb>
-</span><span style=color:#bbb></span><span style=color:navy>metadata</span>:<span style=color:#bbb>
-</span><span style=color:#bbb>  </span><span style=color:navy>namespace</span>:<span style=color:#bbb> </span>a-1<span style=color:#bbb>
-</span><span style=color:#bbb>  </span><span style=color:navy>name</span>:<span style=color:#bbb> </span>admin<span style=color:#bbb>
-</span><span style=color:#bbb></span><span style=color:navy>rules</span>:<span style=color:#bbb>
-</span><span style=color:#bbb></span>- <span style=color:navy>apiGroups</span>:<span style=color:#bbb> </span>[<span style=color:#d14>&#34;&#34;</span>]<span style=color:#bbb>
-</span><span style=color:#bbb>  </span><span style=color:navy>resources</span>:<span style=color:#bbb> </span>[<span style=color:#d14>&#34;*&#34;</span>]<span style=color:#bbb>
-</span><span style=color:#bbb>  </span><span style=color:navy>verbs</span>:<span style=color:#bbb> </span>[<span style=color:#d14>&#34;*&#34;</span>]<span style=color:#bbb>
-</span></code></pre></div><p>这是在a-1命名空间内创建了一个admin管理员角色，这里只是用admin角色举例，实际上如果只是为了授予用户某命名空间管理员的权限的话，是不需要新建一个角色的，K8S已经内置了一个名为admin的ClusterRole</p>
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#434f54>kind</span>: Role
+<span style=color:#434f54>apiVersion</span>: rbac.authorization.k8s.io/v1beta1
+<span style=color:#434f54>metadata</span>:
+  <span style=color:#434f54>namespace</span>: a-1
+  <span style=color:#434f54>name</span>: admin
+<span style=color:#434f54>rules</span>:
+- <span style=color:#434f54>apiGroups</span>: [<span style=color:#7f8c8d>&#34;&#34;</span>]
+  <span style=color:#434f54>resources</span>: [<span style=color:#7f8c8d>&#34;*&#34;</span>]
+  <span style=color:#434f54>verbs</span>: [<span style=color:#7f8c8d>&#34;*&#34;</span>]
+</code></pre></div><p>这是在a-1命名空间内创建了一个admin管理员角色，这里只是用admin角色举例，实际上如果只是为了授予用户某命名空间管理员的权限的话，是不需要新建一个角色的，K8S已经内置了一个名为admin的ClusterRole</p>
 <h4 id=将角色和用户绑定>将角色和用户绑定</h4>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:navy>kind</span>:<span style=color:#bbb> </span>RoleBinding<span style=color:#bbb>
-</span><span style=color:#bbb></span><span style=color:navy>apiVersion</span>:<span style=color:#bbb> </span>rbac.authorization.k8s.io/v1beta1<span style=color:#bbb>
-</span><span style=color:#bbb></span><span style=color:navy>metadata</span>:<span style=color:#bbb>
-</span><span style=color:#bbb>  </span><span style=color:navy>name</span>:<span style=color:#bbb> </span>admin-binding<span style=color:#bbb>
-</span><span style=color:#bbb>  </span><span style=color:navy>namespace</span>:<span style=color:#bbb> </span>a-1<span style=color:#bbb>
-</span><span style=color:#bbb></span><span style=color:navy>subjects</span>:<span style=color:#bbb>
-</span><span style=color:#bbb></span>- <span style=color:navy>kind</span>:<span style=color:#bbb> </span>User<span style=color:#bbb>
-</span><span style=color:#bbb>  </span><span style=color:navy>name</span>:<span style=color:#bbb> </span>tom<span style=color:#bbb>
-</span><span style=color:#bbb>  </span><span style=color:navy>apiGroup</span>:<span style=color:#bbb> </span><span style=color:#d14>&#34;&#34;</span><span style=color:#bbb>
-</span><span style=color:#bbb></span><span style=color:navy>roleRef</span>:<span style=color:#bbb>
-</span><span style=color:#bbb>  </span><span style=color:navy>kind</span>:<span style=color:#bbb> </span>Role<span style=color:#bbb>
-</span><span style=color:#bbb>  </span><span style=color:navy>name</span>:<span style=color:#bbb> </span>admin<span style=color:#bbb>
-</span><span style=color:#bbb>  </span><span style=color:navy>apiGroup</span>:<span style=color:#bbb> </span><span style=color:#d14>&#34;&#34;</span><span style=color:#bbb>
-</span></code></pre></div><p>如yaml中所示，RoleBinding资源创建了一个 Role-User 之间的关系，<code>roleRef</code>节点指定此RoleBinding所引用的角色，<code>subjects</code>节点指定了此RoleBinding的受体，可以是User，也可以是前面说过的ServiceAccount，在这里只包含了名为 tom 的用户</p>
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#434f54>kind</span>: RoleBinding
+<span style=color:#434f54>apiVersion</span>: rbac.authorization.k8s.io/v1beta1
+<span style=color:#434f54>metadata</span>:
+  <span style=color:#434f54>name</span>: admin-binding
+  <span style=color:#434f54>namespace</span>: a-1
+<span style=color:#434f54>subjects</span>:
+- <span style=color:#434f54>kind</span>: User
+  <span style=color:#434f54>name</span>: tom
+  <span style=color:#434f54>apiGroup</span>: <span style=color:#7f8c8d>&#34;&#34;</span>
+<span style=color:#434f54>roleRef</span>:
+  <span style=color:#434f54>kind</span>: Role
+  <span style=color:#434f54>name</span>: admin
+  <span style=color:#434f54>apiGroup</span>: <span style=color:#7f8c8d>&#34;&#34;</span>
+</code></pre></div><p>如yaml中所示，RoleBinding资源创建了一个 Role-User 之间的关系，<code>roleRef</code>节点指定此RoleBinding所引用的角色，<code>subjects</code>节点指定了此RoleBinding的受体，可以是User，也可以是前面说过的ServiceAccount，在这里只包含了名为 tom 的用户</p>
 <h4 id=添加命名空间管理员的另一种方式>添加命名空间管理员的另一种方式</h4>
 <p>前面说过，K8S内置了一个名为admin的ClusterRole，所以实际上我们无需创建一个admin Role，直接对集群默认的admin ClusterRole添加RoleBinding就可以了</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:navy>kind</span>:<span style=color:#bbb> </span>RoleBinding<span style=color:#bbb>
-</span><span style=color:#bbb></span><span style=color:navy>apiVersion</span>:<span style=color:#bbb> </span>rbac.authorization.k8s.io/v1beta1<span style=color:#bbb>
-</span><span style=color:#bbb></span><span style=color:navy>metadata</span>:<span style=color:#bbb>
-</span><span style=color:#bbb>  </span><span style=color:navy>name</span>:<span style=color:#bbb> </span>admin-binding<span style=color:#bbb>
-</span><span style=color:#bbb>  </span><span style=color:navy>namespace</span>:<span style=color:#bbb> </span>a-1<span style=color:#bbb>
-</span><span style=color:#bbb></span><span style=color:navy>subjects</span>:<span style=color:#bbb>
-</span><span style=color:#bbb></span>- <span style=color:navy>kind</span>:<span style=color:#bbb> </span>User<span style=color:#bbb>
-</span><span style=color:#bbb>  </span><span style=color:navy>name</span>:<span style=color:#bbb> </span>tom<span style=color:#bbb>
-</span><span style=color:#bbb>  </span><span style=color:navy>apiGroup</span>:<span style=color:#bbb> </span><span style=color:#d14>&#34;&#34;</span><span style=color:#bbb>
-</span><span style=color:#bbb></span><span style=color:navy>roleRef</span>:<span style=color:#bbb>
-</span><span style=color:#bbb>  </span><span style=color:navy>kind</span>:<span style=color:#bbb> </span>ClusterRole<span style=color:#bbb>
-</span><span style=color:#bbb>  </span><span style=color:navy>name</span>:<span style=color:#bbb> </span>admin<span style=color:#bbb>
-</span><span style=color:#bbb>  </span><span style=color:navy>apiGroup</span>:<span style=color:#bbb> </span><span style=color:#d14>&#34;&#34;</span><span style=color:#bbb>
-</span></code></pre></div><p>这里虽然引用的是作为ClusterRole的admin角色，但是其权限被限制在RoleBinding admin-binding所处的命名空间，即a-1内
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#434f54>kind</span>: RoleBinding
+<span style=color:#434f54>apiVersion</span>: rbac.authorization.k8s.io/v1beta1
+<span style=color:#434f54>metadata</span>:
+  <span style=color:#434f54>name</span>: admin-binding
+  <span style=color:#434f54>namespace</span>: a-1
+<span style=color:#434f54>subjects</span>:
+- <span style=color:#434f54>kind</span>: User
+  <span style=color:#434f54>name</span>: tom
+  <span style=color:#434f54>apiGroup</span>: <span style=color:#7f8c8d>&#34;&#34;</span>
+<span style=color:#434f54>roleRef</span>:
+  <span style=color:#434f54>kind</span>: ClusterRole
+  <span style=color:#434f54>name</span>: admin
+  <span style=color:#434f54>apiGroup</span>: <span style=color:#7f8c8d>&#34;&#34;</span>
+</code></pre></div><p>这里虽然引用的是作为ClusterRole的admin角色，但是其权限被限制在RoleBinding admin-binding所处的命名空间，即a-1内
 如果想要添加全命名空间或者说全集群的管理员，可以使用cluster-admin角色</p>
 <p>到此为止，我们已经：</p>
 <ul>

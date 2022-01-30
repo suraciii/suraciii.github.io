@@ -21,25 +21,25 @@
 </div>
 </header><p>Pulumi是一个现代<code>基础设施即代码(infrastructure as code)</code>平台，通过它，我们可以使用我们熟悉的编程语言和工具来构建、部署和管理云及云原生基础设施。</p>
 <p>来看一个最简单的例子，准备如下typescript代码：</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#000;font-weight:700>import</span> <span style=color:#000;font-weight:700>*</span> <span style=color:#000;font-weight:700>as</span> pulumi <span style=color:#000;font-weight:700>from</span> <span style=color:#d14>&#34;@pulumi/pulumi&#34;</span>;
-<span style=color:#000;font-weight:700>import</span> <span style=color:#000;font-weight:700>*</span> <span style=color:#000;font-weight:700>as</span> aws <span style=color:#000;font-weight:700>from</span> <span style=color:#d14>&#34;@pulumi/aws&#34;</span>;
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#00979d>import</span> <span style=color:#728e00>*</span> <span style=color:#00979d>as</span> <span style=color:#728e00>pulumi</span> <span style=color:#00979d>from</span> <span style=color:#7f8c8d>&#34;@pulumi/pulumi&#34;</span>;
+<span style=color:#00979d>import</span> <span style=color:#728e00>*</span> <span style=color:#00979d>as</span> <span style=color:#728e00>aws</span> <span style=color:#00979d>from</span> <span style=color:#7f8c8d>&#34;@pulumi/aws&#34;</span>;
 
-<span style=color:#000;font-weight:700>const</span> group <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>new</span> aws.ec2.SecurityGroup(<span style=color:#d14>&#34;web-sg&#34;</span>, {
-    description<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;Enable HTTP access&#34;</span>,
-    ingress<span style=color:#000;font-weight:700>:</span> [{ protocol<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;tcp&#34;</span>, fromPort: <span style=color:#458;font-weight:700>80</span>, toPort: <span style=color:#458;font-weight:700>80</span>, cidrBlocks<span style=color:#000;font-weight:700>:</span> [<span style=color:#d14>&#34;0.0.0.0/0&#34;</span>] }],
+<span style=color:#00979d>const</span> <span style=color:#728e00>group</span> <span style=color:#728e00>=</span> <span style=color:#728e00>new</span> <span style=color:#728e00>aws</span>.<span style=color:#728e00>ec2</span>.<span style=color:#728e00>SecurityGroup</span>(<span style=color:#7f8c8d>&#34;web-sg&#34;</span>, {
+    <span style=color:#728e00>description</span><span style=color:#728e00>:</span> <span style=color:#7f8c8d>&#34;Enable HTTP access&#34;</span>,
+    <span style=color:#728e00>ingress</span><span style=color:#728e00>:</span> [{ <span style=color:#728e00>protocol</span><span style=color:#728e00>:</span> <span style=color:#7f8c8d>&#34;tcp&#34;</span>, <span style=color:#728e00>fromPort</span>: <span style=color:#00979d>80</span>, <span style=color:#728e00>toPort</span>: <span style=color:#00979d>80</span>, <span style=color:#728e00>cidrBlocks</span><span style=color:#728e00>:</span> [<span style=color:#7f8c8d>&#34;0.0.0.0/0&#34;</span>] }],
 });
 
-<span style=color:#000;font-weight:700>const</span> server <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>new</span> aws.ec2.Instance(<span style=color:#d14>&#34;web-server&#34;</span>, {
-    ami<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;ami-6869aa05&#34;</span>,
-    instanceType<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;t2.micro&#34;</span>,
-    vpcSecurityGroupIds<span style=color:#000;font-weight:700>:</span> [ group.name ], <span style=color:#998;font-style:italic>// reference the security group resource above
-</span><span style=color:#998;font-style:italic></span>});
+<span style=color:#00979d>const</span> <span style=color:#728e00>server</span> <span style=color:#728e00>=</span> <span style=color:#728e00>new</span> <span style=color:#728e00>aws</span>.<span style=color:#728e00>ec2</span>.<span style=color:#728e00>Instance</span>(<span style=color:#7f8c8d>&#34;web-server&#34;</span>, {
+    <span style=color:#728e00>ami</span><span style=color:#728e00>:</span> <span style=color:#7f8c8d>&#34;ami-6869aa05&#34;</span>,
+    <span style=color:#728e00>instanceType</span><span style=color:#728e00>:</span> <span style=color:#7f8c8d>&#34;t2.micro&#34;</span>,
+    <span style=color:#728e00>vpcSecurityGroupIds</span><span style=color:#728e00>:</span> [ <span style=color:#728e00>group</span>.<span style=color:#728e00>name</span> ], <span style=color:#95a5a6>// reference the security group resource above
+</span><span style=color:#95a5a6></span>});
 </code></pre></div><p>运行<code>pulumi up</code>命令，即可在AWS中创建一个ec2实例并配置其安全组。</p>
 <p>如果我们需要修改其安全组配置，加上443端口的入口，那么只需要更改代码:</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#000;font-weight:700>const</span> group <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>new</span> aws.ec2.SecurityGroup(<span style=color:#d14>&#34;web-sg&#34;</span>, {
-    description<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;Enable HTTP access&#34;</span>,
-    ingress<span style=color:#000;font-weight:700>:</span> [{ protocol<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;tcp&#34;</span>, fromPort: <span style=color:#458;font-weight:700>80</span>, toPort: <span style=color:#458;font-weight:700>80</span>, cidrBlocks<span style=color:#000;font-weight:700>:</span> [<span style=color:#d14>&#34;0.0.0.0/0&#34;</span>] },
-		{ protocol<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;tcp&#34;</span>, fromPort: <span style=color:#458;font-weight:700>443</span>, toPort: <span style=color:#458;font-weight:700>443</span>, cidrBlocks<span style=color:#000;font-weight:700>:</span> [<span style=color:#d14>&#34;0.0.0.0/0&#34;</span>] }],
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#00979d>const</span> <span style=color:#728e00>group</span> <span style=color:#728e00>=</span> <span style=color:#728e00>new</span> <span style=color:#728e00>aws</span>.<span style=color:#728e00>ec2</span>.<span style=color:#728e00>SecurityGroup</span>(<span style=color:#7f8c8d>&#34;web-sg&#34;</span>, {
+    <span style=color:#728e00>description</span><span style=color:#728e00>:</span> <span style=color:#7f8c8d>&#34;Enable HTTP access&#34;</span>,
+    <span style=color:#728e00>ingress</span><span style=color:#728e00>:</span> [{ <span style=color:#728e00>protocol</span><span style=color:#728e00>:</span> <span style=color:#7f8c8d>&#34;tcp&#34;</span>, <span style=color:#728e00>fromPort</span>: <span style=color:#00979d>80</span>, <span style=color:#728e00>toPort</span>: <span style=color:#00979d>80</span>, <span style=color:#728e00>cidrBlocks</span><span style=color:#728e00>:</span> [<span style=color:#7f8c8d>&#34;0.0.0.0/0&#34;</span>] },
+		{ <span style=color:#728e00>protocol</span><span style=color:#728e00>:</span> <span style=color:#7f8c8d>&#34;tcp&#34;</span>, <span style=color:#728e00>fromPort</span>: <span style=color:#00979d>443</span>, <span style=color:#728e00>toPort</span>: <span style=color:#00979d>443</span>, <span style=color:#728e00>cidrBlocks</span><span style=color:#728e00>:</span> [<span style=color:#7f8c8d>&#34;0.0.0.0/0&#34;</span>] }],
 });
 </code></pre></div><p>再次运行<code>pulumi up</code>命令，即可对相关安全组进行更新。</p>
 <p>这里的例子是使用tyescript代码管理AWS中的资源，此外，Pulumi还支持python、C#、go等编程语言，以及Azure、GCP、阿里云、Kubernetes等平台。</p>
@@ -66,70 +66,70 @@
 <p>跟着指引一步步填写相关信息，如：</p>
 <div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>project name: demo-meetingsvc
 project description: A meeting service
-stack name: dev <span style=color:#998;font-style:italic># stack可以简单理解为环境</span>
+stack name: dev <span style=color:#95a5a6># stack可以简单理解为环境</span>
 </code></pre></div><p>执行完成后，Pulumi会在目录中生成项目以及初始实例代码，可以打开<code>index.ts</code>查看：</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#000;font-weight:700>import</span> <span style=color:#000;font-weight:700>*</span> <span style=color:#000;font-weight:700>as</span> k8s <span style=color:#000;font-weight:700>from</span> <span style=color:#d14>&#34;@pulumi/kubernetes&#34;</span>;
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#00979d>import</span> <span style=color:#728e00>*</span> <span style=color:#00979d>as</span> <span style=color:#728e00>k8s</span> <span style=color:#00979d>from</span> <span style=color:#7f8c8d>&#34;@pulumi/kubernetes&#34;</span>;
 
-<span style=color:#000;font-weight:700>const</span> appLabels <span style=color:#000;font-weight:700>=</span> { app<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;nginx&#34;</span> };
-<span style=color:#000;font-weight:700>const</span> deployment <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>new</span> k8s.apps.v1.Deployment(<span style=color:#d14>&#34;nginx&#34;</span>, {
-    spec<span style=color:#000;font-weight:700>:</span> {
-        selector<span style=color:#000;font-weight:700>:</span> { matchLabels: <span style=color:#458;font-weight:700>appLabels</span> },
-        replicas: <span style=color:#458;font-weight:700>1</span>,
-        template<span style=color:#000;font-weight:700>:</span> {
-            metadata<span style=color:#000;font-weight:700>:</span> { labels: <span style=color:#458;font-weight:700>appLabels</span> },
-            spec<span style=color:#000;font-weight:700>:</span> { containers<span style=color:#000;font-weight:700>:</span> [{ name<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;nginx&#34;</span>, image<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;nginx&#34;</span> }] }
+<span style=color:#00979d>const</span> <span style=color:#728e00>appLabels</span> <span style=color:#728e00>=</span> { <span style=color:#728e00>app</span><span style=color:#728e00>:</span> <span style=color:#7f8c8d>&#34;nginx&#34;</span> };
+<span style=color:#00979d>const</span> <span style=color:#728e00>deployment</span> <span style=color:#728e00>=</span> <span style=color:#728e00>new</span> <span style=color:#728e00>k8s</span>.<span style=color:#728e00>apps</span>.<span style=color:#728e00>v1</span>.<span style=color:#728e00>Deployment</span>(<span style=color:#7f8c8d>&#34;nginx&#34;</span>, {
+    <span style=color:#728e00>spec</span><span style=color:#728e00>:</span> {
+        <span style=color:#728e00>selector</span><span style=color:#728e00>:</span> { <span style=color:#728e00>matchLabels</span>: <span style=color:#00979d>appLabels</span> },
+        <span style=color:#728e00>replicas</span>: <span style=color:#00979d>1</span>,
+        <span style=color:#728e00>template</span><span style=color:#728e00>:</span> {
+            <span style=color:#728e00>metadata</span><span style=color:#728e00>:</span> { <span style=color:#728e00>labels</span>: <span style=color:#00979d>appLabels</span> },
+            <span style=color:#728e00>spec</span><span style=color:#728e00>:</span> { <span style=color:#728e00>containers</span><span style=color:#728e00>:</span> [{ <span style=color:#728e00>name</span><span style=color:#728e00>:</span> <span style=color:#7f8c8d>&#34;nginx&#34;</span>, <span style=color:#728e00>image</span><span style=color:#728e00>:</span> <span style=color:#7f8c8d>&#34;nginx&#34;</span> }] }
         }
     }
 });
-<span style=color:#000;font-weight:700>export</span> <span style=color:#000;font-weight:700>const</span> name <span style=color:#000;font-weight:700>=</span> deployment.metadata.name;
+<span style=color:#00979d>export</span> <span style=color:#00979d>const</span> <span style=color:#728e00>name</span> <span style=color:#728e00>=</span> <span style=color:#728e00>deployment</span>.<span style=color:#728e00>metadata</span>.<span style=color:#728e00>name</span>;
 </code></pre></div><p>上面代码的作用是创建一个nginx部署，我们可以删掉这段代码，改成我们想要的。</p>
 <p>首先，新建一个命名空间：</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#000;font-weight:700>import</span> <span style=color:#000;font-weight:700>*</span> <span style=color:#000;font-weight:700>as</span> pulumi <span style=color:#000;font-weight:700>from</span> <span style=color:#d14>&#34;@pulumi/pulumi&#34;</span>;
-<span style=color:#000;font-weight:700>import</span> <span style=color:#000;font-weight:700>*</span> <span style=color:#000;font-weight:700>as</span> kubernetes <span style=color:#000;font-weight:700>from</span> <span style=color:#d14>&#34;@pulumi/kubernetes&#34;</span>;
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#00979d>import</span> <span style=color:#728e00>*</span> <span style=color:#00979d>as</span> <span style=color:#728e00>pulumi</span> <span style=color:#00979d>from</span> <span style=color:#7f8c8d>&#34;@pulumi/pulumi&#34;</span>;
+<span style=color:#00979d>import</span> <span style=color:#728e00>*</span> <span style=color:#00979d>as</span> <span style=color:#728e00>kubernetes</span> <span style=color:#00979d>from</span> <span style=color:#7f8c8d>&#34;@pulumi/kubernetes&#34;</span>;
 
-<span style=color:#000;font-weight:700>const</span> <span style=color:#000;font-weight:700>namespace</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>new</span> kubernetes.core.v1.Namespace(<span style=color:#d14>&#34;my-namespace&#34;</span>);
+<span style=color:#00979d>const</span> <span style=color:#00979d>namespace</span> <span style=color:#728e00>=</span> <span style=color:#728e00>new</span> <span style=color:#728e00>kubernetes</span>.<span style=color:#728e00>core</span>.<span style=color:#728e00>v1</span>.<span style=color:#728e00>Namespace</span>(<span style=color:#7f8c8d>&#34;my-namespace&#34;</span>);
 </code></pre></div><p>运行<code>pulumi up</code>，会首先进行变更预览：</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>Previewing update <span style=color:#000;font-weight:700>(</span>dev<span style=color:#000;font-weight:700>)</span>                                                                   
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>Previewing update <span style=color:#728e00>(</span>dev<span style=color:#728e00>)</span>                                                                   
                                                                                           
      Type                             Name                 Plan                           
  +   pulumi:pulumi:Stack              demo-meetingsvc-dev  create                         
  +   └─ kubernetes:core/v1:Namespace  my-namespace         create                         
                                                                                           
 Resources:                                                                                
-    + <span style=color:#099>2</span> to create                                                                         
+    + <span style=color:#8a7b52>2</span> to create                                                                         
                                                                                           
-Do you want to perform this update?  <span style=color:#000;font-weight:700>[</span>Use arrows to move, enter to <span style=color:#000;font-weight:700>select</span>, <span style=color:#0086b3>type</span> to filter<span style=color:#000;font-weight:700>]</span>
+Do you want to perform this update?  <span style=color:#728e00>[</span>Use arrows to move, enter to <span style=color:#728e00>select</span>, <span style=color:#728e00>type</span> to filter<span style=color:#728e00>]</span>
   yes                                                                                     
 &gt; no                                                                                      
   details                                                                                 
 </code></pre></div><p>选择<code>details</code>可以查看即将进行的改动详情：</p>
 <div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>Do you want to perform this update? details
-+ pulumi:pulumi:Stack: <span style=color:#000;font-weight:700>(</span>create<span style=color:#000;font-weight:700>)</span>
-    <span style=color:#000;font-weight:700>[</span><span style=color:teal>urn</span><span style=color:#000;font-weight:700>=</span>urn:pulumi:dev::demo-meetingsvc::pulumi:pulumi:Stack::demo-meetingsvc-dev<span style=color:#000;font-weight:700>]</span>
-    + kubernetes:core/v1:Namespace: <span style=color:#000;font-weight:700>(</span>create<span style=color:#000;font-weight:700>)</span>
-        <span style=color:#000;font-weight:700>[</span><span style=color:teal>urn</span><span style=color:#000;font-weight:700>=</span>urn:pulumi:dev::demo-meetingsvc::kubernetes:core/v1:Namespace::my-namespace<span style=color:#000;font-weight:700>]</span>
-        <span style=color:#000;font-weight:700>[</span><span style=color:teal>provider</span><span style=color:#000;font-weight:700>=</span>urn:pulumi:dev::demo-meetingsvc::pulumi:providers:kubernetes::default_3_14_1::04da6b54-80e4-46f7-96ec-b56ff0331ba9<span style=color:#000;font-weight:700>]</span>
-        apiVersion: <span style=color:#d14>&#34;v1&#34;</span>
-        kind      : <span style=color:#d14>&#34;Namespace&#34;</span>
-        metadata  : <span style=color:#000;font-weight:700>{</span>
-            annotations: <span style=color:#000;font-weight:700>{</span>
-                pulumi.com/autonamed: <span style=color:#d14>&#34;true&#34;</span>
-            <span style=color:#000;font-weight:700>}</span>
-            labels     : <span style=color:#000;font-weight:700>{</span>
-                app.kubernetes.io/managed-by: <span style=color:#d14>&#34;pulumi&#34;</span>
-            <span style=color:#000;font-weight:700>}</span>
-            name       : <span style=color:#d14>&#34;my-namespace-20a6saph&#34;</span>
-        <span style=color:#000;font-weight:700>}</span>
++ pulumi:pulumi:Stack: <span style=color:#728e00>(</span>create<span style=color:#728e00>)</span>
+    <span style=color:#728e00>[</span><span style=color:#434f54>urn</span><span style=color:#728e00>=</span>urn:pulumi:dev::demo-meetingsvc::pulumi:pulumi:Stack::demo-meetingsvc-dev<span style=color:#728e00>]</span>
+    + kubernetes:core/v1:Namespace: <span style=color:#728e00>(</span>create<span style=color:#728e00>)</span>
+        <span style=color:#728e00>[</span><span style=color:#434f54>urn</span><span style=color:#728e00>=</span>urn:pulumi:dev::demo-meetingsvc::kubernetes:core/v1:Namespace::my-namespace<span style=color:#728e00>]</span>
+        <span style=color:#728e00>[</span><span style=color:#434f54>provider</span><span style=color:#728e00>=</span>urn:pulumi:dev::demo-meetingsvc::pulumi:providers:kubernetes::default_3_14_1::04da6b54-80e4-46f7-96ec-b56ff0331ba9<span style=color:#728e00>]</span>
+        apiVersion: <span style=color:#7f8c8d>&#34;v1&#34;</span>
+        kind      : <span style=color:#7f8c8d>&#34;Namespace&#34;</span>
+        metadata  : <span style=color:#728e00>{</span>
+            annotations: <span style=color:#728e00>{</span>
+                pulumi.com/autonamed: <span style=color:#7f8c8d>&#34;true&#34;</span>
+            <span style=color:#728e00>}</span>
+            labels     : <span style=color:#728e00>{</span>
+                app.kubernetes.io/managed-by: <span style=color:#7f8c8d>&#34;pulumi&#34;</span>
+            <span style=color:#728e00>}</span>
+            name       : <span style=color:#7f8c8d>&#34;my-namespace-20a6saph&#34;</span>
+        <span style=color:#728e00>}</span>
 </code></pre></div><p>选择<code>yes</code>便会真正进行相应的改动:</p>
 <div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>Do you want to perform this update? yes
-Updating <span style=color:#000;font-weight:700>(</span>dev<span style=color:#000;font-weight:700>)</span>
+Updating <span style=color:#728e00>(</span>dev<span style=color:#728e00>)</span>
 
      Type                             Name                 Status
  +   pulumi:pulumi:Stack              demo-meetingsvc-dev  created
  +   └─ kubernetes:core/v1:Namespace  my-namespace         created
 
 Resources:
-    + <span style=color:#099>2</span> created
+    + <span style=color:#8a7b52>2</span> created
 
 Duration: 4s
 </code></pre></div><p>使用kubectl查看，可以看到创建出了一个新的namespace：</p>
@@ -137,39 +137,39 @@ Duration: 4s
 NAME           STATUS   AGE
 my-namespace-ifywo1p0   Active   1m
 </code></pre></div><p>可以看到新创建的namespace带了一个后缀，这是Pulumi为了维护<code>不可变基础设施</code>而故意设计的一种行为，它的好处这里先不做介绍，如果不想要这个后缀，可以显示指定资源名字而非自动生成：</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#000;font-weight:700>const</span> <span style=color:#000;font-weight:700>namespace</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>new</span> k8s.core.v1.Namespace(<span style=color:#d14>&#34;my-namespace&#34;</span>, {
-  metadata<span style=color:#000;font-weight:700>:</span>{
-    name<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;my-namespace&#34;</span>,
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#00979d>const</span> <span style=color:#00979d>namespace</span> <span style=color:#728e00>=</span> <span style=color:#728e00>new</span> <span style=color:#728e00>k8s</span>.<span style=color:#728e00>core</span>.<span style=color:#728e00>v1</span>.<span style=color:#728e00>Namespace</span>(<span style=color:#7f8c8d>&#34;my-namespace&#34;</span>, {
+  <span style=color:#728e00>metadata</span><span style=color:#728e00>:</span>{
+    <span style=color:#728e00>name</span><span style=color:#728e00>:</span> <span style=color:#7f8c8d>&#34;my-namespace&#34;</span>,
   }
 });
 </code></pre></div><p>命名空间创建好后，接着添加deployment和service：</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#000;font-weight:700>const</span> appName <span style=color:#000;font-weight:700>=</span> <span style=color:#d14>&#34;meetingsvc&#34;</span>;
-<span style=color:#000;font-weight:700>const</span> image <span style=color:#000;font-weight:700>=</span> <span style=color:#d14>`</span><span style=color:#d14>${</span>imageRepo<span style=color:#d14>}</span><span style=color:#d14>/</span><span style=color:#d14>${</span>imageName<span style=color:#d14>}</span><span style=color:#d14>:</span><span style=color:#d14>${</span>imageTag<span style=color:#d14>}</span><span style=color:#d14>`</span>;
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#00979d>const</span> <span style=color:#728e00>appName</span> <span style=color:#728e00>=</span> <span style=color:#7f8c8d>&#34;meetingsvc&#34;</span>;
+<span style=color:#00979d>const</span> <span style=color:#728e00>image</span> <span style=color:#728e00>=</span> <span style=color:#7f8c8d>`</span><span style=color:#7f8c8d>${</span><span style=color:#728e00>imageRepo</span><span style=color:#7f8c8d>}</span><span style=color:#7f8c8d>/</span><span style=color:#7f8c8d>${</span><span style=color:#728e00>imageName</span><span style=color:#7f8c8d>}</span><span style=color:#7f8c8d>:</span><span style=color:#7f8c8d>${</span><span style=color:#728e00>imageTag</span><span style=color:#7f8c8d>}</span><span style=color:#7f8c8d>`</span>;
 
-<span style=color:#000;font-weight:700>const</span> selector <span style=color:#000;font-weight:700>=</span> {
-  <span style=color:#d14>&#34;app.kubernetes.io/app&#34;</span><span style=color:#000;font-weight:700>:</span> appName,
+<span style=color:#00979d>const</span> <span style=color:#728e00>selector</span> <span style=color:#728e00>=</span> {
+  <span style=color:#7f8c8d>&#34;app.kubernetes.io/app&#34;</span><span style=color:#728e00>:</span> <span style=color:#728e00>appName</span>,
 }
-<span style=color:#000;font-weight:700>const</span> labels <span style=color:#000;font-weight:700>=</span> {
-  <span style=color:#d14>&#34;app.kubernetes.io/part-of&#34;</span><span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;demo&#34;</span>,
-  ...selector
+<span style=color:#00979d>const</span> <span style=color:#728e00>labels</span> <span style=color:#728e00>=</span> {
+  <span style=color:#7f8c8d>&#34;app.kubernetes.io/part-of&#34;</span><span style=color:#728e00>:</span> <span style=color:#7f8c8d>&#34;demo&#34;</span>,
+  ...<span style=color:#728e00>selector</span>
 };
 
-<span style=color:#000;font-weight:700>const</span> deployment <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>new</span> k8s.apps.v1.Deployment(appName, {
-  metadata<span style=color:#000;font-weight:700>:</span> {
-    <span style=color:#000;font-weight:700>namespace</span><span style=color:#000;font-weight:700>:</span> <span style=color:#000;font-weight:700>namespace</span>.metadata.name,
-    labels
+<span style=color:#00979d>const</span> <span style=color:#728e00>deployment</span> <span style=color:#728e00>=</span> <span style=color:#728e00>new</span> <span style=color:#728e00>k8s</span>.<span style=color:#728e00>apps</span>.<span style=color:#728e00>v1</span>.<span style=color:#728e00>Deployment</span>(<span style=color:#728e00>appName</span>, {
+  <span style=color:#728e00>metadata</span><span style=color:#728e00>:</span> {
+    <span style=color:#00979d>namespace</span><span style=color:#728e00>:</span> <span style=color:#00979d>namespace</span>.<span style=color:#728e00>metadata</span>.<span style=color:#728e00>name</span>,
+    <span style=color:#728e00>labels</span>
   },
-  spec<span style=color:#000;font-weight:700>:</span> {
-    selector<span style=color:#000;font-weight:700>:</span> { matchLabels: <span style=color:#458;font-weight:700>selector</span> },
-    template<span style=color:#000;font-weight:700>:</span> {
-      metadata<span style=color:#000;font-weight:700>:</span> { labels },
-      spec<span style=color:#000;font-weight:700>:</span> {
-        containers<span style=color:#000;font-weight:700>:</span> [{
-          name: <span style=color:#458;font-weight:700>appName</span>,
-          image,
-          ports<span style=color:#000;font-weight:700>:</span> [{
-            containerPort: <span style=color:#458;font-weight:700>80</span>,
-            name<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;http&#34;</span>,
+  <span style=color:#728e00>spec</span><span style=color:#728e00>:</span> {
+    <span style=color:#728e00>selector</span><span style=color:#728e00>:</span> { <span style=color:#728e00>matchLabels</span>: <span style=color:#00979d>selector</span> },
+    <span style=color:#728e00>template</span><span style=color:#728e00>:</span> {
+      <span style=color:#728e00>metadata</span><span style=color:#728e00>:</span> { <span style=color:#728e00>labels</span> },
+      <span style=color:#728e00>spec</span><span style=color:#728e00>:</span> {
+        <span style=color:#728e00>containers</span><span style=color:#728e00>:</span> [{
+          <span style=color:#728e00>name</span>: <span style=color:#00979d>appName</span>,
+          <span style=color:#728e00>image</span>,
+          <span style=color:#728e00>ports</span><span style=color:#728e00>:</span> [{
+            <span style=color:#728e00>containerPort</span>: <span style=color:#00979d>80</span>,
+            <span style=color:#728e00>name</span><span style=color:#728e00>:</span> <span style=color:#7f8c8d>&#34;http&#34;</span>,
           }],
         }]
       }
@@ -177,19 +177,19 @@ my-namespace-ifywo1p0   Active   1m
   }
 });
 
-<span style=color:#000;font-weight:700>const</span> svc <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>new</span> k8s.core.v1.Service(appName, {
-  metadata<span style=color:#000;font-weight:700>:</span> {
-    <span style=color:#000;font-weight:700>namespace</span><span style=color:#000;font-weight:700>:</span> <span style=color:#000;font-weight:700>namespace</span>.metadata.name,
-    labels
+<span style=color:#00979d>const</span> <span style=color:#728e00>svc</span> <span style=color:#728e00>=</span> <span style=color:#728e00>new</span> <span style=color:#728e00>k8s</span>.<span style=color:#728e00>core</span>.<span style=color:#728e00>v1</span>.<span style=color:#728e00>Service</span>(<span style=color:#728e00>appName</span>, {
+  <span style=color:#728e00>metadata</span><span style=color:#728e00>:</span> {
+    <span style=color:#00979d>namespace</span><span style=color:#728e00>:</span> <span style=color:#00979d>namespace</span>.<span style=color:#728e00>metadata</span>.<span style=color:#728e00>name</span>,
+    <span style=color:#728e00>labels</span>
   },
-  spec<span style=color:#000;font-weight:700>:</span> {
-    ports<span style=color:#000;font-weight:700>:</span> [{
-      port: <span style=color:#458;font-weight:700>80</span>,
-      targetPort<span style=color:#000;font-weight:700>:</span> <span style=color:#d14>&#34;http&#34;</span>,
+  <span style=color:#728e00>spec</span><span style=color:#728e00>:</span> {
+    <span style=color:#728e00>ports</span><span style=color:#728e00>:</span> [{
+      <span style=color:#728e00>port</span>: <span style=color:#00979d>80</span>,
+      <span style=color:#728e00>targetPort</span><span style=color:#728e00>:</span> <span style=color:#7f8c8d>&#34;http&#34;</span>,
     }],
-    selector,
+    <span style=color:#728e00>selector</span>,
   },
-}, { dependsOn: <span style=color:#458;font-weight:700>deployment</span> });
+}, { <span style=color:#728e00>dependsOn</span>: <span style=color:#00979d>deployment</span> });
 
 </code></pre></div><p>运行<code>pulumi up</code>即可预览并进行相关变更。
 如果应用需要ingress，也可以通过相同的方式创建。</p>

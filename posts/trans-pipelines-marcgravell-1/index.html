@@ -51,88 +51,88 @@
 <p>让我们先准备一个对等的Stream，然后写入一些简单的东西，然后再读取回来——坚持只使用Stream API。我们将只使用ASCII文本以便不用担心有任何复杂编码的状况，并且我们的读写代码不对下层数据流做任何假设。我们只是写入数据，并且读取到流的末尾从而消费它。</p>
 <p>我们将先用Stream来做这些——熟悉的领域，然后我们用Pipelines重新实现它，来看其中的相似和不同之处，在之后，我们将研究在其内部究竟发生了什么，然后我们就能明白为什么它会吸引我们</p>
 <p>也许你会说"啊，我想起来了<code>TextReader</code>/<code>TextWriter</code>"，我故意不去使用它们——因为我在这里是在尝试谈论Stream API，这样我们的例子可以扩展到广泛的数据协议和场景</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#000;font-weight:700>using</span> (MemoryStream ms = <span style=color:#000;font-weight:700>new</span> MemoryStream())
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#728e00>using</span> (<span style=color:#434f54>MemoryStream</span> <span style=color:#434f54>ms</span> = <span style=color:#728e00>new</span> <span style=color:#434f54>MemoryStream</span>())
 {
-    <span style=color:#998;font-style:italic>// write something
-</span><span style=color:#998;font-style:italic></span>    WriteSomeData(ms);
-    <span style=color:#998;font-style:italic>// rewind - MemoryStream works like a tape
-</span><span style=color:#998;font-style:italic></span>    ms.Position = <span style=color:#099>0</span>;
-    <span style=color:#998;font-style:italic>// consume it
-</span><span style=color:#998;font-style:italic></span>    ReadSomeData(ms);
+    <span style=color:#95a5a6>// write something
+</span><span style=color:#95a5a6></span>    <span style=color:#434f54>WriteSomeData</span>(<span style=color:#434f54>ms</span>);
+    <span style=color:#95a5a6>// rewind - MemoryStream works like a tape
+</span><span style=color:#95a5a6></span>    <span style=color:#434f54>ms</span>.<span style=color:#434f54>Position</span> = <span style=color:#8a7b52>0</span>;
+    <span style=color:#95a5a6>// consume it
+</span><span style=color:#95a5a6></span>    <span style=color:#434f54>ReadSomeData</span>(<span style=color:#434f54>ms</span>);
 }
 </code></pre></div><p>现在，要写入Stream，调用方需要获取并填充一个缓冲区然后将其传递给Stream，此时我们为了简化它，使用同步的API，并且简单地分配一个byte数组</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#000;font-weight:700>void</span> WriteSomeData(Stream stream)
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#728e00>void</span> <span style=color:#434f54>WriteSomeData</span>(<span style=color:#434f54>Stream</span> <span style=color:#434f54>stream</span>)
 {
-    <span style=color:#458;font-weight:700>byte</span>[] bytes = Encoding.ASCII.GetBytes(<span style=color:#d14>&#34;hello, world!&#34;</span>);
-    stream.Write(bytes, <span style=color:#099>0</span>, bytes.Length);
-    stream.Flush();
+    <span style=color:#00979d>byte</span>[] <span style=color:#434f54>bytes</span> = <span style=color:#434f54>Encoding</span>.<span style=color:#434f54>ASCII</span>.<span style=color:#434f54>GetBytes</span>(<span style=color:#7f8c8d>&#34;hello, world!&#34;</span>);
+    <span style=color:#434f54>stream</span>.<span style=color:#434f54>Write</span>(<span style=color:#434f54>bytes</span>, <span style=color:#8a7b52>0</span>, <span style=color:#434f54>bytes</span>.<span style=color:#434f54>Length</span>);
+    <span style=color:#434f54>stream</span>.<span style=color:#434f54>Flush</span>();
 }
 </code></pre></div><p>注意：如果要提高效率地话，在上面的代码中有很多可以做的，但是这不是重点。所以如果你熟悉这类代码并且看着膈应，别慌，之后我们会让它变得更丑陋——呃，我是说更有效率</p>
 <p>读逻辑的代码会比写逻辑更复杂，因为读代码无法假定一次单独的调用就可以获得所有的数据，一个对Stream的读操作可能会什么也不返回(表明已经读到数据末尾)，也可能填满我们的缓冲区，或者只是返回了一个字节即使我们准备了一个巨大的缓冲区。所以Stream的读代码大多数会是一个循环：</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#000;font-weight:700>void</span> ReadSomeData(Stream stream)
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#728e00>void</span> <span style=color:#434f54>ReadSomeData</span>(<span style=color:#434f54>Stream</span> <span style=color:#434f54>stream</span>)
 {
-    <span style=color:#458;font-weight:700>int</span> bytesRead;
-    <span style=color:#998;font-style:italic>// note that the caller usually can&#39;t know much about
-</span><span style=color:#998;font-style:italic></span>    <span style=color:#998;font-style:italic>// the size; .Length is not usually usable
-</span><span style=color:#998;font-style:italic></span>    <span style=color:#458;font-weight:700>byte</span>[] buffer = <span style=color:#000;font-weight:700>new</span> <span style=color:#458;font-weight:700>byte</span>[<span style=color:#099>256</span>];
-    <span style=color:#000;font-weight:700>do</span>
+    <span style=color:#00979d>int</span> <span style=color:#434f54>bytesRead</span>;
+    <span style=color:#95a5a6>// note that the caller usually can&#39;t know much about
+</span><span style=color:#95a5a6></span>    <span style=color:#95a5a6>// the size; .Length is not usually usable
+</span><span style=color:#95a5a6></span>    <span style=color:#00979d>byte</span>[] <span style=color:#434f54>buffer</span> = <span style=color:#728e00>new</span> <span style=color:#00979d>byte</span>[<span style=color:#8a7b52>256</span>];
+    <span style=color:#728e00>do</span>
     {
-        bytesRead = stream.Read(buffer, <span style=color:#099>0</span>, buffer.Length);
-        <span style=color:#000;font-weight:700>if</span> (bytesRead &gt; <span style=color:#099>0</span>)
-        {   <span style=color:#998;font-style:italic>// note this only works for single-byte encodings
-</span><span style=color:#998;font-style:italic></span>            <span style=color:#458;font-weight:700>string</span> s = Encoding.ASCII.GetString(
-                buffer, <span style=color:#099>0</span>, bytesRead);
-            Console.Write(s);
+        <span style=color:#434f54>bytesRead</span> = <span style=color:#434f54>stream</span>.<span style=color:#434f54>Read</span>(<span style=color:#434f54>buffer</span>, <span style=color:#8a7b52>0</span>, <span style=color:#434f54>buffer</span>.<span style=color:#434f54>Length</span>);
+        <span style=color:#728e00>if</span> (<span style=color:#434f54>bytesRead</span> &gt; <span style=color:#8a7b52>0</span>)
+        {   <span style=color:#95a5a6>// note this only works for single-byte encodings
+</span><span style=color:#95a5a6></span>            <span style=color:#00979d>string</span> <span style=color:#434f54>s</span> = <span style=color:#434f54>Encoding</span>.<span style=color:#434f54>ASCII</span>.<span style=color:#434f54>GetString</span>(
+                <span style=color:#434f54>buffer</span>, <span style=color:#8a7b52>0</span>, <span style=color:#434f54>bytesRead</span>);
+            <span style=color:#434f54>Console</span>.<span style=color:#434f54>Write</span>(<span style=color:#434f54>s</span>);
         }
-    } <span style=color:#000;font-weight:700>while</span> (bytesRead &gt; <span style=color:#099>0</span>);
+    } <span style=color:#728e00>while</span> (<span style=color:#434f54>bytesRead</span> &gt; <span style=color:#8a7b52>0</span>);
 }
 </code></pre></div><p>现在我们将它翻译成pipelines，一个Pipe可以大略地比作一个<code>MemoryStream</code>，除了不能多次倒带(rewind)，数据是一个简单的先进先出队列，我们有一个<code>writer</code>API可以在一端推入数据，而一个<code>reader</code>API可以在另一端将数据取出，Pipe就是坐在二这之中的一个缓冲区。让我们重现之前的场景，但是用一个Pipe替换掉<code>MemoryStream</code>（同样，实践中我们通常不会这么做，但是易于举例）：</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp>Pipe pipe = <span style=color:#000;font-weight:700>new</span> Pipe();
-<span style=color:#998;font-style:italic>// write something
-</span><span style=color:#998;font-style:italic></span><span style=color:#000;font-weight:700>await</span> WriteSomeDataAsync(pipe.Writer);
-<span style=color:#998;font-style:italic>// signal that there won&#39;t be anything else written
-</span><span style=color:#998;font-style:italic></span>pipe.Writer.Complete();
-<span style=color:#998;font-style:italic>// consume it
-</span><span style=color:#998;font-style:italic></span><span style=color:#000;font-weight:700>await</span> ReadSomeDataAsync(pipe.Reader);
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#434f54>Pipe</span> <span style=color:#434f54>pipe</span> = <span style=color:#728e00>new</span> <span style=color:#434f54>Pipe</span>();
+<span style=color:#95a5a6>// write something
+</span><span style=color:#95a5a6></span><span style=color:#728e00>await</span> <span style=color:#434f54>WriteSomeDataAsync</span>(<span style=color:#434f54>pipe</span>.<span style=color:#434f54>Writer</span>);
+<span style=color:#95a5a6>// signal that there won&#39;t be anything else written
+</span><span style=color:#95a5a6></span><span style=color:#434f54>pipe</span>.<span style=color:#434f54>Writer</span>.<span style=color:#434f54>Complete</span>();
+<span style=color:#95a5a6>// consume it
+</span><span style=color:#95a5a6></span><span style=color:#728e00>await</span> <span style=color:#434f54>ReadSomeDataAsync</span>(<span style=color:#434f54>pipe</span>.<span style=color:#434f54>Reader</span>);
 </code></pre></div><p>首先我们用默认选项创造一个pipe，然后我们写入它。注意在Pipe中的IO操作通常都是异步的，所以我们需要await我们的两个帮助方法，同样注意，我们并没有将这个Pipe传入它们——和Stream不同，pipelines 对于读和写有着不同的API层面，所以我们将一个<code>PipeWriter</code> 传入帮助方法用来写入数据，然后传入一个<code>PipeReader</code>来读取数据，写入数据后，我们在<code>PipeWriter</code>上调用<code>Complete()</code>。我们不需要在<code>MemoryStream</code>中做这个因为当它到达缓冲数据的末尾时会自动<a href=https://en.wikipedia.org/wiki/End-of-file>EOFs</a>——但是在一些其它的Stream实现中——尤其是单向流——我们也许需要在写入数据后调用<code>Close</code></p>
 <p>好了，那么我们的<code>WriteSomeDataAsync</code> 是什么呢？注意，我在下面的代码中故意多写了注释：</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#000;font-weight:700>async</span> ValueTask WriteSomeDataAsync(PipeWriter writer)
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#728e00>async</span> <span style=color:#434f54>ValueTask</span> <span style=color:#434f54>WriteSomeDataAsync</span>(<span style=color:#434f54>PipeWriter</span> <span style=color:#434f54>writer</span>)
 {
-    <span style=color:#998;font-style:italic>// use an oversized size guess
-</span><span style=color:#998;font-style:italic></span>    Memory&lt;<span style=color:#458;font-weight:700>byte</span>&gt; workspace = writer.GetMemory(<span style=color:#099>20</span>);
-    <span style=color:#998;font-style:italic>// write the data to the workspace
-</span><span style=color:#998;font-style:italic></span>    <span style=color:#458;font-weight:700>int</span> bytes = Encoding.ASCII.GetBytes(
-        <span style=color:#d14>&#34;hello, world!&#34;</span>, workspace.Span);
-    <span style=color:#998;font-style:italic>// tell the pipe how much of the workspace
-</span><span style=color:#998;font-style:italic></span>    <span style=color:#998;font-style:italic>// we actually want to commit
-</span><span style=color:#998;font-style:italic></span>    writer.Advance(bytes);
-    <span style=color:#998;font-style:italic>// this is **not** the same as Stream.Flush!
-</span><span style=color:#998;font-style:italic></span>    <span style=color:#000;font-weight:700>await</span> writer.FlushAsync();
+    <span style=color:#95a5a6>// use an oversized size guess
+</span><span style=color:#95a5a6></span>    <span style=color:#434f54>Memory</span>&lt;<span style=color:#00979d>byte</span>&gt; <span style=color:#434f54>workspace</span> = <span style=color:#434f54>writer</span>.<span style=color:#434f54>GetMemory</span>(<span style=color:#8a7b52>20</span>);
+    <span style=color:#95a5a6>// write the data to the workspace
+</span><span style=color:#95a5a6></span>    <span style=color:#00979d>int</span> <span style=color:#434f54>bytes</span> = <span style=color:#434f54>Encoding</span>.<span style=color:#434f54>ASCII</span>.<span style=color:#434f54>GetBytes</span>(
+        <span style=color:#7f8c8d>&#34;hello, world!&#34;</span>, <span style=color:#434f54>workspace</span>.<span style=color:#434f54>Span</span>);
+    <span style=color:#95a5a6>// tell the pipe how much of the workspace
+</span><span style=color:#95a5a6></span>    <span style=color:#95a5a6>// we actually want to commit
+</span><span style=color:#95a5a6></span>    <span style=color:#434f54>writer</span>.<span style=color:#434f54>Advance</span>(<span style=color:#434f54>bytes</span>);
+    <span style=color:#95a5a6>// this is **not** the same as Stream.Flush!
+</span><span style=color:#95a5a6></span>    <span style=color:#728e00>await</span> <span style=color:#434f54>writer</span>.<span style=color:#434f54>FlushAsync</span>();
 }
 </code></pre></div><p>首先要注意的是，在处理pipelines时：不是你控制缓冲区，而是Pipe，回想我们的Stream代码，读和写代码都创建了本地byte[]，但是在这里我们没有，相反，我们通过<code>GetMemory</code> (或者它的孪生方法<code>GetSpan</code>)向Pipe请求了一个缓冲区(<code>workspace</code>)，就先你从名字中想到的那样，这给了我们一个<code>Memory&lt;byte></code>或是一个<code>Span&lt;byte></code> ——其容量为最少20字节</p>
 <p>获取这个缓冲区后，将我们的字符串编码进去，这意味着我们是直接写入Pipe的内存，并且记录下<em>实际上</em>我们使用了多少字节，然后我们通过<code>Advance</code>告诉Pipe，我们不受之前请求的20字节的限制——我们可以写入0，20，甚至50字节，最后一个看起来也许会令人意外，但是这实际上是被鼓励的！之前的重点是“至少”——writer可以时间上给我们一个比我们请求的大的很多的缓冲区。当处理较大的数据时，得陇望蜀是很常见的：请求一个我们能有效利用的最小空间，但是之后在检查提供给我们的memory/span的体积后，再决定最终实际写入多少。</p>
 <p>对<code>Advance</code>的调用很重要，它意味着一次写操作的终结，使得Pipe中的数据可用从而被reader消费。对<code>FlushAsync</code> 的调用同样重要，但是有微妙的区别，但是在我们可以充分地阐明这区别是什么前，我们需要先看一看reader。这是我们的<code>ReadSomeDataAsync</code> 方法：</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#000;font-weight:700>async</span> ValueTask ReadSomeDataAsync(PipeReader reader)
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#728e00>async</span> <span style=color:#434f54>ValueTask</span> <span style=color:#434f54>ReadSomeDataAsync</span>(<span style=color:#434f54>PipeReader</span> <span style=color:#434f54>reader</span>)
 {
-    <span style=color:#000;font-weight:700>while</span> (<span style=color:#000;font-weight:700>true</span>)
+    <span style=color:#728e00>while</span> (<span style=color:#728e00>true</span>)
     {
-        <span style=color:#998;font-style:italic>// await some data being available
-</span><span style=color:#998;font-style:italic></span>        ReadResult read = <span style=color:#000;font-weight:700>await</span> reader.ReadAsync();
-        ReadOnlySequence&lt;<span style=color:#458;font-weight:700>byte</span>&gt; buffer = read.Buffer;
-        <span style=color:#998;font-style:italic>// check whether we&#39;ve reached the end
-</span><span style=color:#998;font-style:italic></span>        <span style=color:#998;font-style:italic>// and processed everything
-</span><span style=color:#998;font-style:italic></span>        <span style=color:#000;font-weight:700>if</span> (buffer.IsEmpty &amp;&amp; read.IsCompleted)
-            <span style=color:#000;font-weight:700>break</span>; <span style=color:#998;font-style:italic>// exit loop
-</span><span style=color:#998;font-style:italic></span>
-        <span style=color:#998;font-style:italic>// process what we received
-</span><span style=color:#998;font-style:italic></span>        <span style=color:#000;font-weight:700>foreach</span> (Memory&lt;<span style=color:#458;font-weight:700>byte</span>&gt; segment <span style=color:#000;font-weight:700>in</span> buffer)
+        <span style=color:#95a5a6>// await some data being available
+</span><span style=color:#95a5a6></span>        <span style=color:#434f54>ReadResult</span> <span style=color:#434f54>read</span> = <span style=color:#728e00>await</span> <span style=color:#434f54>reader</span>.<span style=color:#434f54>ReadAsync</span>();
+        <span style=color:#434f54>ReadOnlySequence</span>&lt;<span style=color:#00979d>byte</span>&gt; <span style=color:#434f54>buffer</span> = <span style=color:#434f54>read</span>.<span style=color:#434f54>Buffer</span>;
+        <span style=color:#95a5a6>// check whether we&#39;ve reached the end
+</span><span style=color:#95a5a6></span>        <span style=color:#95a5a6>// and processed everything
+</span><span style=color:#95a5a6></span>        <span style=color:#728e00>if</span> (<span style=color:#434f54>buffer</span>.<span style=color:#434f54>IsEmpty</span> &amp;&amp; <span style=color:#434f54>read</span>.<span style=color:#434f54>IsCompleted</span>)
+            <span style=color:#728e00>break</span>; <span style=color:#95a5a6>// exit loop
+</span><span style=color:#95a5a6></span>
+        <span style=color:#95a5a6>// process what we received
+</span><span style=color:#95a5a6></span>        <span style=color:#728e00>foreach</span> (<span style=color:#434f54>Memory</span>&lt;<span style=color:#00979d>byte</span>&gt; <span style=color:#434f54>segment</span> <span style=color:#728e00>in</span> <span style=color:#434f54>buffer</span>)
         {
-            <span style=color:#458;font-weight:700>string</span> s = Encoding.ASCII.GetString(
-                segment.Span);
-            Console.Write(s);
+            <span style=color:#00979d>string</span> <span style=color:#434f54>s</span> = <span style=color:#434f54>Encoding</span>.<span style=color:#434f54>ASCII</span>.<span style=color:#434f54>GetString</span>(
+                <span style=color:#434f54>segment</span>.<span style=color:#434f54>Span</span>);
+            <span style=color:#434f54>Console</span>.<span style=color:#434f54>Write</span>(<span style=color:#434f54>s</span>);
         }
-        <span style=color:#998;font-style:italic>// tell the pipe that we used everything
-</span><span style=color:#998;font-style:italic></span>        reader.AdvanceTo(buffer.End);
+        <span style=color:#95a5a6>// tell the pipe that we used everything
+</span><span style=color:#95a5a6></span>        <span style=color:#434f54>reader</span>.<span style=color:#434f54>AdvanceTo</span>(<span style=color:#434f54>buffer</span>.<span style=color:#434f54>End</span>);
     }
 }
 </code></pre></div><p>就像Stream例子一样，我们有一个循环持续到我们读取到数据的末尾，在Stream中，这种情况通过<code>Read</code>方法返回一个非正结果时判定，但是在pipeline中有两种检查方式：</p>
@@ -155,7 +155,7 @@
 <li>你可以使用<code>ReadOnlySequence&lt;byte></code>中的<code>.GetPosition(...)</code> 方法，它返回一个相关位置而<em>无需</em>真正分割</li>
 </ul>
 <p>更微妙的是：我们可以分别告诉它我们消费了一些数量，但是我们已检查了另一个不同的数量，这里最常见的例子是表达“你可以丢弃这么多——这些我做完了；但是我看完了所有的数据，我此时无法处理——我需要更多数据（you can drop <em>this much</em> - I&rsquo;m done with that; but I looked at everything, I can&rsquo;t make any more progress at the moment - I need more data）”，具体来说：</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp>reader.AdvanceTo(consumedToPosition, buffer.End);
+<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-csharp data-lang=csharp><span style=color:#434f54>reader</span>.<span style=color:#434f54>AdvanceTo</span>(<span style=color:#434f54>consumedToPosition</span>, <span style=color:#434f54>buffer</span>.<span style=color:#434f54>End</span>);
 </code></pre></div><p>这里正是<code>PipeWriter.FlushAsync()</code>和<code>PipeReader.ReadAsync()</code>微妙的相互作用出场的地方了，我之前跳过了<code>PipeWriter.FlushAsync()</code>，它实际上在一次调用里提供了两个功能：</p>
 <ul>
 <li>如果存在一个<code>ReadAsync</code> 调用，它会被注意到，因为它需要数据，然后它唤醒reader，使读取循环继续</li>

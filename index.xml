@@ -1,22 +1,117 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>The Dice Maker</title><link>http://suraciii.github.io/</link><description>Recent content on The Dice Maker</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Fri, 28 Jan 2022 00:00:00 +0000</lastBuildDate><atom:link href="http://suraciii.github.io/index.xml" rel="self" type="application/rss+xml"/><item><title>使用Pulumi在Kubernetes中部署应用</title><link>http://suraciii.github.io/posts/use-pulumi-to-deploy-app-in-k8s/</link><pubDate>Fri, 28 Jan 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/use-pulumi-to-deploy-app-in-k8s/</guid><description>&lt;p>Pulumi是一个现代&lt;code>基础设施即代码(infrastructure as code)&lt;/code>平台，通过它，我们可以使用我们熟悉的编程语言和工具来构建、部署和管理云及云原生基础设施。&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>The Dice Maker</title><link>http://suraciii.github.io/</link><description>Recent content on The Dice Maker</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sun, 30 Jan 2022 00:00:00 +0000</lastBuildDate><atom:link href="http://suraciii.github.io/index.xml" rel="self" type="application/rss+xml"/><item><title>使用领域建模来梳理业务和分离复杂性</title><link>http://suraciii.github.io/posts/domain-modeling-for-coupon-lottery/</link><pubDate>Sun, 30 Jan 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/domain-modeling-for-coupon-lottery/</guid><description>&lt;p>同事C来找我交流，问如何做一个抽奖的功能——&lt;/p>
+&lt;blockquote>
+&lt;p>“我们给每个新注册的用户都赠送了一次抽奖的机会，用户进行购买也能够获得更多抽奖次数，我们会不定时开放一些转盘抽奖活动，用户抽奖的时候我们要先用他账号里的注册时赠送的抽奖机会，如果没有的话再用用户消费获得的抽奖次数，一个抽奖次数只能用一次要防止并发冲突导致超抽……我们准备把抽奖次数放到redis中，用户每次使用就把次数减一，但是又需要优先使用系统赠送的抽奖次数数，然后抽奖机会又需要有过期时间——”&lt;/p>
+&lt;/blockquote>
+&lt;p>作为一个&lt;strong>愚钝&lt;/strong>的程序员，我的大脑的思考能力实在是有限的紧，在听了前面一大串已经晕晕乎乎的，听到用redis来实现抽奖次数扣减和过期时间检查这里更是头昏脑胀，仿佛一团乱麻，什么也想不清楚，更别说给出什么有价值的意见了。&lt;/p>
+&lt;p>我对C说：“你已经把我说晕了，咱们先别说redis什么的了。”&lt;/p>
+&lt;p>说着我拿出纸笔，开始和C进行对话：&lt;/p>
+&lt;p>我首先关注的是“抽奖”这个关键词，当然是因为C之前那一大段话都是围绕着“抽奖”讲述的，更具体地，是在讲述使用抽奖次数的策略，在捕捉到“抽奖次数”这个概念后，我在纸上写下：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#00979d">type&lt;/span> &lt;span style="color:#a61717">抽奖机会&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
+};
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>同时我对C说：“我们来用‘抽奖机会’来表示‘抽奖次数’吧。”，抽奖次数是一个比较模糊和口头化的概念，它蕴含着数量上的表达，我偏爱更严谨的词汇。&lt;/p>
+&lt;p>我在&lt;code>抽奖机会&lt;/code>上加了一个属性：&lt;code>类型: '注册赠送的' | '消费获取的'&lt;/code>。&lt;/p>
+&lt;p>“按照你刚才的描述，抽奖机会有两种，一种是用户注册是赠送的，另一种是用户消费后获得的。”&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#00979d">type&lt;/span> &lt;span style="color:#a61717">抽奖机会&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
+&lt;span style="color:#a61717">类型&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;注册赠送的&amp;#39;&lt;/span> &lt;span style="color:#728e00">|&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;消费获取的&amp;#39;&lt;/span>
+};
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>我问C：“除了类型，你认为抽奖机会还应该具备什么属性呢？”&lt;/p>
+&lt;p>“过期时间！”，C回答。
+于是加上了过期时间：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#00979d">type&lt;/span> &lt;span style="color:#a61717">抽奖机会&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
+&lt;span style="color:#a61717">类型&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;注册赠送的&amp;#39;&lt;/span> &lt;span style="color:#728e00">|&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;消费获取的&amp;#39;&lt;/span>
+&lt;span style="color:#728e00">过期时间&lt;/span>: &lt;span style="color:#00979d">DateTime&lt;/span>
+};
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>我接着说：“抽奖机会是发送给用户的，所以应该还应该记录其所有者。”，C表示同意。
+“每个抽奖机会都是独立被使用的，应该也是需要可以被追溯的，那它应该有一个编号作为标识。”&lt;/p>
+&lt;p>最终，我们有了一个映射&lt;code>抽奖机会&lt;/code>的模型&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#00979d">type&lt;/span> &lt;span style="color:#a61717">抽奖机会&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
+&lt;span style="color:#a61717">编号：抽奖机会&lt;/span>&lt;span style="color:#728e00">ID&lt;/span>
+&lt;span style="color:#728e00">持有人&lt;/span>: &lt;span style="color:#00979d">用户ID&lt;/span>
+&lt;span style="color:#a61717">类型&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;注册赠送的&amp;#39;&lt;/span> &lt;span style="color:#728e00">|&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;消费获取的&amp;#39;&lt;/span>
+&lt;span style="color:#728e00">过期时间&lt;/span>: &lt;span style="color:#00979d">DateTime&lt;/span>
+};
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>接着用同样的方法，我们整理出来了这个业务场景中另外一个相关概念的模型：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#00979d">type&lt;/span> &lt;span style="color:#a61717">抽奖活动&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
+&lt;span style="color:#728e00">Id&lt;/span>: &lt;span style="color:#00979d">抽奖活动ID&lt;/span>;
+&lt;span style="color:#728e00">类型&lt;/span>: &lt;span style="color:#00979d">活动类型&lt;/span>;
+&lt;span style="color:#a61717">过期时间：&lt;/span>&lt;span style="color:#728e00">DateTime&lt;/span>
+}
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>有了这两个模型后，我对C说：“现在我们有了对&lt;code>抽奖机会&lt;/code>和&lt;code>抽奖活动&lt;/code>这两个业务概念的描述，现在我们来分析这个抽奖业务的具体行为吧。”&lt;/p>
+&lt;p>根据我们的分析整理，有了下面几个关键点：&lt;/p>
+&lt;ol>
+&lt;li>抽奖发生在一个具体的抽奖活动中&lt;/li>
+&lt;li>抽奖时会选取用户的一个抽奖机会&lt;/li>
+&lt;li>优先选择‘注册赠送的’抽奖机会&lt;/li>
+&lt;li>优先选择临近过期的抽奖机会&lt;/li>
+&lt;li>一个抽奖机会只能被使用一次&lt;/li>
+&lt;/ol>
+&lt;p>根据这些，我给出了一段伪代码来对抽奖行为进行描述：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#728e00">function&lt;/span> &lt;span style="color:#a61717">抽奖&lt;/span>(&lt;span style="color:#728e00">活动&lt;/span>: &lt;span style="color:#00979d">抽奖活动&lt;/span>, &lt;span style="color:#728e00">用户ID&lt;/span>: &lt;span style="color:#00979d">用户ID&lt;/span>) {
+&lt;span style="color:#728e00">if&lt;/span>(&lt;span style="color:#a61717">已过期&lt;/span>(&lt;span style="color:#a61717">活动&lt;/span>)) {
+&lt;span style="color:#728e00">throw&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;活动已过期&amp;#39;&lt;/span>
+}
+&lt;span style="color:#00979d">const&lt;/span> &lt;span style="color:#a61717">机会&lt;/span> &lt;span style="color:#728e00">=&lt;/span> &lt;span style="color:#a61717">获取抽奖机会&lt;/span>(&lt;span style="color:#a61717">用户&lt;/span>&lt;span style="color:#728e00">ID&lt;/span>) &lt;span style="color:#95a5a6">// 优先注册赠送 优先临近过期
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span>
+&lt;span style="color:#a61717">使用抽奖机会&lt;/span>(&lt;span style="color:#a61717">机会&lt;/span>, &lt;span style="color:#a61717">活动&lt;/span>)
+}
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>在这里，我们发现，为了保证“一个抽奖机会只能被使用一次”，我们需要有一个属性来识别抽奖机会是否已经被使用，于是我们更新了抽奖机会的模型：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#00979d">type&lt;/span> &lt;span style="color:#a61717">抽奖机会&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
+&lt;span style="color:#a61717">编号：抽奖机会&lt;/span>&lt;span style="color:#728e00">ID&lt;/span>
+&lt;span style="color:#728e00">持有人&lt;/span>: &lt;span style="color:#00979d">用户ID&lt;/span>
+&lt;span style="color:#a61717">类型&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;注册赠送的&amp;#39;&lt;/span> &lt;span style="color:#728e00">|&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;购买获取的&amp;#39;&lt;/span>
+&lt;span style="color:#728e00">过期时间&lt;/span>: &lt;span style="color:#00979d">DateTime&lt;/span>
+&lt;span style="color:#728e00">+&lt;/span> &lt;span style="color:#a61717">状态&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;已使用&amp;#39;&lt;/span> &lt;span style="color:#728e00">|&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;未使用&amp;#39;&lt;/span>
+};
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>并且在使用抽奖机会时，更新抽奖机会的状态。&lt;/p>
+&lt;p>接着，我们又发现，为了避免在并发请求中，获取到已被其它请求获取但是还并未被使用的抽奖机会，我们需要额外一个状态来标志这个抽奖机会已经被某个抽奖请求获取到了，随时可能会被更新为&lt;code>已使用&lt;/code>。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#00979d">type&lt;/span> &lt;span style="color:#a61717">抽奖机会&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
+&lt;span style="color:#95a5a6">// ...
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#a61717">状态&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;已使用&amp;#39;&lt;/span> &lt;span style="color:#728e00">|&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;未使用&amp;#39;&lt;/span> &lt;span style="color:#728e00">|&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;已被获取&amp;#39;&lt;/span>
+};
+&lt;span style="color:#728e00">function&lt;/span> &lt;span style="color:#a61717">抽奖&lt;/span>(&lt;span style="color:#728e00">活动&lt;/span>: &lt;span style="color:#00979d">抽奖活动&lt;/span>, &lt;span style="color:#728e00">用户ID&lt;/span>: &lt;span style="color:#00979d">用户ID&lt;/span>) {
+&lt;span style="color:#95a5a6">// ...
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span>
+&lt;span style="color:#00979d">const&lt;/span> &lt;span style="color:#a61717">机会&lt;/span> &lt;span style="color:#728e00">=&lt;/span> &lt;span style="color:#a61717">获取未使用抽奖机会&lt;/span>(&lt;span style="color:#a61717">用户&lt;/span>&lt;span style="color:#728e00">ID&lt;/span>) &lt;span style="color:#95a5a6">// 同时更新其状态为&amp;#39;已被获取&amp;#39;
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#95a5a6">// ...
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span>}
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>到了这里，C说，“那我明白该怎么做了”&lt;/p>
+&lt;p>可以看到，经过了这番对话，我们将这个抽奖的业务场景进行分析梳理，写清楚其中的各个概念、规则、行为后，发现其实根本不需要什么redis，而所谓的‘抽奖次数’实际上是具备完整的自己的生命周期的对象，而非是一个加加减减的标量。&lt;/p>
+&lt;p>有学习过领域驱动设计的朋友应该可以明显看出，上面我和C在做的的其实是在进行简略的领域建模。&lt;/p>
+&lt;h2 id="关于领域建模">关于领域建模&lt;/h2>
+&lt;p>&lt;strong>领域建模就是对特定业务问题进行梳理、探索、提炼，将其从一个松散的口头信息描述，抽象转化为一系列能够帮助我们解决问题的概念、关系和流程模型。&lt;/strong>&lt;/p>
+&lt;p>就像是问开车到百货大楼要多久，我们并不能直接得到答案，而是先将这个场景转化为：车的&lt;strong>时速&lt;/strong>是多少？从这里到百货大楼的&lt;strong>路程&lt;/strong>要多远？然后再套用&lt;strong>速率公式&lt;/strong>，有了这些，我们才能得到想要的答案。&lt;/p>
+&lt;p>而对于软件开发，虽然有所不同，但是也有着一样的道理，我们开发软件总是为了解决一些问题，而对于许多业务系统来说，要解决这些业务问题，就一定要对它的业务领域有所了解，领域建模就是一个帮助我们学习目标业务领域中的知识，并将业务问题抽象成可以帮助我们解决这个问题的模型的方法。&lt;/p>
+&lt;p>事实上，无论我们是否有这个意识，只要我们是在开发业务系统，其相关的业务领域中的知识就或清晰或混乱地存在于我们的代码中，而在开发时，我们一定也会主动或被动地对相关业务领域进行建模——我们设计的类、数据库表结构、模块等，无一不是在对真实世界中的业务进行的抽象，它们都在一定程度上以某种角度描述了相关的业务领域。&lt;/p>
+&lt;p>但是许多时候，这些领域知识或者说模型，总是松散而重复地分散在系统各处，这边一点，那边一点，又同应用逻辑杂糅在一起，这为我们造成了相当程度上的认知负担，尤其是对于我这样愚钝的程序员来说，接收到的信息稍微多一点混乱一点，我的脑袋就什么都想不清楚了。&lt;/p>
+&lt;p>所以我们要把我们开发时被动地做的学习业务中的知识，整理业务中的概念等事情，变成在开发时首先做、主动做、专注做。&lt;/p>
+&lt;p>这么做有几个好处：&lt;/p>
+&lt;ol>
+&lt;li>帮助我们更准确地理解业务&lt;/li>
+&lt;li>隔离应用逻辑和数据库实现，专注于对业务领域的探索和分析，降低问题的复杂度&lt;/li>
+&lt;li>模型成果作为代码存在于项目之中，代码中的业务逻辑更容易理解&lt;/li>
+&lt;li>团队成员尤其是新成员可以有效地从代码中学习到领域知识，并且有着统一的认识&lt;/li>
+&lt;/ol>
+&lt;p>上面说过，我和C所做的是“简略”的领域建模，与完整的领域建模有着许多不同，比如在真正进行完整的领域建模时，我应该和C首先以业务专用语言进行用户叙事，来尽量获得业务场景的全貌，又比如还有实体和值对象地识别，领域上下文的整理和映射等。
+不过由于这是一个非常有限的业务场景，而我也只是需要来借助领域建模来帮助我梳理这个特定业务场景，帮助我能看清楚这个问题的本质，所以也就不需要那么麻烦。&lt;/p>
+&lt;p>如果是在真正进行一个业务系统的开发，实践更为完整的领域驱动设计就会有很好的效果，比如，如果我们需要限定只有&lt;/p></description></item><item><title>使用Pulumi在Kubernetes中部署应用</title><link>http://suraciii.github.io/posts/use-pulumi-to-deploy-app-in-k8s/</link><pubDate>Fri, 28 Jan 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/use-pulumi-to-deploy-app-in-k8s/</guid><description>&lt;p>Pulumi是一个现代&lt;code>基础设施即代码(infrastructure as code)&lt;/code>平台，通过它，我们可以使用我们熟悉的编程语言和工具来构建、部署和管理云及云原生基础设施。&lt;/p>
 &lt;p>来看一个最简单的例子，准备如下typescript代码：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#000;font-weight:bold">import&lt;/span> &lt;span style="color:#000;font-weight:bold">*&lt;/span> &lt;span style="color:#000;font-weight:bold">as&lt;/span> pulumi &lt;span style="color:#000;font-weight:bold">from&lt;/span> &lt;span style="color:#d14">&amp;#34;@pulumi/pulumi&amp;#34;&lt;/span>;
-&lt;span style="color:#000;font-weight:bold">import&lt;/span> &lt;span style="color:#000;font-weight:bold">*&lt;/span> &lt;span style="color:#000;font-weight:bold">as&lt;/span> aws &lt;span style="color:#000;font-weight:bold">from&lt;/span> &lt;span style="color:#d14">&amp;#34;@pulumi/aws&amp;#34;&lt;/span>;
-&lt;span style="color:#000;font-weight:bold">const&lt;/span> group &lt;span style="color:#000;font-weight:bold">=&lt;/span> &lt;span style="color:#000;font-weight:bold">new&lt;/span> aws.ec2.SecurityGroup(&lt;span style="color:#d14">&amp;#34;web-sg&amp;#34;&lt;/span>, {
-description&lt;span style="color:#000;font-weight:bold">:&lt;/span> &lt;span style="color:#d14">&amp;#34;Enable HTTP access&amp;#34;&lt;/span>,
-ingress&lt;span style="color:#000;font-weight:bold">:&lt;/span> [{ protocol&lt;span style="color:#000;font-weight:bold">:&lt;/span> &lt;span style="color:#d14">&amp;#34;tcp&amp;#34;&lt;/span>, fromPort: &lt;span style="color:#458;font-weight:bold">80&lt;/span>, toPort: &lt;span style="color:#458;font-weight:bold">80&lt;/span>, cidrBlocks&lt;span style="color:#000;font-weight:bold">:&lt;/span> [&lt;span style="color:#d14">&amp;#34;0.0.0.0/0&amp;#34;&lt;/span>] }],
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#00979d">import&lt;/span> &lt;span style="color:#728e00">*&lt;/span> &lt;span style="color:#00979d">as&lt;/span> &lt;span style="color:#728e00">pulumi&lt;/span> &lt;span style="color:#00979d">from&lt;/span> &lt;span style="color:#7f8c8d">&amp;#34;@pulumi/pulumi&amp;#34;&lt;/span>;
+&lt;span style="color:#00979d">import&lt;/span> &lt;span style="color:#728e00">*&lt;/span> &lt;span style="color:#00979d">as&lt;/span> &lt;span style="color:#728e00">aws&lt;/span> &lt;span style="color:#00979d">from&lt;/span> &lt;span style="color:#7f8c8d">&amp;#34;@pulumi/aws&amp;#34;&lt;/span>;
+&lt;span style="color:#00979d">const&lt;/span> &lt;span style="color:#728e00">group&lt;/span> &lt;span style="color:#728e00">=&lt;/span> &lt;span style="color:#728e00">new&lt;/span> &lt;span style="color:#728e00">aws&lt;/span>.&lt;span style="color:#728e00">ec2&lt;/span>.&lt;span style="color:#728e00">SecurityGroup&lt;/span>(&lt;span style="color:#7f8c8d">&amp;#34;web-sg&amp;#34;&lt;/span>, {
+&lt;span style="color:#728e00">description&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#34;Enable HTTP access&amp;#34;&lt;/span>,
+&lt;span style="color:#728e00">ingress&lt;/span>&lt;span style="color:#728e00">:&lt;/span> [{ &lt;span style="color:#728e00">protocol&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#34;tcp&amp;#34;&lt;/span>, &lt;span style="color:#728e00">fromPort&lt;/span>: &lt;span style="color:#00979d">80&lt;/span>, &lt;span style="color:#728e00">toPort&lt;/span>: &lt;span style="color:#00979d">80&lt;/span>, &lt;span style="color:#728e00">cidrBlocks&lt;/span>&lt;span style="color:#728e00">:&lt;/span> [&lt;span style="color:#7f8c8d">&amp;#34;0.0.0.0/0&amp;#34;&lt;/span>] }],
 });
-&lt;span style="color:#000;font-weight:bold">const&lt;/span> server &lt;span style="color:#000;font-weight:bold">=&lt;/span> &lt;span style="color:#000;font-weight:bold">new&lt;/span> aws.ec2.Instance(&lt;span style="color:#d14">&amp;#34;web-server&amp;#34;&lt;/span>, {
-ami&lt;span style="color:#000;font-weight:bold">:&lt;/span> &lt;span style="color:#d14">&amp;#34;ami-6869aa05&amp;#34;&lt;/span>,
-instanceType&lt;span style="color:#000;font-weight:bold">:&lt;/span> &lt;span style="color:#d14">&amp;#34;t2.micro&amp;#34;&lt;/span>,
-vpcSecurityGroupIds&lt;span style="color:#000;font-weight:bold">:&lt;/span> [ group.name ], &lt;span style="color:#998;font-style:italic">// reference the security group resource above
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span>});
+&lt;span style="color:#00979d">const&lt;/span> &lt;span style="color:#728e00">server&lt;/span> &lt;span style="color:#728e00">=&lt;/span> &lt;span style="color:#728e00">new&lt;/span> &lt;span style="color:#728e00">aws&lt;/span>.&lt;span style="color:#728e00">ec2&lt;/span>.&lt;span style="color:#728e00">Instance&lt;/span>(&lt;span style="color:#7f8c8d">&amp;#34;web-server&amp;#34;&lt;/span>, {
+&lt;span style="color:#728e00">ami&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#34;ami-6869aa05&amp;#34;&lt;/span>,
+&lt;span style="color:#728e00">instanceType&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#34;t2.micro&amp;#34;&lt;/span>,
+&lt;span style="color:#728e00">vpcSecurityGroupIds&lt;/span>&lt;span style="color:#728e00">:&lt;/span> [ &lt;span style="color:#728e00">group&lt;/span>.&lt;span style="color:#728e00">name&lt;/span> ], &lt;span style="color:#95a5a6">// reference the security group resource above
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span>});
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>运行&lt;code>pulumi up&lt;/code>命令，即可在AWS中创建一个ec2实例并配置其安全组。&lt;/p>
 &lt;p>如果我们需要修改其安全组配置，加上443端口的入口，那么只需要更改代码:&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#000;font-weight:bold">const&lt;/span> group &lt;span style="color:#000;font-weight:bold">=&lt;/span> &lt;span style="color:#000;font-weight:bold">new&lt;/span> aws.ec2.SecurityGroup(&lt;span style="color:#d14">&amp;#34;web-sg&amp;#34;&lt;/span>, {
-description&lt;span style="color:#000;font-weight:bold">:&lt;/span> &lt;span style="color:#d14">&amp;#34;Enable HTTP access&amp;#34;&lt;/span>,
-ingress&lt;span style="color:#000;font-weight:bold">:&lt;/span> [{ protocol&lt;span style="color:#000;font-weight:bold">:&lt;/span> &lt;span style="color:#d14">&amp;#34;tcp&amp;#34;&lt;/span>, fromPort: &lt;span style="color:#458;font-weight:bold">80&lt;/span>, toPort: &lt;span style="color:#458;font-weight:bold">80&lt;/span>, cidrBlocks&lt;span style="color:#000;font-weight:bold">:&lt;/span> [&lt;span style="color:#d14">&amp;#34;0.0.0.0/0&amp;#34;&lt;/span>] },
-{ protocol&lt;span style="color:#000;font-weight:bold">:&lt;/span> &lt;span style="color:#d14">&amp;#34;tcp&amp;#34;&lt;/span>, fromPort: &lt;span style="color:#458;font-weight:bold">443&lt;/span>, toPort: &lt;span style="color:#458;font-weight:bold">443&lt;/span>, cidrBlocks&lt;span style="color:#000;font-weight:bold">:&lt;/span> [&lt;span style="color:#d14">&amp;#34;0.0.0.0/0&amp;#34;&lt;/span>] }],
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#00979d">const&lt;/span> &lt;span style="color:#728e00">group&lt;/span> &lt;span style="color:#728e00">=&lt;/span> &lt;span style="color:#728e00">new&lt;/span> &lt;span style="color:#728e00">aws&lt;/span>.&lt;span style="color:#728e00">ec2&lt;/span>.&lt;span style="color:#728e00">SecurityGroup&lt;/span>(&lt;span style="color:#7f8c8d">&amp;#34;web-sg&amp;#34;&lt;/span>, {
+&lt;span style="color:#728e00">description&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#34;Enable HTTP access&amp;#34;&lt;/span>,
+&lt;span style="color:#728e00">ingress&lt;/span>&lt;span style="color:#728e00">:&lt;/span> [{ &lt;span style="color:#728e00">protocol&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#34;tcp&amp;#34;&lt;/span>, &lt;span style="color:#728e00">fromPort&lt;/span>: &lt;span style="color:#00979d">80&lt;/span>, &lt;span style="color:#728e00">toPort&lt;/span>: &lt;span style="color:#00979d">80&lt;/span>, &lt;span style="color:#728e00">cidrBlocks&lt;/span>&lt;span style="color:#728e00">:&lt;/span> [&lt;span style="color:#7f8c8d">&amp;#34;0.0.0.0/0&amp;#34;&lt;/span>] },
+{ &lt;span style="color:#728e00">protocol&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#34;tcp&amp;#34;&lt;/span>, &lt;span style="color:#728e00">fromPort&lt;/span>: &lt;span style="color:#00979d">443&lt;/span>, &lt;span style="color:#728e00">toPort&lt;/span>: &lt;span style="color:#00979d">443&lt;/span>, &lt;span style="color:#728e00">cidrBlocks&lt;/span>&lt;span style="color:#728e00">:&lt;/span> [&lt;span style="color:#7f8c8d">&amp;#34;0.0.0.0/0&amp;#34;&lt;/span>] }],
 });
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>再次运行&lt;code>pulumi up&lt;/code>命令，即可对相关安全组进行更新。&lt;/p>
 &lt;p>这里的例子是使用tyescript代码管理AWS中的资源，此外，Pulumi还支持python、C#、go等编程语言，以及Azure、GCP、阿里云、Kubernetes等平台。&lt;/p>
@@ -43,146 +138,146 @@ ingress&lt;span style="color:#000;font-weight:bold">:&lt;/span> [{ protocol&lt;s
 &lt;p>跟着指引一步步填写相关信息，如：&lt;/p>
 &lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-shell" data-lang="shell">project name: demo-meetingsvc
 project description: A meeting service
-stack name: dev &lt;span style="color:#998;font-style:italic"># stack可以简单理解为环境&lt;/span>
+stack name: dev &lt;span style="color:#95a5a6"># stack可以简单理解为环境&lt;/span>
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>执行完成后，Pulumi会在目录中生成项目以及初始实例代码，可以打开&lt;code>index.ts&lt;/code>查看：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#000;font-weight:bold">import&lt;/span> &lt;span style="color:#000;font-weight:bold">*&lt;/span> &lt;span style="color:#000;font-weight:bold">as&lt;/span> k8s &lt;span style="color:#000;font-weight:bold">from&lt;/span> &lt;span style="color:#d14">&amp;#34;@pulumi/kubernetes&amp;#34;&lt;/span>;
-&lt;span style="color:#000;font-weight:bold">const&lt;/span> appLabels &lt;span style="color:#000;font-weight:bold">=&lt;/span> { app&lt;span style="color:#000;font-weight:bold">:&lt;/span> &lt;span style="color:#d14">&amp;#34;nginx&amp;#34;&lt;/span> };
-&lt;span style="color:#000;font-weight:bold">const&lt;/span> deployment &lt;span style="color:#000;font-weight:bold">=&lt;/span> &lt;span style="color:#000;font-weight:bold">new&lt;/span> k8s.apps.v1.Deployment(&lt;span style="color:#d14">&amp;#34;nginx&amp;#34;&lt;/span>, {
-spec&lt;span style="color:#000;font-weight:bold">:&lt;/span> {
-selector&lt;span style="color:#000;font-weight:bold">:&lt;/span> { matchLabels: &lt;span style="color:#458;font-weight:bold">appLabels&lt;/span> },
-replicas: &lt;span style="color:#458;font-weight:bold">1&lt;/span>,
-template&lt;span style="color:#000;font-weight:bold">:&lt;/span> {
-metadata&lt;span style="color:#000;font-weight:bold">:&lt;/span> { labels: &lt;span style="color:#458;font-weight:bold">appLabels&lt;/span> },
-spec&lt;span style="color:#000;font-weight:bold">:&lt;/span> { containers&lt;span style="color:#000;font-weight:bold">:&lt;/span> [{ name&lt;span style="color:#000;font-weight:bold">:&lt;/span> &lt;span style="color:#d14">&amp;#34;nginx&amp;#34;&lt;/span>, image&lt;span style="color:#000;font-weight:bold">:&lt;/span> &lt;span style="color:#d14">&amp;#34;nginx&amp;#34;&lt;/span> }] }
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#00979d">import&lt;/span> &lt;span style="color:#728e00">*&lt;/span> &lt;span style="color:#00979d">as&lt;/span> &lt;span style="color:#728e00">k8s&lt;/span> &lt;span style="color:#00979d">from&lt;/span> &lt;span style="color:#7f8c8d">&amp;#34;@pulumi/kubernetes&amp;#34;&lt;/span>;
+&lt;span style="color:#00979d">const&lt;/span> &lt;span style="color:#728e00">appLabels&lt;/span> &lt;span style="color:#728e00">=&lt;/span> { &lt;span style="color:#728e00">app&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#34;nginx&amp;#34;&lt;/span> };
+&lt;span style="color:#00979d">const&lt;/span> &lt;span style="color:#728e00">deployment&lt;/span> &lt;span style="color:#728e00">=&lt;/span> &lt;span style="color:#728e00">new&lt;/span> &lt;span style="color:#728e00">k8s&lt;/span>.&lt;span style="color:#728e00">apps&lt;/span>.&lt;span style="color:#728e00">v1&lt;/span>.&lt;span style="color:#728e00">Deployment&lt;/span>(&lt;span style="color:#7f8c8d">&amp;#34;nginx&amp;#34;&lt;/span>, {
+&lt;span style="color:#728e00">spec&lt;/span>&lt;span style="color:#728e00">:&lt;/span> {
+&lt;span style="color:#728e00">selector&lt;/span>&lt;span style="color:#728e00">:&lt;/span> { &lt;span style="color:#728e00">matchLabels&lt;/span>: &lt;span style="color:#00979d">appLabels&lt;/span> },
+&lt;span style="color:#728e00">replicas&lt;/span>: &lt;span style="color:#00979d">1&lt;/span>,
+&lt;span style="color:#728e00">template&lt;/span>&lt;span style="color:#728e00">:&lt;/span> {
+&lt;span style="color:#728e00">metadata&lt;/span>&lt;span style="color:#728e00">:&lt;/span> { &lt;span style="color:#728e00">labels&lt;/span>: &lt;span style="color:#00979d">appLabels&lt;/span> },
+&lt;span style="color:#728e00">spec&lt;/span>&lt;span style="color:#728e00">:&lt;/span> { &lt;span style="color:#728e00">containers&lt;/span>&lt;span style="color:#728e00">:&lt;/span> [{ &lt;span style="color:#728e00">name&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#34;nginx&amp;#34;&lt;/span>, &lt;span style="color:#728e00">image&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#34;nginx&amp;#34;&lt;/span> }] }
 }
 }
 });
-&lt;span style="color:#000;font-weight:bold">export&lt;/span> &lt;span style="color:#000;font-weight:bold">const&lt;/span> name &lt;span style="color:#000;font-weight:bold">=&lt;/span> deployment.metadata.name;
+&lt;span style="color:#00979d">export&lt;/span> &lt;span style="color:#00979d">const&lt;/span> &lt;span style="color:#728e00">name&lt;/span> &lt;span style="color:#728e00">=&lt;/span> &lt;span style="color:#728e00">deployment&lt;/span>.&lt;span style="color:#728e00">metadata&lt;/span>.&lt;span style="color:#728e00">name&lt;/span>;
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>上面代码的作用是创建一个nginx部署，我们可以删掉这段代码，改成我们想要的。&lt;/p>
 &lt;p>首先，新建一个命名空间：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#000;font-weight:bold">import&lt;/span> &lt;span style="color:#000;font-weight:bold">*&lt;/span> &lt;span style="color:#000;font-weight:bold">as&lt;/span> pulumi &lt;span style="color:#000;font-weight:bold">from&lt;/span> &lt;span style="color:#d14">&amp;#34;@pulumi/pulumi&amp;#34;&lt;/span>;
-&lt;span style="color:#000;font-weight:bold">import&lt;/span> &lt;span style="color:#000;font-weight:bold">*&lt;/span> &lt;span style="color:#000;font-weight:bold">as&lt;/span> kubernetes &lt;span style="color:#000;font-weight:bold">from&lt;/span> &lt;span style="color:#d14">&amp;#34;@pulumi/kubernetes&amp;#34;&lt;/span>;
-&lt;span style="color:#000;font-weight:bold">const&lt;/span> &lt;span style="color:#000;font-weight:bold">namespace&lt;/span> &lt;span style="color:#000;font-weight:bold">=&lt;/span> &lt;span style="color:#000;font-weight:bold">new&lt;/span> kubernetes.core.v1.Namespace(&lt;span style="color:#d14">&amp;#34;my-namespace&amp;#34;&lt;/span>);
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#00979d">import&lt;/span> &lt;span style="color:#728e00">*&lt;/span> &lt;span style="color:#00979d">as&lt;/span> &lt;span style="color:#728e00">pulumi&lt;/span> &lt;span style="color:#00979d">from&lt;/span> &lt;span style="color:#7f8c8d">&amp;#34;@pulumi/pulumi&amp;#34;&lt;/span>;
+&lt;span style="color:#00979d">import&lt;/span> &lt;span style="color:#728e00">*&lt;/span> &lt;span style="color:#00979d">as&lt;/span> &lt;span style="color:#728e00">kubernetes&lt;/span> &lt;span style="color:#00979d">from&lt;/span> &lt;span style="color:#7f8c8d">&amp;#34;@pulumi/kubernetes&amp;#34;&lt;/span>;
+&lt;span style="color:#00979d">const&lt;/span> &lt;span style="color:#00979d">namespace&lt;/span> &lt;span style="color:#728e00">=&lt;/span> &lt;span style="color:#728e00">new&lt;/span> &lt;span style="color:#728e00">kubernetes&lt;/span>.&lt;span style="color:#728e00">core&lt;/span>.&lt;span style="color:#728e00">v1&lt;/span>.&lt;span style="color:#728e00">Namespace&lt;/span>(&lt;span style="color:#7f8c8d">&amp;#34;my-namespace&amp;#34;&lt;/span>);
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>运行&lt;code>pulumi up&lt;/code>，会首先进行变更预览：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-shell" data-lang="shell">Previewing update &lt;span style="color:#000;font-weight:bold">(&lt;/span>dev&lt;span style="color:#000;font-weight:bold">)&lt;/span>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-shell" data-lang="shell">Previewing update &lt;span style="color:#728e00">(&lt;/span>dev&lt;span style="color:#728e00">)&lt;/span>
 Type Name Plan
 + pulumi:pulumi:Stack demo-meetingsvc-dev create
 + └─ kubernetes:core/v1:Namespace my-namespace create
 Resources:
-+ &lt;span style="color:#099">2&lt;/span> to create
-Do you want to perform this update? &lt;span style="color:#000;font-weight:bold">[&lt;/span>Use arrows to move, enter to &lt;span style="color:#000;font-weight:bold">select&lt;/span>, &lt;span style="color:#0086b3">type&lt;/span> to filter&lt;span style="color:#000;font-weight:bold">]&lt;/span>
++ &lt;span style="color:#8a7b52">2&lt;/span> to create
+Do you want to perform this update? &lt;span style="color:#728e00">[&lt;/span>Use arrows to move, enter to &lt;span style="color:#728e00">select&lt;/span>, &lt;span style="color:#728e00">type&lt;/span> to filter&lt;span style="color:#728e00">]&lt;/span>
 yes
 &amp;gt; no
 details
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>选择&lt;code>details&lt;/code>可以查看即将进行的改动详情：&lt;/p>
 &lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-shell" data-lang="shell">Do you want to perform this update? details
-+ pulumi:pulumi:Stack: &lt;span style="color:#000;font-weight:bold">(&lt;/span>create&lt;span style="color:#000;font-weight:bold">)&lt;/span>
-&lt;span style="color:#000;font-weight:bold">[&lt;/span>&lt;span style="color:#008080">urn&lt;/span>&lt;span style="color:#000;font-weight:bold">=&lt;/span>urn:pulumi:dev::demo-meetingsvc::pulumi:pulumi:Stack::demo-meetingsvc-dev&lt;span style="color:#000;font-weight:bold">]&lt;/span>
-+ kubernetes:core/v1:Namespace: &lt;span style="color:#000;font-weight:bold">(&lt;/span>create&lt;span style="color:#000;font-weight:bold">)&lt;/span>
-&lt;span style="color:#000;font-weight:bold">[&lt;/span>&lt;span style="color:#008080">urn&lt;/span>&lt;span style="color:#000;font-weight:bold">=&lt;/span>urn:pulumi:dev::demo-meetingsvc::kubernetes:core/v1:Namespace::my-namespace&lt;span style="color:#000;font-weight:bold">]&lt;/span>
-&lt;span style="color:#000;font-weight:bold">[&lt;/span>&lt;span style="color:#008080">provider&lt;/span>&lt;span style="color:#000;font-weight:bold">=&lt;/span>urn:pulumi:dev::demo-meetingsvc::pulumi:providers:kubernetes::default_3_14_1::04da6b54-80e4-46f7-96ec-b56ff0331ba9&lt;span style="color:#000;font-weight:bold">]&lt;/span>
-apiVersion: &lt;span style="color:#d14">&amp;#34;v1&amp;#34;&lt;/span>
-kind : &lt;span style="color:#d14">&amp;#34;Namespace&amp;#34;&lt;/span>
-metadata : &lt;span style="color:#000;font-weight:bold">{&lt;/span>
-annotations: &lt;span style="color:#000;font-weight:bold">{&lt;/span>
-pulumi.com/autonamed: &lt;span style="color:#d14">&amp;#34;true&amp;#34;&lt;/span>
-&lt;span style="color:#000;font-weight:bold">}&lt;/span>
-labels : &lt;span style="color:#000;font-weight:bold">{&lt;/span>
-app.kubernetes.io/managed-by: &lt;span style="color:#d14">&amp;#34;pulumi&amp;#34;&lt;/span>
-&lt;span style="color:#000;font-weight:bold">}&lt;/span>
-name : &lt;span style="color:#d14">&amp;#34;my-namespace-20a6saph&amp;#34;&lt;/span>
-&lt;span style="color:#000;font-weight:bold">}&lt;/span>
++ pulumi:pulumi:Stack: &lt;span style="color:#728e00">(&lt;/span>create&lt;span style="color:#728e00">)&lt;/span>
+&lt;span style="color:#728e00">[&lt;/span>&lt;span style="color:#434f54">urn&lt;/span>&lt;span style="color:#728e00">=&lt;/span>urn:pulumi:dev::demo-meetingsvc::pulumi:pulumi:Stack::demo-meetingsvc-dev&lt;span style="color:#728e00">]&lt;/span>
++ kubernetes:core/v1:Namespace: &lt;span style="color:#728e00">(&lt;/span>create&lt;span style="color:#728e00">)&lt;/span>
+&lt;span style="color:#728e00">[&lt;/span>&lt;span style="color:#434f54">urn&lt;/span>&lt;span style="color:#728e00">=&lt;/span>urn:pulumi:dev::demo-meetingsvc::kubernetes:core/v1:Namespace::my-namespace&lt;span style="color:#728e00">]&lt;/span>
+&lt;span style="color:#728e00">[&lt;/span>&lt;span style="color:#434f54">provider&lt;/span>&lt;span style="color:#728e00">=&lt;/span>urn:pulumi:dev::demo-meetingsvc::pulumi:providers:kubernetes::default_3_14_1::04da6b54-80e4-46f7-96ec-b56ff0331ba9&lt;span style="color:#728e00">]&lt;/span>
+apiVersion: &lt;span style="color:#7f8c8d">&amp;#34;v1&amp;#34;&lt;/span>
+kind : &lt;span style="color:#7f8c8d">&amp;#34;Namespace&amp;#34;&lt;/span>
+metadata : &lt;span style="color:#728e00">{&lt;/span>
+annotations: &lt;span style="color:#728e00">{&lt;/span>
+pulumi.com/autonamed: &lt;span style="color:#7f8c8d">&amp;#34;true&amp;#34;&lt;/span>
+&lt;span style="color:#728e00">}&lt;/span>
+labels : &lt;span style="color:#728e00">{&lt;/span>
+app.kubernetes.io/managed-by: &lt;span style="color:#7f8c8d">&amp;#34;pulumi&amp;#34;&lt;/span>
+&lt;span style="color:#728e00">}&lt;/span>
+name : &lt;span style="color:#7f8c8d">&amp;#34;my-namespace-20a6saph&amp;#34;&lt;/span>
+&lt;span style="color:#728e00">}&lt;/span>
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>选择&lt;code>yes&lt;/code>便会真正进行相应的改动:&lt;/p>
 &lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-shell" data-lang="shell">Do you want to perform this update? yes
-Updating &lt;span style="color:#000;font-weight:bold">(&lt;/span>dev&lt;span style="color:#000;font-weight:bold">)&lt;/span>
+Updating &lt;span style="color:#728e00">(&lt;/span>dev&lt;span style="color:#728e00">)&lt;/span>
 Type Name Status
 + pulumi:pulumi:Stack demo-meetingsvc-dev created
 + └─ kubernetes:core/v1:Namespace my-namespace created
 Resources:
-+ &lt;span style="color:#099">2&lt;/span> created
++ &lt;span style="color:#8a7b52">2&lt;/span> created
 Duration: 4s
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>使用kubectl查看，可以看到创建出了一个新的namespace：&lt;/p>
 &lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-shell" data-lang="shell">$ kubectl get ns
 NAME STATUS AGE
 my-namespace-ifywo1p0 Active 1m
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>可以看到新创建的namespace带了一个后缀，这是Pulumi为了维护&lt;code>不可变基础设施&lt;/code>而故意设计的一种行为，它的好处这里先不做介绍，如果不想要这个后缀，可以显示指定资源名字而非自动生成：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#000;font-weight:bold">const&lt;/span> &lt;span style="color:#000;font-weight:bold">namespace&lt;/span> &lt;span style="color:#000;font-weight:bold">=&lt;/span> &lt;span style="color:#000;font-weight:bold">new&lt;/span> k8s.core.v1.Namespace(&lt;span style="color:#d14">&amp;#34;my-namespace&amp;#34;&lt;/span>, {
-metadata&lt;span style="color:#000;font-weight:bold">:&lt;/span>{
-name&lt;span style="color:#000;font-weight:bold">:&lt;/span> &lt;span style="color:#d14">&amp;#34;my-namespace&amp;#34;&lt;/span>,
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#00979d">const&lt;/span> &lt;span style="color:#00979d">namespace&lt;/span> &lt;span style="color:#728e00">=&lt;/span> &lt;span style="color:#728e00">new&lt;/span> &lt;span style="color:#728e00">k8s&lt;/span>.&lt;span style="color:#728e00">core&lt;/span>.&lt;span style="color:#728e00">v1&lt;/span>.&lt;span style="color:#728e00">Namespace&lt;/span>(&lt;span style="color:#7f8c8d">&amp;#34;my-namespace&amp;#34;&lt;/span>, {
+&lt;span style="color:#728e00">metadata&lt;/span>&lt;span style="color:#728e00">:&lt;/span>{
+&lt;span style="color:#728e00">name&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#34;my-namespace&amp;#34;&lt;/span>,
 }
 });
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>命名空间创建好后，接着添加deployment和service：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#000;font-weight:bold">const&lt;/span> appName &lt;span style="color:#000;font-weight:bold">=&lt;/span> &lt;span style="color:#d14">&amp;#34;meetingsvc&amp;#34;&lt;/span>;
-&lt;span style="color:#000;font-weight:bold">const&lt;/span> image &lt;span style="color:#000;font-weight:bold">=&lt;/span> &lt;span style="color:#d14">`&lt;/span>&lt;span style="color:#d14">${&lt;/span>imageRepo&lt;span style="color:#d14">}&lt;/span>&lt;span style="color:#d14">/&lt;/span>&lt;span style="color:#d14">${&lt;/span>imageName&lt;span style="color:#d14">}&lt;/span>&lt;span style="color:#d14">:&lt;/span>&lt;span style="color:#d14">${&lt;/span>imageTag&lt;span style="color:#d14">}&lt;/span>&lt;span style="color:#d14">`&lt;/span>;
-&lt;span style="color:#000;font-weight:bold">const&lt;/span> selector &lt;span style="color:#000;font-weight:bold">=&lt;/span> {
-&lt;span style="color:#d14">&amp;#34;app.kubernetes.io/app&amp;#34;&lt;/span>&lt;span style="color:#000;font-weight:bold">:&lt;/span> appName,
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#00979d">const&lt;/span> &lt;span style="color:#728e00">appName&lt;/span> &lt;span style="color:#728e00">=&lt;/span> &lt;span style="color:#7f8c8d">&amp;#34;meetingsvc&amp;#34;&lt;/span>;
+&lt;span style="color:#00979d">const&lt;/span> &lt;span style="color:#728e00">image&lt;/span> &lt;span style="color:#728e00">=&lt;/span> &lt;span style="color:#7f8c8d">`&lt;/span>&lt;span style="color:#7f8c8d">${&lt;/span>&lt;span style="color:#728e00">imageRepo&lt;/span>&lt;span style="color:#7f8c8d">}&lt;/span>&lt;span style="color:#7f8c8d">/&lt;/span>&lt;span style="color:#7f8c8d">${&lt;/span>&lt;span style="color:#728e00">imageName&lt;/span>&lt;span style="color:#7f8c8d">}&lt;/span>&lt;span style="color:#7f8c8d">:&lt;/span>&lt;span style="color:#7f8c8d">${&lt;/span>&lt;span style="color:#728e00">imageTag&lt;/span>&lt;span style="color:#7f8c8d">}&lt;/span>&lt;span style="color:#7f8c8d">`&lt;/span>;
+&lt;span style="color:#00979d">const&lt;/span> &lt;span style="color:#728e00">selector&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
+&lt;span style="color:#7f8c8d">&amp;#34;app.kubernetes.io/app&amp;#34;&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#728e00">appName&lt;/span>,
 }
-&lt;span style="color:#000;font-weight:bold">const&lt;/span> labels &lt;span style="color:#000;font-weight:bold">=&lt;/span> {
-&lt;span style="color:#d14">&amp;#34;app.kubernetes.io/part-of&amp;#34;&lt;/span>&lt;span style="color:#000;font-weight:bold">:&lt;/span> &lt;span style="color:#d14">&amp;#34;demo&amp;#34;&lt;/span>,
-...selector
+&lt;span style="color:#00979d">const&lt;/span> &lt;span style="color:#728e00">labels&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
+&lt;span style="color:#7f8c8d">&amp;#34;app.kubernetes.io/part-of&amp;#34;&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#34;demo&amp;#34;&lt;/span>,
+...&lt;span style="color:#728e00">selector&lt;/span>
 };
-&lt;span style="color:#000;font-weight:bold">const&lt;/span> deployment &lt;span style="color:#000;font-weight:bold">=&lt;/span> &lt;span style="color:#000;font-weight:bold">new&lt;/span> k8s.apps.v1.Deployment(appName, {
-metadata&lt;span style="color:#000;font-weight:bold">:&lt;/span> {
-&lt;span style="color:#000;font-weight:bold">namespace&lt;/span>&lt;span style="color:#000;font-weight:bold">:&lt;/span> &lt;span style="color:#000;font-weight:bold">namespace&lt;/span>.metadata.name,
-labels
+&lt;span style="color:#00979d">const&lt;/span> &lt;span style="color:#728e00">deployment&lt;/span> &lt;span style="color:#728e00">=&lt;/span> &lt;span style="color:#728e00">new&lt;/span> &lt;span style="color:#728e00">k8s&lt;/span>.&lt;span style="color:#728e00">apps&lt;/span>.&lt;span style="color:#728e00">v1&lt;/span>.&lt;span style="color:#728e00">Deployment&lt;/span>(&lt;span style="color:#728e00">appName&lt;/span>, {
+&lt;span style="color:#728e00">metadata&lt;/span>&lt;span style="color:#728e00">:&lt;/span> {
+&lt;span style="color:#00979d">namespace&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#00979d">namespace&lt;/span>.&lt;span style="color:#728e00">metadata&lt;/span>.&lt;span style="color:#728e00">name&lt;/span>,
+&lt;span style="color:#728e00">labels&lt;/span>
 },
-spec&lt;span style="color:#000;font-weight:bold">:&lt;/span> {
-selector&lt;span style="color:#000;font-weight:bold">:&lt;/span> { matchLabels: &lt;span style="color:#458;font-weight:bold">selector&lt;/span> },
-template&lt;span style="color:#000;font-weight:bold">:&lt;/span> {
-metadata&lt;span style="color:#000;font-weight:bold">:&lt;/span> { labels },
-spec&lt;span style="color:#000;font-weight:bold">:&lt;/span> {
-containers&lt;span style="color:#000;font-weight:bold">:&lt;/span> [{
-name: &lt;span style="color:#458;font-weight:bold">appName&lt;/span>,
-image,
-ports&lt;span style="color:#000;font-weight:bold">:&lt;/span> [{
-containerPort: &lt;span style="color:#458;font-weight:bold">80&lt;/span>,
-name&lt;span style="color:#000;font-weight:bold">:&lt;/span> &lt;span style="color:#d14">&amp;#34;http&amp;#34;&lt;/span>,
+&lt;span style="color:#728e00">spec&lt;/span>&lt;span style="color:#728e00">:&lt;/span> {
+&lt;span style="color:#728e00">selector&lt;/span>&lt;span style="color:#728e00">:&lt;/span> { &lt;span style="color:#728e00">matchLabels&lt;/span>: &lt;span style="color:#00979d">selector&lt;/span> },
+&lt;span style="color:#728e00">template&lt;/span>&lt;span style="color:#728e00">:&lt;/span> {
+&lt;span style="color:#728e00">metadata&lt;/span>&lt;span style="color:#728e00">:&lt;/span> { &lt;span style="color:#728e00">labels&lt;/span> },
+&lt;span style="color:#728e00">spec&lt;/span>&lt;span style="color:#728e00">:&lt;/span> {
+&lt;span style="color:#728e00">containers&lt;/span>&lt;span style="color:#728e00">:&lt;/span> [{
+&lt;span style="color:#728e00">name&lt;/span>: &lt;span style="color:#00979d">appName&lt;/span>,
+&lt;span style="color:#728e00">image&lt;/span>,
+&lt;span style="color:#728e00">ports&lt;/span>&lt;span style="color:#728e00">:&lt;/span> [{
+&lt;span style="color:#728e00">containerPort&lt;/span>: &lt;span style="color:#00979d">80&lt;/span>,
+&lt;span style="color:#728e00">name&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#34;http&amp;#34;&lt;/span>,
 }],
 }]
 }
 }
 }
 });
-&lt;span style="color:#000;font-weight:bold">const&lt;/span> svc &lt;span style="color:#000;font-weight:bold">=&lt;/span> &lt;span style="color:#000;font-weight:bold">new&lt;/span> k8s.core.v1.Service(appName, {
-metadata&lt;span style="color:#000;font-weight:bold">:&lt;/span> {
-&lt;span style="color:#000;font-weight:bold">namespace&lt;/span>&lt;span style="color:#000;font-weight:bold">:&lt;/span> &lt;span style="color:#000;font-weight:bold">namespace&lt;/span>.metadata.name,
-labels
+&lt;span style="color:#00979d">const&lt;/span> &lt;span style="color:#728e00">svc&lt;/span> &lt;span style="color:#728e00">=&lt;/span> &lt;span style="color:#728e00">new&lt;/span> &lt;span style="color:#728e00">k8s&lt;/span>.&lt;span style="color:#728e00">core&lt;/span>.&lt;span style="color:#728e00">v1&lt;/span>.&lt;span style="color:#728e00">Service&lt;/span>(&lt;span style="color:#728e00">appName&lt;/span>, {
+&lt;span style="color:#728e00">metadata&lt;/span>&lt;span style="color:#728e00">:&lt;/span> {
+&lt;span style="color:#00979d">namespace&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#00979d">namespace&lt;/span>.&lt;span style="color:#728e00">metadata&lt;/span>.&lt;span style="color:#728e00">name&lt;/span>,
+&lt;span style="color:#728e00">labels&lt;/span>
 },
-spec&lt;span style="color:#000;font-weight:bold">:&lt;/span> {
-ports&lt;span style="color:#000;font-weight:bold">:&lt;/span> [{
-port: &lt;span style="color:#458;font-weight:bold">80&lt;/span>,
-targetPort&lt;span style="color:#000;font-weight:bold">:&lt;/span> &lt;span style="color:#d14">&amp;#34;http&amp;#34;&lt;/span>,
+&lt;span style="color:#728e00">spec&lt;/span>&lt;span style="color:#728e00">:&lt;/span> {
+&lt;span style="color:#728e00">ports&lt;/span>&lt;span style="color:#728e00">:&lt;/span> [{
+&lt;span style="color:#728e00">port&lt;/span>: &lt;span style="color:#00979d">80&lt;/span>,
+&lt;span style="color:#728e00">targetPort&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#34;http&amp;#34;&lt;/span>,
 }],
-selector,
+&lt;span style="color:#728e00">selector&lt;/span>,
 },
-}, { dependsOn: &lt;span style="color:#458;font-weight:bold">deployment&lt;/span> });
+}, { &lt;span style="color:#728e00">dependsOn&lt;/span>: &lt;span style="color:#00979d">deployment&lt;/span> });
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>运行&lt;code>pulumi up&lt;/code>即可预览并进行相关变更。
 如果应用需要ingress，也可以通过相同的方式创建。&lt;/p>
 &lt;h2 id="最后">最后&lt;/h2>
 &lt;p>虽说Pulumi支持多种编程语言及运行时(node.js上的javascript、typescript，.net core上的C#、vb、F#，以及go和python），但是就个人经验来说，用起来最得心应手的还是typescript，主要是因为typescript有着十分完备、强大的类型系统，也一定程度上继承了javascript的灵活性，能用上一些很有意思的小花招，后面可以慢慢介绍。&lt;/p>
 &lt;p>这篇就先写到这，后面准备写一下怎么用Pulumi做自动化部署，用Pulumi做更复杂的部署，组件的封装和打包等。&lt;/p>
 &lt;p>如果有任何疑惑或者想法，欢迎找我交流~&lt;/p></description></item><item><title>.NET Activity API中的一个小陷阱</title><link>http://suraciii.github.io/posts/dotnet-activity-pitfall/</link><pubDate>Thu, 27 Jan 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/dotnet-activity-pitfall/</guid><description>&lt;p>最近在为Orleans改进其分布式追踪组件(&lt;a href="https://github.com/dotnet/orleans/pull/7443">Use DistributedContextPropagator to propagate Activities&lt;/a>)的时候，从AspNetCore中抄了一些代码:&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#998;font-style:italic">// https://github.com/dotnet/aspnetcore/blob/9da42b9fab4c61fe46627ac0c6877905ec845d5a/src/Hosting/Hosting/src/Internal/HostingApplicationDiagnostics.cs#L272
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span>
-&lt;span style="color:#000;font-weight:bold">private&lt;/span> Activity? StartActivity(HttpContext httpContext, &lt;span style="color:#458;font-weight:bold">bool&lt;/span> loggingEnabled, &lt;span style="color:#458;font-weight:bold">bool&lt;/span> diagnosticListenerActivityCreationEnabled, &lt;span style="color:#000;font-weight:bold">out&lt;/span> &lt;span style="color:#458;font-weight:bold">bool&lt;/span> hasDiagnosticListener)
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#95a5a6">// https://github.com/dotnet/aspnetcore/blob/9da42b9fab4c61fe46627ac0c6877905ec845d5a/src/Hosting/Hosting/src/Internal/HostingApplicationDiagnostics.cs#L272
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span>
+&lt;span style="color:#728e00">private&lt;/span> &lt;span style="color:#434f54">Activity&lt;/span>? &lt;span style="color:#434f54">StartActivity&lt;/span>(&lt;span style="color:#434f54">HttpContext&lt;/span> &lt;span style="color:#434f54">httpContext&lt;/span>, &lt;span style="color:#00979d">bool&lt;/span> &lt;span style="color:#434f54">loggingEnabled&lt;/span>, &lt;span style="color:#00979d">bool&lt;/span> &lt;span style="color:#434f54">diagnosticListenerActivityCreationEnabled&lt;/span>, &lt;span style="color:#728e00">out&lt;/span> &lt;span style="color:#00979d">bool&lt;/span> &lt;span style="color:#434f54">hasDiagnosticListener&lt;/span>)
 {
-&lt;span style="color:#458;font-weight:bold">var&lt;/span> activity = &lt;span style="color:#099">_&lt;/span>activitySource.CreateActivity(ActivityName, ActivityKind.Server);
-&lt;span style="color:#998;font-style:italic">// ...
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> &lt;span style="color:#458;font-weight:bold">var&lt;/span> headers = httpContext.Request.Headers;
-&lt;span style="color:#099">_&lt;/span>propagator.ExtractTraceIdAndState(headers,
-&lt;span style="color:#000;font-weight:bold">static&lt;/span> (&lt;span style="color:#458;font-weight:bold">object?&lt;/span> carrier, &lt;span style="color:#458;font-weight:bold">string&lt;/span> fieldName, &lt;span style="color:#000;font-weight:bold">out&lt;/span> &lt;span style="color:#458;font-weight:bold">string?&lt;/span> fieldValue, &lt;span style="color:#000;font-weight:bold">out&lt;/span> IEnumerable&amp;lt;&lt;span style="color:#458;font-weight:bold">string&lt;/span>&amp;gt;? fieldValues) =&amp;gt;
+&lt;span style="color:#00979d">var&lt;/span> &lt;span style="color:#434f54">activity&lt;/span> = &lt;span style="color:#8a7b52">_&lt;/span>&lt;span style="color:#434f54">activitySource&lt;/span>.&lt;span style="color:#434f54">CreateActivity&lt;/span>(&lt;span style="color:#434f54">ActivityName&lt;/span>, &lt;span style="color:#434f54">ActivityKind&lt;/span>.&lt;span style="color:#434f54">Server&lt;/span>);
+&lt;span style="color:#95a5a6">// ...
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#00979d">var&lt;/span> &lt;span style="color:#434f54">headers&lt;/span> = &lt;span style="color:#434f54">httpContext&lt;/span>.&lt;span style="color:#434f54">Request&lt;/span>.&lt;span style="color:#434f54">Headers&lt;/span>;
+&lt;span style="color:#8a7b52">_&lt;/span>&lt;span style="color:#434f54">propagator&lt;/span>.&lt;span style="color:#434f54">ExtractTraceIdAndState&lt;/span>(&lt;span style="color:#434f54">headers&lt;/span>,
+&lt;span style="color:#728e00">static&lt;/span> (&lt;span style="color:#00979d">object?&lt;/span> &lt;span style="color:#434f54">carrier&lt;/span>, &lt;span style="color:#00979d">string&lt;/span> &lt;span style="color:#434f54">fieldName&lt;/span>, &lt;span style="color:#728e00">out&lt;/span> &lt;span style="color:#00979d">string?&lt;/span> &lt;span style="color:#434f54">fieldValue&lt;/span>, &lt;span style="color:#728e00">out&lt;/span> &lt;span style="color:#434f54">IEnumerable&lt;/span>&amp;lt;&lt;span style="color:#00979d">string&lt;/span>&amp;gt;? &lt;span style="color:#434f54">fieldValues&lt;/span>) =&amp;gt;
 {
-fieldValues = &lt;span style="color:#000;font-weight:bold">default&lt;/span>;
-&lt;span style="color:#458;font-weight:bold">var&lt;/span> headers = (IHeaderDictionary)carrier!;
-fieldValue = headers[fieldName];
+&lt;span style="color:#434f54">fieldValues&lt;/span> = &lt;span style="color:#728e00">default&lt;/span>;
+&lt;span style="color:#00979d">var&lt;/span> &lt;span style="color:#434f54">headers&lt;/span> = (&lt;span style="color:#434f54">IHeaderDictionary&lt;/span>)&lt;span style="color:#434f54">carrier&lt;/span>!;
+&lt;span style="color:#434f54">fieldValue&lt;/span> = &lt;span style="color:#434f54">headers&lt;/span>[&lt;span style="color:#434f54">fieldName&lt;/span>];
 },
-&lt;span style="color:#000;font-weight:bold">out&lt;/span> &lt;span style="color:#458;font-weight:bold">var&lt;/span> requestId,
-&lt;span style="color:#000;font-weight:bold">out&lt;/span> &lt;span style="color:#458;font-weight:bold">var&lt;/span> traceState);
-&lt;span style="color:#998;font-style:italic">// ...
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> activity.SetParentId(requestId);
-&lt;span style="color:#000;font-weight:bold">if&lt;/span> (!&lt;span style="color:#458;font-weight:bold">string&lt;/span>.IsNullOrEmpty(traceState))
+&lt;span style="color:#728e00">out&lt;/span> &lt;span style="color:#00979d">var&lt;/span> &lt;span style="color:#434f54">requestId&lt;/span>,
+&lt;span style="color:#728e00">out&lt;/span> &lt;span style="color:#00979d">var&lt;/span> &lt;span style="color:#434f54">traceState&lt;/span>);
+&lt;span style="color:#95a5a6">// ...
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#434f54">activity&lt;/span>.&lt;span style="color:#434f54">SetParentId&lt;/span>(&lt;span style="color:#434f54">requestId&lt;/span>);
+&lt;span style="color:#728e00">if&lt;/span> (!&lt;span style="color:#00979d">string&lt;/span>.&lt;span style="color:#434f54">IsNullOrEmpty&lt;/span>(&lt;span style="color:#434f54">traceState&lt;/span>))
 {
-activity.TraceStateString = traceState;
+&lt;span style="color:#434f54">activity&lt;/span>.&lt;span style="color:#434f54">TraceStateString&lt;/span> = &lt;span style="color:#434f54">traceState&lt;/span>;
 }
 }
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>这段代码的作用是，创建Activity后，从请求头中尝试获取追踪信息（traceid等），如果存在的话，就通过&lt;code>activity.SetParentId(requestId)&lt;/code>将这个新创建的Activity与请求头中的追踪上下文关联，即进入链路成为其中的一个子片段。&lt;/p>
@@ -193,18 +288,18 @@ activity.TraceStateString = traceState;
 &lt;p>这就十分令人好奇了——这是从AspNetCore代码库里抄来的代码，也有相关测试覆盖，为什么还会有问题？
 于是使用OpenTelemetry SDK重现了这个bug并仔细调试后，发现了问题出现的原因：&lt;/p>
 &lt;p>OpenTelemetry SDK记录应用的Activity时，有一个默认的采样器(Sampler)，在这个采样器中它会在创建Activity时访问相关&lt;code>ActivityCreationOptions&lt;/code>中的&lt;code>.TraceId&lt;/code>属性，再看其源码：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#998;font-style:italic">// https://github.com/dotnet/runtime/blob/970d347a1b06951692cfecc1cc12a500158708b1/src/libraries/System.Diagnostics.DiagnosticSource/src/System/Diagnostics/ActivityCreationOptions.cs#L128
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span>&lt;span style="color:#000;font-weight:bold">public&lt;/span> ActivityTraceId TraceId
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#95a5a6">// https://github.com/dotnet/runtime/blob/970d347a1b06951692cfecc1cc12a500158708b1/src/libraries/System.Diagnostics.DiagnosticSource/src/System/Diagnostics/ActivityCreationOptions.cs#L128
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span>&lt;span style="color:#728e00">public&lt;/span> &lt;span style="color:#434f54">ActivityTraceId&lt;/span> &lt;span style="color:#434f54">TraceId&lt;/span>
 {
-&lt;span style="color:#000;font-weight:bold">get&lt;/span>
+&lt;span style="color:#728e00">get&lt;/span>
 {
-&lt;span style="color:#000;font-weight:bold">if&lt;/span> (Parent &lt;span style="color:#000;font-weight:bold">is&lt;/span> ActivityContext &amp;amp;&amp;amp; IdFormat == ActivityIdFormat.W3C &amp;amp;&amp;amp; &lt;span style="color:#099">_&lt;/span>context == &lt;span style="color:#000;font-weight:bold">default&lt;/span>)
+&lt;span style="color:#728e00">if&lt;/span> (&lt;span style="color:#434f54">Parent&lt;/span> &lt;span style="color:#728e00">is&lt;/span> &lt;span style="color:#434f54">ActivityContext&lt;/span> &amp;amp;&amp;amp; &lt;span style="color:#434f54">IdFormat&lt;/span> == &lt;span style="color:#434f54">ActivityIdFormat&lt;/span>.&lt;span style="color:#434f54">W3C&lt;/span> &amp;amp;&amp;amp; &lt;span style="color:#8a7b52">_&lt;/span>&lt;span style="color:#434f54">context&lt;/span> == &lt;span style="color:#728e00">default&lt;/span>)
 {
-Func&amp;lt;ActivityTraceId&amp;gt;? traceIdGenerator = Activity.TraceIdGenerator;
-ActivityTraceId id = traceIdGenerator == &lt;span style="color:#000;font-weight:bold">null&lt;/span> ? ActivityTraceId.CreateRandom() : traceIdGenerator();
-Unsafe.AsRef(&lt;span style="color:#000;font-weight:bold">in&lt;/span> &lt;span style="color:#099">_&lt;/span>context) = &lt;span style="color:#000;font-weight:bold">new&lt;/span> ActivityContext(id, &lt;span style="color:#000;font-weight:bold">default&lt;/span>, ActivityTraceFlags.None);
+&lt;span style="color:#434f54">Func&lt;/span>&amp;lt;&lt;span style="color:#434f54">ActivityTraceId&lt;/span>&amp;gt;? &lt;span style="color:#434f54">traceIdGenerator&lt;/span> = &lt;span style="color:#434f54">Activity&lt;/span>.&lt;span style="color:#434f54">TraceIdGenerator&lt;/span>;
+&lt;span style="color:#434f54">ActivityTraceId&lt;/span> &lt;span style="color:#434f54">id&lt;/span> = &lt;span style="color:#434f54">traceIdGenerator&lt;/span> == &lt;span style="color:#728e00">null&lt;/span> ? &lt;span style="color:#434f54">ActivityTraceId&lt;/span>.&lt;span style="color:#434f54">CreateRandom&lt;/span>() : &lt;span style="color:#434f54">traceIdGenerator&lt;/span>();
+&lt;span style="color:#434f54">Unsafe&lt;/span>.&lt;span style="color:#434f54">AsRef&lt;/span>(&lt;span style="color:#728e00">in&lt;/span> &lt;span style="color:#8a7b52">_&lt;/span>&lt;span style="color:#434f54">context&lt;/span>) = &lt;span style="color:#728e00">new&lt;/span> &lt;span style="color:#434f54">ActivityContext&lt;/span>(&lt;span style="color:#434f54">id&lt;/span>, &lt;span style="color:#728e00">default&lt;/span>, &lt;span style="color:#434f54">ActivityTraceFlags&lt;/span>.&lt;span style="color:#434f54">None&lt;/span>);
 }
-&lt;span style="color:#000;font-weight:bold">return&lt;/span> &lt;span style="color:#099">_&lt;/span>context.TraceId;
+&lt;span style="color:#728e00">return&lt;/span> &lt;span style="color:#8a7b52">_&lt;/span>&lt;span style="color:#434f54">context&lt;/span>.&lt;span style="color:#434f54">TraceId&lt;/span>;
 }
 }
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>也就是说，访问&lt;code>.TraceId&lt;/code>时，如果它还没有traceid，就生成一个并返回，最终被配置到新创建的Activity中，而Activity的TraceId只能被配置一次，也就是说如果traceid已经存在，后面的&lt;code>activity.SetParentId(requestId)&lt;/code>就不会产生作用。&lt;/p>
@@ -579,22 +674,22 @@ Unsafe.AsRef(&lt;span style="color:#000;font-weight:bold">in&lt;/span> &lt;span 
 &lt;li>更新余额&lt;/li>
 &lt;/ul>
 &lt;p>即&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-sql" data-lang="sql">&lt;span style="color:#000;font-weight:bold">SELECT&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000;font-weight:bold">*&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000;font-weight:bold">FROM&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000;font-weight:bold">`&lt;/span>Accounts&lt;span style="color:#000;font-weight:bold">`&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000;font-weight:bold">WHERE&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000;font-weight:bold">`&lt;/span>Id&lt;span style="color:#000;font-weight:bold">`=@&lt;/span>Id&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000;font-weight:bold">FOR&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000;font-weight:bold">UPDATE&lt;/span>;&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb">&lt;/span>&lt;span style="color:#998;font-style:italic">/* 检查余额 */&lt;/span>&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb">&lt;/span>&lt;span style="color:#000;font-weight:bold">Update&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000;font-weight:bold">`&lt;/span>Accounts&lt;span style="color:#000;font-weight:bold">`&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000;font-weight:bold">SET&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000;font-weight:bold">`&lt;/span>Balance&lt;span style="color:#000;font-weight:bold">`=@&lt;/span>Balance;&lt;span style="color:#bbb">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>由于“多数用户均为高频账号”，在高频校验更新余额时势必会产生性能问题，而在某些特殊场景下，甚至会产生死锁的问题&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-sql" data-lang="sql">&lt;span style="color:#728e00">SELECT&lt;/span> &lt;span style="color:#728e00">*&lt;/span> &lt;span style="color:#728e00">FROM&lt;/span> &lt;span style="color:#728e00">`&lt;/span>&lt;span style="color:#434f54">Accounts&lt;/span>&lt;span style="color:#728e00">`&lt;/span> &lt;span style="color:#728e00">WHERE&lt;/span> &lt;span style="color:#728e00">`&lt;/span>&lt;span style="color:#434f54">Id&lt;/span>&lt;span style="color:#728e00">`=@&lt;/span>&lt;span style="color:#434f54">Id&lt;/span> &lt;span style="color:#728e00">FOR&lt;/span> &lt;span style="color:#728e00">UPDATE&lt;/span>;
+&lt;span style="color:#95a5a6">/* 检查余额 */&lt;/span>
+&lt;span style="color:#728e00">Update&lt;/span> &lt;span style="color:#728e00">`&lt;/span>&lt;span style="color:#434f54">Accounts&lt;/span>&lt;span style="color:#728e00">`&lt;/span> &lt;span style="color:#728e00">SET&lt;/span> &lt;span style="color:#728e00">`&lt;/span>&lt;span style="color:#434f54">Balance&lt;/span>&lt;span style="color:#728e00">`=@&lt;/span>&lt;span style="color:#434f54">Balance&lt;/span>;
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>由于“多数用户均为高频账号”，在高频校验更新余额时势必会产生性能问题，而在某些特殊场景下，甚至会产生死锁的问题&lt;/p>
 &lt;p>那么这里的主要思路就是减少降低锁的使用频率：&lt;/p>
 &lt;h4 id="a-只在减款校验时加锁">a) 只在减款校验时加锁&lt;/h4>
 &lt;p>余额的更新中，只有减款时需要校验当前实时余额，而加款则不需要&lt;/p>
 &lt;p>减款时流程不变，加款时直接对余额进行加操作&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-sql" data-lang="sql">&lt;span style="color:#000;font-weight:bold">Update&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000;font-weight:bold">`&lt;/span>Accounts&lt;span style="color:#000;font-weight:bold">`&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000;font-weight:bold">SET&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000;font-weight:bold">`&lt;/span>Balance&lt;span style="color:#000;font-weight:bold">`=@&lt;/span>Balance&lt;span style="color:#000;font-weight:bold">+@&lt;/span>Amount;&lt;span style="color:#bbb">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h4 id="b-先减款再校验">b) 先减款，再校验&lt;/h4>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-sql" data-lang="sql">&lt;span style="color:#728e00">Update&lt;/span> &lt;span style="color:#728e00">`&lt;/span>&lt;span style="color:#434f54">Accounts&lt;/span>&lt;span style="color:#728e00">`&lt;/span> &lt;span style="color:#728e00">SET&lt;/span> &lt;span style="color:#728e00">`&lt;/span>&lt;span style="color:#434f54">Balance&lt;/span>&lt;span style="color:#728e00">`=@&lt;/span>&lt;span style="color:#434f54">Balance&lt;/span>&lt;span style="color:#728e00">+@&lt;/span>&lt;span style="color:#434f54">Amount&lt;/span>;
+&lt;/code>&lt;/pre>&lt;/div>&lt;h4 id="b-先减款再校验">b) 先减款，再校验&lt;/h4>
 &lt;p>加款操作去掉了锁，减款是否也能去掉呢？
 我们在减款中加锁，是为了避免在减款操作时余额被并发更改，出现校验时账号有充足的余额，但是减款时余额却变成了负数
 如果我们按照之前的流程 加锁-查询-更新，的确是需要锁住这一行记录，但是如果先减款，再判断余额是否小于0，就可以避免锁的需求&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-sql" data-lang="sql">&lt;span style="color:#000;font-weight:bold">Update&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000;font-weight:bold">`&lt;/span>Accounts&lt;span style="color:#000;font-weight:bold">`&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000;font-weight:bold">SET&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000;font-weight:bold">`&lt;/span>Balance&lt;span style="color:#000;font-weight:bold">`=@&lt;/span>Balance&lt;span style="color:#000;font-weight:bold">-@&lt;/span>Amount&lt;span style="color:#bbb"> &lt;/span>RETURNING&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000;font-weight:bold">`&lt;/span>Balance&lt;span style="color:#000;font-weight:bold">`&lt;/span>;&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb">&lt;/span>&lt;span style="color:#998;font-style:italic">/* 判断Balance是否小于0，如果小于0，则回滚事务 */&lt;/span>&lt;span style="color:#bbb">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>这样在减款操作时也避免了显式锁行&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-sql" data-lang="sql">&lt;span style="color:#728e00">Update&lt;/span> &lt;span style="color:#728e00">`&lt;/span>&lt;span style="color:#434f54">Accounts&lt;/span>&lt;span style="color:#728e00">`&lt;/span> &lt;span style="color:#728e00">SET&lt;/span> &lt;span style="color:#728e00">`&lt;/span>&lt;span style="color:#434f54">Balance&lt;/span>&lt;span style="color:#728e00">`=@&lt;/span>&lt;span style="color:#434f54">Balance&lt;/span>&lt;span style="color:#728e00">-@&lt;/span>&lt;span style="color:#434f54">Amount&lt;/span> &lt;span style="color:#434f54">RETURNING&lt;/span> &lt;span style="color:#728e00">`&lt;/span>&lt;span style="color:#434f54">Balance&lt;/span>&lt;span style="color:#728e00">`&lt;/span>;
+&lt;span style="color:#95a5a6">/* 判断Balance是否小于0，如果小于0，则回滚事务 */&lt;/span>
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>这样在减款操作时也避免了显式锁行&lt;/p>
 &lt;p>解冻校验也可以用类似方法，比如将冻结记录的校验与更新，使用&lt;code>WHERE&lt;/code>语句合成一条SQL语句，来避免锁的使用&lt;/p>
 &lt;h3 id="尝试摆脱数据库事务">尝试摆脱数据库事务&lt;/h3>
 &lt;p>上一步里去除了更新余额时的显式行锁，但是对于高频账号来说，数据库事务自带的锁/隔离机制仍然会是其并发性能的一大阻碍
@@ -727,47 +822,47 @@ ServiceAccount是由K8S管理的，创建等操作，都通过K8S完成&lt;/p>
 &lt;/ul>
 &lt;h3 id="为用户添加角色">为用户添加角色&lt;/h3>
 &lt;h4 id="首先创造一个角色">首先创造一个角色&lt;/h4>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-yaml" data-lang="yaml">&lt;span style="color:#000080">kind&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>Role&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb">&lt;/span>&lt;span style="color:#000080">apiVersion&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>rbac.authorization.k8s.io/v1beta1&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb">&lt;/span>&lt;span style="color:#000080">metadata&lt;/span>:&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000080">namespace&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>a-1&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000080">name&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>admin&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb">&lt;/span>&lt;span style="color:#000080">rules&lt;/span>:&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb">&lt;/span>- &lt;span style="color:#000080">apiGroups&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>[&lt;span style="color:#d14">&amp;#34;&amp;#34;&lt;/span>]&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000080">resources&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>[&lt;span style="color:#d14">&amp;#34;*&amp;#34;&lt;/span>]&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000080">verbs&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>[&lt;span style="color:#d14">&amp;#34;*&amp;#34;&lt;/span>]&lt;span style="color:#bbb">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>这是在a-1命名空间内创建了一个admin管理员角色，这里只是用admin角色举例，实际上如果只是为了授予用户某命名空间管理员的权限的话，是不需要新建一个角色的，K8S已经内置了一个名为admin的ClusterRole&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-yaml" data-lang="yaml">&lt;span style="color:#434f54">kind&lt;/span>: Role
+&lt;span style="color:#434f54">apiVersion&lt;/span>: rbac.authorization.k8s.io/v1beta1
+&lt;span style="color:#434f54">metadata&lt;/span>:
+&lt;span style="color:#434f54">namespace&lt;/span>: a-1
+&lt;span style="color:#434f54">name&lt;/span>: admin
+&lt;span style="color:#434f54">rules&lt;/span>:
+- &lt;span style="color:#434f54">apiGroups&lt;/span>: [&lt;span style="color:#7f8c8d">&amp;#34;&amp;#34;&lt;/span>]
+&lt;span style="color:#434f54">resources&lt;/span>: [&lt;span style="color:#7f8c8d">&amp;#34;*&amp;#34;&lt;/span>]
+&lt;span style="color:#434f54">verbs&lt;/span>: [&lt;span style="color:#7f8c8d">&amp;#34;*&amp;#34;&lt;/span>]
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>这是在a-1命名空间内创建了一个admin管理员角色，这里只是用admin角色举例，实际上如果只是为了授予用户某命名空间管理员的权限的话，是不需要新建一个角色的，K8S已经内置了一个名为admin的ClusterRole&lt;/p>
 &lt;h4 id="将角色和用户绑定">将角色和用户绑定&lt;/h4>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-yaml" data-lang="yaml">&lt;span style="color:#000080">kind&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>RoleBinding&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb">&lt;/span>&lt;span style="color:#000080">apiVersion&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>rbac.authorization.k8s.io/v1beta1&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb">&lt;/span>&lt;span style="color:#000080">metadata&lt;/span>:&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000080">name&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>admin-binding&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000080">namespace&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>a-1&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb">&lt;/span>&lt;span style="color:#000080">subjects&lt;/span>:&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb">&lt;/span>- &lt;span style="color:#000080">kind&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>User&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000080">name&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>tom&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000080">apiGroup&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#d14">&amp;#34;&amp;#34;&lt;/span>&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb">&lt;/span>&lt;span style="color:#000080">roleRef&lt;/span>:&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000080">kind&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>Role&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000080">name&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>admin&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000080">apiGroup&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#d14">&amp;#34;&amp;#34;&lt;/span>&lt;span style="color:#bbb">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>如yaml中所示，RoleBinding资源创建了一个 Role-User 之间的关系，&lt;code>roleRef&lt;/code>节点指定此RoleBinding所引用的角色，&lt;code>subjects&lt;/code>节点指定了此RoleBinding的受体，可以是User，也可以是前面说过的ServiceAccount，在这里只包含了名为 tom 的用户&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-yaml" data-lang="yaml">&lt;span style="color:#434f54">kind&lt;/span>: RoleBinding
+&lt;span style="color:#434f54">apiVersion&lt;/span>: rbac.authorization.k8s.io/v1beta1
+&lt;span style="color:#434f54">metadata&lt;/span>:
+&lt;span style="color:#434f54">name&lt;/span>: admin-binding
+&lt;span style="color:#434f54">namespace&lt;/span>: a-1
+&lt;span style="color:#434f54">subjects&lt;/span>:
+- &lt;span style="color:#434f54">kind&lt;/span>: User
+&lt;span style="color:#434f54">name&lt;/span>: tom
+&lt;span style="color:#434f54">apiGroup&lt;/span>: &lt;span style="color:#7f8c8d">&amp;#34;&amp;#34;&lt;/span>
+&lt;span style="color:#434f54">roleRef&lt;/span>:
+&lt;span style="color:#434f54">kind&lt;/span>: Role
+&lt;span style="color:#434f54">name&lt;/span>: admin
+&lt;span style="color:#434f54">apiGroup&lt;/span>: &lt;span style="color:#7f8c8d">&amp;#34;&amp;#34;&lt;/span>
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>如yaml中所示，RoleBinding资源创建了一个 Role-User 之间的关系，&lt;code>roleRef&lt;/code>节点指定此RoleBinding所引用的角色，&lt;code>subjects&lt;/code>节点指定了此RoleBinding的受体，可以是User，也可以是前面说过的ServiceAccount，在这里只包含了名为 tom 的用户&lt;/p>
 &lt;h4 id="添加命名空间管理员的另一种方式">添加命名空间管理员的另一种方式&lt;/h4>
 &lt;p>前面说过，K8S内置了一个名为admin的ClusterRole，所以实际上我们无需创建一个admin Role，直接对集群默认的admin ClusterRole添加RoleBinding就可以了&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-yaml" data-lang="yaml">&lt;span style="color:#000080">kind&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>RoleBinding&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb">&lt;/span>&lt;span style="color:#000080">apiVersion&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>rbac.authorization.k8s.io/v1beta1&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb">&lt;/span>&lt;span style="color:#000080">metadata&lt;/span>:&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000080">name&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>admin-binding&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000080">namespace&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>a-1&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb">&lt;/span>&lt;span style="color:#000080">subjects&lt;/span>:&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb">&lt;/span>- &lt;span style="color:#000080">kind&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>User&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000080">name&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>tom&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000080">apiGroup&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#d14">&amp;#34;&amp;#34;&lt;/span>&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb">&lt;/span>&lt;span style="color:#000080">roleRef&lt;/span>:&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000080">kind&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>ClusterRole&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000080">name&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>admin&lt;span style="color:#bbb">
-&lt;/span>&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#000080">apiGroup&lt;/span>:&lt;span style="color:#bbb"> &lt;/span>&lt;span style="color:#d14">&amp;#34;&amp;#34;&lt;/span>&lt;span style="color:#bbb">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>这里虽然引用的是作为ClusterRole的admin角色，但是其权限被限制在RoleBinding admin-binding所处的命名空间，即a-1内
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-yaml" data-lang="yaml">&lt;span style="color:#434f54">kind&lt;/span>: RoleBinding
+&lt;span style="color:#434f54">apiVersion&lt;/span>: rbac.authorization.k8s.io/v1beta1
+&lt;span style="color:#434f54">metadata&lt;/span>:
+&lt;span style="color:#434f54">name&lt;/span>: admin-binding
+&lt;span style="color:#434f54">namespace&lt;/span>: a-1
+&lt;span style="color:#434f54">subjects&lt;/span>:
+- &lt;span style="color:#434f54">kind&lt;/span>: User
+&lt;span style="color:#434f54">name&lt;/span>: tom
+&lt;span style="color:#434f54">apiGroup&lt;/span>: &lt;span style="color:#7f8c8d">&amp;#34;&amp;#34;&lt;/span>
+&lt;span style="color:#434f54">roleRef&lt;/span>:
+&lt;span style="color:#434f54">kind&lt;/span>: ClusterRole
+&lt;span style="color:#434f54">name&lt;/span>: admin
+&lt;span style="color:#434f54">apiGroup&lt;/span>: &lt;span style="color:#7f8c8d">&amp;#34;&amp;#34;&lt;/span>
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>这里虽然引用的是作为ClusterRole的admin角色，但是其权限被限制在RoleBinding admin-binding所处的命名空间，即a-1内
 如果想要添加全命名空间或者说全集群的管理员，可以使用cluster-admin角色&lt;/p>
 &lt;p>到此为止，我们已经：&lt;/p>
 &lt;ul>
@@ -861,10 +956,10 @@ client-key-data: ...
 &lt;li>它带来了&lt;em>几乎所有&lt;/em>我们之前提到过的优点&lt;/li>
 &lt;/ul>
 &lt;p>所以，让我们开始吧！我们首先要思考的是：这里的&lt;em>方向&lt;/em>是什么？就像刚才提到的一样，&lt;code>Stream&lt;/code>是模糊不清的——可能只读，只写，或可读可写。来假设我们想解决的是最通常的问题：一个可读可写表现为双工行为的stream——这可以让我们访问如sockets(通过&lt;code>NetworkStream&lt;/code>)之类的东西。这意味着我们实际上将会需要&lt;em>两个&lt;/em>pipe——一个用来输入，一个用来输出。Pipelines通过明确地声明&lt;code>IDuplexPipe&lt;/code>接口来帮助我们指明道路。这是一个非常简单的接口，数据传输给&lt;code>IDuplexPipe&lt;/code>就像传输给两个pipe的端点一样——一个标记为&amp;quot;in&amp;quot;，一个标记为&amp;quot;out&amp;quot;：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#000;font-weight:bold">interface&lt;/span> IDuplexPipe
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#728e00">interface&lt;/span> &lt;span style="color:#434f54">IDuplexPipe&lt;/span>
 {
-PipeReader Input { &lt;span style="color:#000;font-weight:bold">get&lt;/span>; }
-PipeWriter Output { &lt;span style="color:#000;font-weight:bold">get&lt;/span>; }
+&lt;span style="color:#434f54">PipeReader&lt;/span> &lt;span style="color:#434f54">Input&lt;/span> { &lt;span style="color:#728e00">get&lt;/span>; }
+&lt;span style="color:#434f54">PipeWriter&lt;/span> &lt;span style="color:#434f54">Output&lt;/span> { &lt;span style="color:#728e00">get&lt;/span>; }
 }
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>我们接下来想要做的是创建一个类来实现 &lt;code>IDuplexPipe&lt;/code>，但是其内部使用两个&lt;code>Pipe&lt;/code>实例：&lt;/p>
 &lt;ul>
@@ -881,51 +976,51 @@ PipeWriter Output { &lt;span style="color:#000;font-weight:bold">get&lt;/span>; 
 &lt;/ul>
 &lt;h3 id="那么它看起来会是什么样">那么它看起来会是什么样？&lt;/h3>
 &lt;p>基本上，我们需要做的就是这样：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#000;font-weight:bold">class&lt;/span> &lt;span style="color:#458;font-weight:bold">StreamDuplexPipe&lt;/span> : IDuplexPipe
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#728e00">class&lt;/span> &lt;span style="color:#434f54">StreamDuplexPipe&lt;/span> : &lt;span style="color:#434f54">IDuplexPipe&lt;/span>
 {
-Stream &lt;span style="color:#099">_&lt;/span>stream;
-Pipe &lt;span style="color:#099">_&lt;/span>readPipe, &lt;span style="color:#099">_&lt;/span>writePipe;
-&lt;span style="color:#000;font-weight:bold">public&lt;/span> PipeReader Input =&amp;gt; &lt;span style="color:#099">_&lt;/span>readPipe.Reader;
-&lt;span style="color:#000;font-weight:bold">public&lt;/span> PipeWriter Output =&amp;gt; &lt;span style="color:#099">_&lt;/span>writePipe.Writer;
-&lt;span style="color:#998;font-style:italic">// ... more here
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span>}
+&lt;span style="color:#434f54">Stream&lt;/span> &lt;span style="color:#8a7b52">_&lt;/span>&lt;span style="color:#434f54">stream&lt;/span>;
+&lt;span style="color:#434f54">Pipe&lt;/span> &lt;span style="color:#8a7b52">_&lt;/span>&lt;span style="color:#434f54">readPipe&lt;/span>, &lt;span style="color:#8a7b52">_&lt;/span>&lt;span style="color:#434f54">writePipe&lt;/span>;
+&lt;span style="color:#728e00">public&lt;/span> &lt;span style="color:#434f54">PipeReader&lt;/span> &lt;span style="color:#434f54">Input&lt;/span> =&amp;gt; &lt;span style="color:#8a7b52">_&lt;/span>&lt;span style="color:#434f54">readPipe&lt;/span>.&lt;span style="color:#434f54">Reader&lt;/span>;
+&lt;span style="color:#728e00">public&lt;/span> &lt;span style="color:#434f54">PipeWriter&lt;/span> &lt;span style="color:#434f54">Output&lt;/span> =&amp;gt; &lt;span style="color:#8a7b52">_&lt;/span>&lt;span style="color:#434f54">writePipe&lt;/span>.&lt;span style="color:#434f54">Writer&lt;/span>;
+&lt;span style="color:#95a5a6">// ... more here
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span>}
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>注意我们有两个不同的pipe；调用者获取每个pipe的一个端点——然后我们的代码将会操作每个pipe的&lt;em>另一个&lt;/em>端点。&lt;/p>
 &lt;h3 id="对pipe进行抽取">对pipe进行抽取&lt;/h3>
 &lt;p>那么我们与stream交互的代码是什么样的呢？像之前说过的那样，我们需要两个方法。首先——很简单——一个循环，从&lt;code>_stream&lt;/code>中读取数据并且将其推入&lt;code>_readPipe&lt;/code>，然后被调用代码所消费；这个方法的核心类似这样：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#000;font-weight:bold">while&lt;/span> (&lt;span style="color:#000;font-weight:bold">true&lt;/span>)
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#728e00">while&lt;/span> (&lt;span style="color:#728e00">true&lt;/span>)
 {
-&lt;span style="color:#998;font-style:italic">// note we&amp;#39;ll usually get *much* more than we ask for
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> &lt;span style="color:#458;font-weight:bold">var&lt;/span> buffer = &lt;span style="color:#099">_&lt;/span>readPipe.Writer.GetMemory(&lt;span style="color:#099">1&lt;/span>);
-&lt;span style="color:#458;font-weight:bold">int&lt;/span> bytes = &lt;span style="color:#000;font-weight:bold">await&lt;/span> &lt;span style="color:#099">_&lt;/span>stream.ReadAsync(buffer);
-&lt;span style="color:#099">_&lt;/span>readPipe.Writer.Advance(bytes);
-&lt;span style="color:#000;font-weight:bold">if&lt;/span> (bytes == &lt;span style="color:#099">0&lt;/span>) &lt;span style="color:#000;font-weight:bold">break&lt;/span>; &lt;span style="color:#998;font-style:italic">// source EOF
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> &lt;span style="color:#458;font-weight:bold">var&lt;/span> flush = &lt;span style="color:#000;font-weight:bold">await&lt;/span> &lt;span style="color:#099">_&lt;/span>readPipe.Writer.FlushAsync();
-&lt;span style="color:#000;font-weight:bold">if&lt;/span> (flush.IsCompleted || flush.IsCanceled) &lt;span style="color:#000;font-weight:bold">break&lt;/span>;
+&lt;span style="color:#95a5a6">// note we&amp;#39;ll usually get *much* more than we ask for
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#00979d">var&lt;/span> &lt;span style="color:#434f54">buffer&lt;/span> = &lt;span style="color:#8a7b52">_&lt;/span>&lt;span style="color:#434f54">readPipe&lt;/span>.&lt;span style="color:#434f54">Writer&lt;/span>.&lt;span style="color:#434f54">GetMemory&lt;/span>(&lt;span style="color:#8a7b52">1&lt;/span>);
+&lt;span style="color:#00979d">int&lt;/span> &lt;span style="color:#434f54">bytes&lt;/span> = &lt;span style="color:#728e00">await&lt;/span> &lt;span style="color:#8a7b52">_&lt;/span>&lt;span style="color:#434f54">stream&lt;/span>.&lt;span style="color:#434f54">ReadAsync&lt;/span>(&lt;span style="color:#434f54">buffer&lt;/span>);
+&lt;span style="color:#8a7b52">_&lt;/span>&lt;span style="color:#434f54">readPipe&lt;/span>.&lt;span style="color:#434f54">Writer&lt;/span>.&lt;span style="color:#434f54">Advance&lt;/span>(&lt;span style="color:#434f54">bytes&lt;/span>);
+&lt;span style="color:#728e00">if&lt;/span> (&lt;span style="color:#434f54">bytes&lt;/span> == &lt;span style="color:#8a7b52">0&lt;/span>) &lt;span style="color:#728e00">break&lt;/span>; &lt;span style="color:#95a5a6">// source EOF
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#00979d">var&lt;/span> &lt;span style="color:#434f54">flush&lt;/span> = &lt;span style="color:#728e00">await&lt;/span> &lt;span style="color:#8a7b52">_&lt;/span>&lt;span style="color:#434f54">readPipe&lt;/span>.&lt;span style="color:#434f54">Writer&lt;/span>.&lt;span style="color:#434f54">FlushAsync&lt;/span>();
+&lt;span style="color:#728e00">if&lt;/span> (&lt;span style="color:#434f54">flush&lt;/span>.&lt;span style="color:#434f54">IsCompleted&lt;/span> || &lt;span style="color:#434f54">flush&lt;/span>.&lt;span style="color:#434f54">IsCanceled&lt;/span>) &lt;span style="color:#728e00">break&lt;/span>;
 }
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>这个循环向pipie请求一个缓冲区，然后用 &lt;code>netcoreapp2.1&lt;/code> 中&lt;code>Stream.ReadAsync&lt;/code> 的新重载接收一个 &lt;code>Memory&amp;lt;byte&amp;gt;&lt;/code> 来填充缓冲区——我们一会儿讨论如果你现在没有一个能接收 &lt;code>Memory&amp;lt;byte&amp;gt;&lt;/code> 的API该怎么办。当读取完成后，它使用&lt;code>Advance&lt;/code>向pipe提交这个数量的字节，然后它在pipe上调用 &lt;code>FlushAsync()&lt;/code> 来（如果需要的话）唤醒reader，或者在背压减轻时暂停写循环。注意我们还需要检查&lt;code>Pipe&lt;/code>的 &lt;code>FlushAsync()&lt;/code>的结果——它可以告诉我们pipe的消费者已经告知其已经读取完了所有想要的数据（&lt;code>Iscompleted&lt;/code>），或者pipe本身被关闭（&lt;code>IsCanceled&lt;/code>）。&lt;/p>
 &lt;p>注意在这两种情况下，我们都希望确保在此循环退出时告诉管道，这样我们就不会最终在没有数据到来时永远在调用端等待下去。意外发生时，或者有时在调用 &lt;code>_stream.ReadAsync&lt;/code> （或其它方法）时，可能会有异常抛出，所以最好是利用&lt;code>try&lt;/code>/&lt;code>finally&lt;/code>：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">Exception error = &lt;span style="color:#000;font-weight:bold">null&lt;/span>;
-&lt;span style="color:#000;font-weight:bold">try&lt;/span>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#434f54">Exception&lt;/span> &lt;span style="color:#434f54">error&lt;/span> = &lt;span style="color:#728e00">null&lt;/span>;
+&lt;span style="color:#728e00">try&lt;/span>
 {
-&lt;span style="color:#998;font-style:italic">// our loop from the previous sample
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span>}
-&lt;span style="color:#000;font-weight:bold">catch&lt;/span>(Exception ex) { error = ex; }
-&lt;span style="color:#000;font-weight:bold">finally&lt;/span> { &lt;span style="color:#099">_&lt;/span>readPipe.Writer.Complete(error); }
+&lt;span style="color:#95a5a6">// our loop from the previous sample
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span>}
+&lt;span style="color:#728e00">catch&lt;/span>(&lt;span style="color:#434f54">Exception&lt;/span> &lt;span style="color:#434f54">ex&lt;/span>) { &lt;span style="color:#434f54">error&lt;/span> = &lt;span style="color:#434f54">ex&lt;/span>; }
+&lt;span style="color:#728e00">finally&lt;/span> { &lt;span style="color:#8a7b52">_&lt;/span>&lt;span style="color:#434f54">readPipe&lt;/span>.&lt;span style="color:#434f54">Writer&lt;/span>.&lt;span style="color:#434f54">Complete&lt;/span>(&lt;span style="color:#434f54">error&lt;/span>); }
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>如果你愿意的话，你可以使用两个 &lt;code>Complete&lt;/code> ——一个在try末尾（成功时），一个在catch中（失败时）。&lt;/p>
 &lt;p>我们需要的第二个方法会比较复杂。我们需要一个循环来从&lt;code>_writePipe&lt;/code>中消费数据，然后将其推入&lt;code>_stream&lt;/code>。核心代码会像这样：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#000;font-weight:bold">while&lt;/span> (&lt;span style="color:#000;font-weight:bold">true&lt;/span>)
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#728e00">while&lt;/span> (&lt;span style="color:#728e00">true&lt;/span>)
 {
-&lt;span style="color:#458;font-weight:bold">var&lt;/span> read = &lt;span style="color:#000;font-weight:bold">await&lt;/span> &lt;span style="color:#099">_&lt;/span>writePipe.Reader.ReadAsync();
-&lt;span style="color:#458;font-weight:bold">var&lt;/span> buffer = read.Buffer;
-&lt;span style="color:#000;font-weight:bold">if&lt;/span> (buffer.IsCanceled) &lt;span style="color:#000;font-weight:bold">break&lt;/span>;
-&lt;span style="color:#000;font-weight:bold">if&lt;/span> (buffer.IsEmpty &amp;amp;&amp;amp; read.IsCompleted) &lt;span style="color:#000;font-weight:bold">break&lt;/span>;
-&lt;span style="color:#998;font-style:italic">// write everything we got to the stream
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> &lt;span style="color:#000;font-weight:bold">foreach&lt;/span> (&lt;span style="color:#458;font-weight:bold">var&lt;/span> segment &lt;span style="color:#000;font-weight:bold">in&lt;/span> buffer)
+&lt;span style="color:#00979d">var&lt;/span> &lt;span style="color:#434f54">read&lt;/span> = &lt;span style="color:#728e00">await&lt;/span> &lt;span style="color:#8a7b52">_&lt;/span>&lt;span style="color:#434f54">writePipe&lt;/span>.&lt;span style="color:#434f54">Reader&lt;/span>.&lt;span style="color:#434f54">ReadAsync&lt;/span>();
+&lt;span style="color:#00979d">var&lt;/span> &lt;span style="color:#434f54">buffer&lt;/span> = &lt;span style="color:#434f54">read&lt;/span>.&lt;span style="color:#434f54">Buffer&lt;/span>;
+&lt;span style="color:#728e00">if&lt;/span> (&lt;span style="color:#434f54">buffer&lt;/span>.&lt;span style="color:#434f54">IsCanceled&lt;/span>) &lt;span style="color:#728e00">break&lt;/span>;
+&lt;span style="color:#728e00">if&lt;/span> (&lt;span style="color:#434f54">buffer&lt;/span>.&lt;span style="color:#434f54">IsEmpty&lt;/span> &amp;amp;&amp;amp; &lt;span style="color:#434f54">read&lt;/span>.&lt;span style="color:#434f54">IsCompleted&lt;/span>) &lt;span style="color:#728e00">break&lt;/span>;
+&lt;span style="color:#95a5a6">// write everything we got to the stream
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#728e00">foreach&lt;/span> (&lt;span style="color:#00979d">var&lt;/span> &lt;span style="color:#434f54">segment&lt;/span> &lt;span style="color:#728e00">in&lt;/span> &lt;span style="color:#434f54">buffer&lt;/span>)
 {
-&lt;span style="color:#000;font-weight:bold">await&lt;/span> &lt;span style="color:#099">_&lt;/span>stream.WriteAsync(segment);
+&lt;span style="color:#728e00">await&lt;/span> &lt;span style="color:#8a7b52">_&lt;/span>&lt;span style="color:#434f54">stream&lt;/span>.&lt;span style="color:#434f54">WriteAsync&lt;/span>(&lt;span style="color:#434f54">segment&lt;/span>);
 }
-&lt;span style="color:#099">_&lt;/span>writePipe.AdvanceTo(buffer.End);
-&lt;span style="color:#000;font-weight:bold">await&lt;/span> &lt;span style="color:#099">_&lt;/span>stream.FlushAsync();
+&lt;span style="color:#8a7b52">_&lt;/span>&lt;span style="color:#434f54">writePipe&lt;/span>.&lt;span style="color:#434f54">AdvanceTo&lt;/span>(&lt;span style="color:#434f54">buffer&lt;/span>.&lt;span style="color:#434f54">End&lt;/span>);
+&lt;span style="color:#728e00">await&lt;/span> &lt;span style="color:#8a7b52">_&lt;/span>&lt;span style="color:#434f54">stream&lt;/span>.&lt;span style="color:#434f54">FlushAsync&lt;/span>();
 }
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>这会等待一些数据（可能在多个缓冲区里），然后进行一些退出判断检查；像之前一样，我们可以在&lt;code>IsCanceled&lt;/code>时放弃，但是下一个检查会比较微妙：我们不希望只因为&lt;em>producer&lt;/em>表示它们已经写入了所有想要的数据（&lt;code>Iscompleted&lt;/code>）就停止写入，不然我们也许会丢失它们末尾几段数据——我们需要继续直到我们已经写入了它们所有的数据，直到&lt;code>buffer.IsEmpty&lt;/code>。这是个简化后的例子，因为我们一直写入所有数据——我们之后会看到更复杂的例子。一旦我们有了数据，我们按顺序将每个非连续缓冲区写入stream中——因为&lt;code>Stream&lt;/code>一次只能写入一个缓冲区（同样，我使用的是&lt;code>netcoreapp2.1&lt;/code>中的重载，接受&lt;code>ReadOnlyMemory&amp;lt;byte&amp;gt;&lt;/code>参数，但是我们不限于此）。一旦它写完了缓冲区，它告诉pipe我们已经消费完了所有数据，然后刷新(flush)底层的&lt;code>Stream&lt;/code>。&lt;/p>
 &lt;p>在“真实”代码中，我们&lt;em>也许&lt;/em>希望更积极地优化从而减少刷新底层stream直到我们知道再也不会有可读取地数据，也许 在&lt;code>_writePipe.Reader.ReadAsync()&lt;/code>之外可以使用&lt;code>_writePipe.Reader.TryRead(...)&lt;/code> 。这个方法地工作方式类似 &lt;code>ReadAsync()&lt;/code>但是保证会同步返回——用来测试“在我忙的时候writer是否附加了什么？”。但是上面的内容已经讲述了这一点。&lt;/p>
@@ -960,77 +1055,77 @@ Pipe &lt;span style="color:#099">_&lt;/span>readPipe, &lt;span style="color:#099
 &lt;h3 id="但是我当前的api不会使用span或者memory">但是我当前的API不会使用 &lt;code>Span&lt;/code> 或者 &lt;code>Memory&lt;/code>！&lt;/h3>
 &lt;p>当在写将数据从pipe中泵送到其它系统（比如一个&lt;code>Socket&lt;/code>）时，很有可能你会遇到不接收 &lt;code>Span&lt;/code> 或者 &lt;code>Memory&lt;/code>的API。不要慌，这没有大碍，你依然可以有很多种变通方案使其变得更……传统。&lt;/p>
 &lt;p>在你有一个 &lt;code>Memory&lt;/code> 或者 &lt;code>ReadOnlyMemory&lt;/code>时，第一个技巧是&lt;code>MemoryMarshal.TryGetArray(...)&lt;/code>。它接收一个&lt;em>memory&lt;/em>并且尝试获取一个&lt;code>ArraySegment&lt;/code> ，它用一个&lt;code>T[]&lt;/code>vector和一个&lt;code>int&lt;/code>偏移/计数对描述相同的数据。显然，这只有在这块内存&lt;em>是基于&lt;/em>一个vector时才能用，而情况并非总是如此，所以这可能会在异种的内存池上失败。我们第二个解决办法时&lt;code>MemoryMarshal.GetReference(...)&lt;/code>，它接受一个&lt;em>span&lt;/em>然后返回一个原始数据起点的引用（实际上是一个“托管指针”，又叫做 &lt;code>ref T&lt;/code>）。一旦我们有了一个 &lt;code>ref T&lt;/code>，我们可以用&lt;code>unsafe&lt;/code>语法来获得一个这个数据的非托管指针，在这种情况下会有用：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">Span&amp;lt;&lt;span style="color:#458;font-weight:bold">byte&lt;/span>&amp;gt; span = ...
-&lt;span style="color:#000;font-weight:bold">fixed&lt;/span>(&lt;span style="color:#458;font-weight:bold">byte&lt;/span>* ptr = &amp;amp;MemoryMarshal.GetReference(span))
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#434f54">Span&lt;/span>&amp;lt;&lt;span style="color:#00979d">byte&lt;/span>&amp;gt; &lt;span style="color:#434f54">span&lt;/span> = ...
+&lt;span style="color:#728e00">fixed&lt;/span>(&lt;span style="color:#00979d">byte&lt;/span>* &lt;span style="color:#434f54">ptr&lt;/span> = &amp;amp;&lt;span style="color:#434f54">MemoryMarshal&lt;/span>.&lt;span style="color:#434f54">GetReference&lt;/span>(&lt;span style="color:#434f54">span&lt;/span>))
 {
-&lt;span style="color:#998;font-style:italic">// ...
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span>}
+&lt;span style="color:#95a5a6">// ...
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span>}
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>即使span的长度是零，你依然可以这么做，其会返回一个第0项&lt;em>将会存在&lt;/em>的位置，而且甚至在使用&lt;code>default&lt;/code>span即根本没有实际后备内存的时候，也可以这么使用。后面这个有一点需要注意，因为&lt;code>ref T&lt;/code>&lt;em>通常不被认为会是null&lt;/em>，但是在这里它是。实际上，只要你不去尝试对这种空引用进行解引用，不会有什么问题。如果你使用&lt;code>fixed&lt;/code>将其转换为一个非托管指针，你会得到一个空（零）指针，这相对来说更合理（并且在一些&lt;code>P/Invoke&lt;/code>场景中会有用），&lt;code>MemoryMarshal&lt;/code> 本质上是&lt;code>unsafe&lt;/code> 代码的同义词，即使你调用的那段代码并没有使用&lt;code>unsafe&lt;/code> 关键字。使用它是完全有效的，但是如果不恰当地使用它，它可能会坑到你——所以小心就是了。&lt;/p>
 &lt;h3 id="pipe的应用端代码是什么样的">Pipe的应用端代码是什么样的？&lt;/h3>
 &lt;p>OK，我们有了&lt;code>IDuplexPipe&lt;/code>，并且我们也看到了如何将两个pipe的“业务端”连接到你选择的后端数据服务。现在，我们在应用代码中如何使用它？&lt;/p>
 &lt;p>按照我们上一章的例子，我们将从 &lt;code>IDuplexPipe.Output&lt;/code> 中把&lt;code>PipeWriter&lt;/code>传递给我们的出站代码，从 &lt;code>IDuplexPipe.Input&lt;/code> 中把 &lt;code>PipeReader&lt;/code> 传递给我们的入站代码。&lt;/p>
 &lt;p>&lt;em>出站&lt;/em>代码相当简单，并且通常是需要直接从基于&lt;code>Stream&lt;/code>的代码移植成基于&lt;code>PipeWriter&lt;/code>的代码。关键的区别还是那样，即&lt;em>你不再手动控制缓冲区&lt;/em>。下面是一个一个典型的实现：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">ValueTask&amp;lt;&lt;span style="color:#458;font-weight:bold">bool&lt;/span>&amp;gt; Write(SomeMessageType message, PipeWriter writer)
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#434f54">ValueTask&lt;/span>&amp;lt;&lt;span style="color:#00979d">bool&lt;/span>&amp;gt; &lt;span style="color:#434f54">Write&lt;/span>(&lt;span style="color:#434f54">SomeMessageType&lt;/span> &lt;span style="color:#434f54">message&lt;/span>, &lt;span style="color:#434f54">PipeWriter&lt;/span> &lt;span style="color:#434f54">writer&lt;/span>)
 {
-&lt;span style="color:#998;font-style:italic">// (this may be multiple GetSpan/Advance calls, or a loop,
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> &lt;span style="color:#998;font-style:italic">// depending on what makes sense for the message/protocol)
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> &lt;span style="color:#458;font-weight:bold">var&lt;/span> span = writer.GetSpan(...);
-&lt;span style="color:#998;font-style:italic">// TODO: ... actually write the message
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> &lt;span style="color:#458;font-weight:bold">int&lt;/span> bytesWritten = ... &lt;span style="color:#998;font-style:italic">// from writing
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> writer.Advance(bytesWritten);
-&lt;span style="color:#000;font-weight:bold">return&lt;/span> FlushAsync(writer);
+&lt;span style="color:#95a5a6">// (this may be multiple GetSpan/Advance calls, or a loop,
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#95a5a6">// depending on what makes sense for the message/protocol)
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#00979d">var&lt;/span> &lt;span style="color:#434f54">span&lt;/span> = &lt;span style="color:#434f54">writer&lt;/span>.&lt;span style="color:#434f54">GetSpan&lt;/span>(...);
+&lt;span style="color:#95a5a6">// TODO: ... actually write the message
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#00979d">int&lt;/span> &lt;span style="color:#434f54">bytesWritten&lt;/span> = ... &lt;span style="color:#95a5a6">// from writing
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#434f54">writer&lt;/span>.&lt;span style="color:#434f54">Advance&lt;/span>(&lt;span style="color:#434f54">bytesWritten&lt;/span>);
+&lt;span style="color:#728e00">return&lt;/span> &lt;span style="color:#434f54">FlushAsync&lt;/span>(&lt;span style="color:#434f54">writer&lt;/span>);
 }
-&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#000;font-weight:bold">private&lt;/span> &lt;span style="color:#000;font-weight:bold">static&lt;/span> &lt;span style="color:#000;font-weight:bold">async&lt;/span> ValueTask&amp;lt;&lt;span style="color:#458;font-weight:bold">bool&lt;/span>&amp;gt; FlushAsync(PipeWriter writer)
+&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#728e00">private&lt;/span> &lt;span style="color:#728e00">static&lt;/span> &lt;span style="color:#728e00">async&lt;/span> &lt;span style="color:#434f54">ValueTask&lt;/span>&amp;lt;&lt;span style="color:#00979d">bool&lt;/span>&amp;gt; &lt;span style="color:#434f54">FlushAsync&lt;/span>(&lt;span style="color:#434f54">PipeWriter&lt;/span> &lt;span style="color:#434f54">writer&lt;/span>)
 {
-&lt;span style="color:#998;font-style:italic">// apply back-pressure etc
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> &lt;span style="color:#458;font-weight:bold">var&lt;/span> flush = &lt;span style="color:#000;font-weight:bold">await&lt;/span> writer.FlushAsync();
-&lt;span style="color:#998;font-style:italic">// tell the calling code whether any more messages
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> &lt;span style="color:#998;font-style:italic">// should be written
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> &lt;span style="color:#000;font-weight:bold">return&lt;/span> !(flush.IsCanceled || flush.IsCompleted);
+&lt;span style="color:#95a5a6">// apply back-pressure etc
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#00979d">var&lt;/span> &lt;span style="color:#434f54">flush&lt;/span> = &lt;span style="color:#728e00">await&lt;/span> &lt;span style="color:#434f54">writer&lt;/span>.&lt;span style="color:#434f54">FlushAsync&lt;/span>();
+&lt;span style="color:#95a5a6">// tell the calling code whether any more messages
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#95a5a6">// should be written
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#728e00">return&lt;/span> !(&lt;span style="color:#434f54">flush&lt;/span>.&lt;span style="color:#434f54">IsCanceled&lt;/span> || &lt;span style="color:#434f54">flush&lt;/span>.&lt;span style="color:#434f54">IsCompleted&lt;/span>);
 }
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>&lt;code>Write&lt;/code> 的第一部分是我们的业务代码，我们需要把数据从writer写入到缓冲区；通常这会多次调用 &lt;code>GetSpan(...)&lt;/code> 和 &lt;code>Advance()&lt;/code>。当我们写完了数据，我们可以flush它从而保证启动泵送并且应用背压控制。对于那些非常大的消息体，我们&lt;em>也可以&lt;/em>在中间点flush，但是对于大多数场景：一个消息flush一次足够了。&lt;/p>
 &lt;p>如果你好奇为什么我将&lt;code>FlushAsync&lt;/code> 分割到不同的代码中：那是因为我想&lt;code>await&lt;/code> &lt;code>FlushAsync&lt;/code>的结果来检查退出条件，所以它需要在一个&lt;code>async&lt;/code> 方法里，在这里最有效率的访问内存方式是通过 &lt;code>Span&amp;lt;byte&amp;gt;&lt;/code> API，&lt;code>Span&amp;lt;byte&amp;gt;&lt;/code> 是一个 &lt;code>ref struct&lt;/code> 类型，因此我们&lt;a href="https://github.com/dotnet/csharplang/blob/master/proposals/csharp-7.2/span-safety.md">不能在异步方法中将 &lt;code>Span&amp;lt;byte&amp;gt;&lt;/code> 作为局部变量使用&lt;/a>。一个实用的办法是简单地分割代码，这样一个方法做 &lt;code>Span&amp;lt;byte&amp;gt;&lt;/code> 工作，一个方法做&lt;code>async&lt;/code>方面的工作。&lt;/p>
 &lt;h3 id="发散一下异步代码同步热路径和异步机制开销">发散一下：异步代码、同步热路径和异步机制开销&lt;/h3>
 &lt;p>&lt;code>async&lt;/code> / &lt;code>await&lt;/code> 中引入的机制非常棒，但是它仍然会是一个会产生惊人栈开销的工作——你可以从 &lt;a href="https://sharplab.io/#v2:D4AQDABCCMCsDcBYAUCkBmKAmCB5ArgE4DCA9gCYCmKA3ihAxAA6ECWAbgIYAulU0ANigAOCADVOAG3yUQAgDwAjUqUkA+CADFpAZwAWAQR0BPAHYBjABQAFVk0oB1Nr0IQA7s8qEAlPUZ1kRiCIAHoQiE4mJkljCEVOcwBrAFoWSh0dIj5KbnM/YIguVwAzXT0IAF4oAE53T0IAOm18fSMzK28kQILQ8N5JSQhuPT5zKUlWUwBzCHMKPjcR4a8I01iAW1JCPnX0nU4p9PzgsIh9UnxJcjiF515TY6CQAHYIAEJLUpa9BoBJHWInAslEklGuwGAEC++j+ANI62iOTBnWOAF8UOjUFjTjomCpimCoVshiMIJQAB6cBGglCTFymKTYCC2exOVguWjHDDiKQyOTyZr6ABK6Uu3A0gsMJgslm8lQ0VGKnDFXUxOm4hHw5m4WjKIsykm4nO6DG5ylUEH+gOBoOuFQVlCVKq5mHNgyt8MRvDtDqdhtVQA=">sharplab.io&lt;/a> 中看到——看看&lt;code>OurCode.FlushAsync&lt;/code> 中生成的机制——和整个 &lt;code>struct &amp;lt;FlushAsync&amp;gt;d__0&lt;/code>。现在，这些代码并&lt;em>不是很糟糕&lt;/em>——它非常努力地尝试在同步路径上避免内存分配——但是&lt;em>没有必要&lt;/em>。&lt;/p>
 &lt;p>这里有两种方法可以显著地改善它；一个是压根不去 &lt;code>await&lt;/code> ，通常如果 &lt;code>await&lt;/code> 是在方法中地最后一行并且&lt;strong>我们不需要去处理结果&lt;/strong>：不去 &lt;code>await&lt;/code> ——只要去除&lt;code>async&lt;/code>然后&lt;code>return&lt;/code>这个task——完成或者未完成。在这里我们没办法这样做，因为我们需要去检查返回的状态，但是我们可以通过检查这个task是否&lt;em>已经完成&lt;/em>来对成功的结果进行优化（通过 &lt;code>.IsCompletedSuccessfully&lt;/code> ——如果它已经结束但是有错误，我们仍然需要使用&lt;code>await&lt;/code>来让异常可以正确表现出来）。如果它&lt;em>是&lt;/em>成功完成的，我们可以请求到&lt;code>.Result&lt;/code>。所以我们&lt;em>也&lt;/em>可以将&lt;code>FlushAsync&lt;/code> 写成这样：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#000;font-weight:bold">private&lt;/span> &lt;span style="color:#000;font-weight:bold">static&lt;/span> ValueTask&amp;lt;&lt;span style="color:#458;font-weight:bold">bool&lt;/span>&amp;gt; Flush(PipeWriter writer)
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#728e00">private&lt;/span> &lt;span style="color:#728e00">static&lt;/span> &lt;span style="color:#434f54">ValueTask&lt;/span>&amp;lt;&lt;span style="color:#00979d">bool&lt;/span>&amp;gt; &lt;span style="color:#434f54">Flush&lt;/span>(&lt;span style="color:#434f54">PipeWriter&lt;/span> &lt;span style="color:#434f54">writer&lt;/span>)
 {
-&lt;span style="color:#458;font-weight:bold">bool&lt;/span> GetResult(FlushResult flush)
-&lt;span style="color:#998;font-style:italic">// tell the calling code whether any more messages
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> &lt;span style="color:#998;font-style:italic">// should be written
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> =&amp;gt; !(flush.IsCanceled || flush.IsCompleted);
-&lt;span style="color:#000;font-weight:bold">async&lt;/span> ValueTask&amp;lt;&lt;span style="color:#458;font-weight:bold">bool&lt;/span>&amp;gt; Awaited(ValueTask&amp;lt;FlushResult&amp;gt; incomplete)
-=&amp;gt; GetResult(&lt;span style="color:#000;font-weight:bold">await&lt;/span> incomplete);
-&lt;span style="color:#998;font-style:italic">// apply back-pressure etc
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> &lt;span style="color:#458;font-weight:bold">var&lt;/span> flushTask = writer.FlushAsync();
-&lt;span style="color:#000;font-weight:bold">return&lt;/span> flushTask.IsCompletedSuccessfully
-? &lt;span style="color:#000;font-weight:bold">new&lt;/span> ValueTask&amp;lt;&lt;span style="color:#458;font-weight:bold">bool&lt;/span>&amp;gt;(GetResult(flushTask.Result))
-: Awaited(flushTask);
+&lt;span style="color:#00979d">bool&lt;/span> &lt;span style="color:#434f54">GetResult&lt;/span>(&lt;span style="color:#434f54">FlushResult&lt;/span> &lt;span style="color:#434f54">flush&lt;/span>)
+&lt;span style="color:#95a5a6">// tell the calling code whether any more messages
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#95a5a6">// should be written
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> =&amp;gt; !(&lt;span style="color:#434f54">flush&lt;/span>.&lt;span style="color:#434f54">IsCanceled&lt;/span> || &lt;span style="color:#434f54">flush&lt;/span>.&lt;span style="color:#434f54">IsCompleted&lt;/span>);
+&lt;span style="color:#728e00">async&lt;/span> &lt;span style="color:#434f54">ValueTask&lt;/span>&amp;lt;&lt;span style="color:#00979d">bool&lt;/span>&amp;gt; &lt;span style="color:#434f54">Awaited&lt;/span>(&lt;span style="color:#434f54">ValueTask&lt;/span>&amp;lt;&lt;span style="color:#434f54">FlushResult&lt;/span>&amp;gt; &lt;span style="color:#434f54">incomplete&lt;/span>)
+=&amp;gt; &lt;span style="color:#434f54">GetResult&lt;/span>(&lt;span style="color:#728e00">await&lt;/span> &lt;span style="color:#434f54">incomplete&lt;/span>);
+&lt;span style="color:#95a5a6">// apply back-pressure etc
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#00979d">var&lt;/span> &lt;span style="color:#434f54">flushTask&lt;/span> = &lt;span style="color:#434f54">writer&lt;/span>.&lt;span style="color:#434f54">FlushAsync&lt;/span>();
+&lt;span style="color:#728e00">return&lt;/span> &lt;span style="color:#434f54">flushTask&lt;/span>.&lt;span style="color:#434f54">IsCompletedSuccessfully&lt;/span>
+? &lt;span style="color:#728e00">new&lt;/span> &lt;span style="color:#434f54">ValueTask&lt;/span>&amp;lt;&lt;span style="color:#00979d">bool&lt;/span>&amp;gt;(&lt;span style="color:#434f54">GetResult&lt;/span>(&lt;span style="color:#434f54">flushTask&lt;/span>.&lt;span style="color:#434f54">Result&lt;/span>))
+: &lt;span style="color:#434f54">Awaited&lt;/span>(&lt;span style="color:#434f54">flushTask&lt;/span>);
 }
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>这在大多数情况（同步完成）下&lt;em>完全避免&lt;/em>了&lt;code>async&lt;/code>/&lt;code>await&lt;/code> 机制——如我们再次在 &lt;a href="https://sharplab.io/#v2:D4AQDABCCMCsDcBYAUCkBmKAmCB5ArgE4DCA9gCYCmKA3ihAxAA6ECWAbgIYAulU0ANggA1TgBt8lEAIA8AI1KkxAPggAxCQGcAFgAoACqyaUA6m16EIAd3OVCASnqM6yRm4gKlEAOKVuAJUpNfDFuXQ18HUDg0IgAMy1tR1d3VIB6NIheMTEs7T4AY3ExVgA7AHMIAoo+K3zufMtOUoBPCABbUkI+dqDNTnKgp1S3DIgdUhDyD1rzXlLhkYYAXlUAQl0EyO0AOgBJTWJmgsoxSmngYHjE/cPSdqYz3nJ7JFQU1JAADhFxSWl5IoVBAAIJWTisZ66UQSKSyCJRIIhbiqMrVB5PSjJJZuVY+PzRZG6EAATggaPujz8WLei1GmU4TEebTknAKAGsALQsPpEPh+Ap0xhcSxbHTSCDLay2Qg7BHaEGaFqlAq6V4oIUMEAAdmu22ktzIGOp5AAyvgCidNJo4iExC1Ne4APwQUqUKy/WEAzwqXS+AJI0KbRIGwmhezYnEMABcoPBkPOwf1AnVHwgAF8UJn3igxpomIo4ud4l08vyAB6cY0oMoWUribAQQzGMwJwi0RYYT3/eGJMMo9SJRXK1X2SWqKhxTjIt7ZzTcQgW7iD7b9jtprs+iAHI4q07FvGT6ehN5uTdA7d3Y3PccQI8zrNAA=">sharplab.io&lt;/a>中看到的一样。我要强调：如果代码是经常（或仅仅）进行&lt;em>真正的异步行为&lt;/em>时，这样做是完全没有必要的；它&lt;em>只&lt;/em>对于那些结果通常（或仅仅）会同步地产生时才有帮助。&lt;/p>
 &lt;p>(译注：对于&lt;code>ValueTask&lt;/code>的&amp;quot;hot path&amp;quot;场景的使用，这里有个视频讲过一些，以及其它一些.NET中新的优化性能的方法： &lt;a href="https://www.youtube.com/watch?v=dVKUYP_YALg">Adam Sitnik - State of the .NET Performance&lt;/a>)&lt;/p>
 &lt;h3 id="那么reader呢">那么Reader呢？&lt;/h3>
 &lt;p>就像我们多次看到的一样，reader总是稍微复杂一些——我们无从得知一个单独的“读”操作是否会准确包含一个入站消息，我们也许需要开启循环直到我们获取到了所有所需的数据，并且我们也许需要推回一些&lt;em>额外的&lt;/em>数据。因此，让我们假设我们想要消费某种单一的消息：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#000;font-weight:bold">async&lt;/span> ValueTask&amp;lt;SomeMessageType&amp;gt; GetNextMessage(
-PipeReader reader,
-CancellationToken cancellationToken = &lt;span style="color:#000;font-weight:bold">default&lt;/span>)
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#728e00">async&lt;/span> &lt;span style="color:#434f54">ValueTask&lt;/span>&amp;lt;&lt;span style="color:#434f54">SomeMessageType&lt;/span>&amp;gt; &lt;span style="color:#434f54">GetNextMessage&lt;/span>(
+&lt;span style="color:#434f54">PipeReader&lt;/span> &lt;span style="color:#434f54">reader&lt;/span>,
+&lt;span style="color:#434f54">CancellationToken&lt;/span> &lt;span style="color:#434f54">cancellationToken&lt;/span> = &lt;span style="color:#728e00">default&lt;/span>)
 {
-&lt;span style="color:#000;font-weight:bold">while&lt;/span> (&lt;span style="color:#000;font-weight:bold">true&lt;/span>)
+&lt;span style="color:#728e00">while&lt;/span> (&lt;span style="color:#728e00">true&lt;/span>)
 {
-&lt;span style="color:#458;font-weight:bold">var&lt;/span> read = &lt;span style="color:#000;font-weight:bold">await&lt;/span> reader.ReadAsync(cancellationToken);
-&lt;span style="color:#000;font-weight:bold">if&lt;/span> (read.IsCanceled) ThrowCanceled();
-&lt;span style="color:#998;font-style:italic">// can we find a complete frame?
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> &lt;span style="color:#458;font-weight:bold">var&lt;/span> buffer = read.Buffer;
-&lt;span style="color:#000;font-weight:bold">if&lt;/span> (TryParseFrame(
-buffer,
-&lt;span style="color:#000;font-weight:bold">out&lt;/span> SomeMessageType nextMessage,
-&lt;span style="color:#000;font-weight:bold">out&lt;/span> SequencePosition consumedTo))
+&lt;span style="color:#00979d">var&lt;/span> &lt;span style="color:#434f54">read&lt;/span> = &lt;span style="color:#728e00">await&lt;/span> &lt;span style="color:#434f54">reader&lt;/span>.&lt;span style="color:#434f54">ReadAsync&lt;/span>(&lt;span style="color:#434f54">cancellationToken&lt;/span>);
+&lt;span style="color:#728e00">if&lt;/span> (&lt;span style="color:#434f54">read&lt;/span>.&lt;span style="color:#434f54">IsCanceled&lt;/span>) &lt;span style="color:#434f54">ThrowCanceled&lt;/span>();
+&lt;span style="color:#95a5a6">// can we find a complete frame?
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#00979d">var&lt;/span> &lt;span style="color:#434f54">buffer&lt;/span> = &lt;span style="color:#434f54">read&lt;/span>.&lt;span style="color:#434f54">Buffer&lt;/span>;
+&lt;span style="color:#728e00">if&lt;/span> (&lt;span style="color:#434f54">TryParseFrame&lt;/span>(
+&lt;span style="color:#434f54">buffer&lt;/span>,
+&lt;span style="color:#728e00">out&lt;/span> &lt;span style="color:#434f54">SomeMessageType&lt;/span> &lt;span style="color:#434f54">nextMessage&lt;/span>,
+&lt;span style="color:#728e00">out&lt;/span> &lt;span style="color:#434f54">SequencePosition&lt;/span> &lt;span style="color:#434f54">consumedTo&lt;/span>))
 {
-reader.AdvanceTo(consumedTo);
-&lt;span style="color:#000;font-weight:bold">return&lt;/span> nextMessage;
+&lt;span style="color:#434f54">reader&lt;/span>.&lt;span style="color:#434f54">AdvanceTo&lt;/span>(&lt;span style="color:#434f54">consumedTo&lt;/span>);
+&lt;span style="color:#728e00">return&lt;/span> &lt;span style="color:#434f54">nextMessage&lt;/span>;
 }
-reader.AdvanceTo(buffer.Start, buffer.End);
-&lt;span style="color:#000;font-weight:bold">if&lt;/span> (read.IsCompleted) ThrowEOF();
+&lt;span style="color:#434f54">reader&lt;/span>.&lt;span style="color:#434f54">AdvanceTo&lt;/span>(&lt;span style="color:#434f54">buffer&lt;/span>.&lt;span style="color:#434f54">Start&lt;/span>, &lt;span style="color:#434f54">buffer&lt;/span>.&lt;span style="color:#434f54">End&lt;/span>);
+&lt;span style="color:#728e00">if&lt;/span> (&lt;span style="color:#434f54">read&lt;/span>.&lt;span style="color:#434f54">IsCompleted&lt;/span>) &lt;span style="color:#434f54">ThrowEOF&lt;/span>();
 }
 }
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>这里我们从pipe中获取了&lt;em>一些&lt;/em>数据，进行退出检查（比如取消）。然后我们&lt;em>尝试寻找一个消息&lt;/em>，这是什么意思取决于你具体的代码——它可以是：&lt;/p>
@@ -1045,25 +1140,25 @@ reader.AdvanceTo(buffer.Start, buffer.End);
 &lt;li>pipe已经死亡，我们&lt;em>再也不会&lt;/em>获得足够的数据&lt;/li>
 &lt;/ul>
 &lt;p>我们在通过 &lt;code>read.IsCompleted&lt;/code> 检查了这些，在第二种情况时报告错误；否则我们继续循环，等待更多数据。那么剩下的，就是我们的帧解析——我们已经把复杂的IO管理降低成了简单的操作；比如，如果我们的消息是以行标记分隔：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#000;font-weight:bold">private&lt;/span> &lt;span style="color:#000;font-weight:bold">static&lt;/span> &lt;span style="color:#458;font-weight:bold">bool&lt;/span> TryParseFrame(
-ReadOnlySequence&amp;lt;&lt;span style="color:#458;font-weight:bold">byte&lt;/span>&amp;gt; buffer,
-&lt;span style="color:#000;font-weight:bold">out&lt;/span> SomeMessageType nextMessage,
-&lt;span style="color:#000;font-weight:bold">out&lt;/span> SequencePosition consumedTo)
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#728e00">private&lt;/span> &lt;span style="color:#728e00">static&lt;/span> &lt;span style="color:#00979d">bool&lt;/span> &lt;span style="color:#434f54">TryParseFrame&lt;/span>(
+&lt;span style="color:#434f54">ReadOnlySequence&lt;/span>&amp;lt;&lt;span style="color:#00979d">byte&lt;/span>&amp;gt; &lt;span style="color:#434f54">buffer&lt;/span>,
+&lt;span style="color:#728e00">out&lt;/span> &lt;span style="color:#434f54">SomeMessageType&lt;/span> &lt;span style="color:#434f54">nextMessage&lt;/span>,
+&lt;span style="color:#728e00">out&lt;/span> &lt;span style="color:#434f54">SequencePosition&lt;/span> &lt;span style="color:#434f54">consumedTo&lt;/span>)
 {
-&lt;span style="color:#998;font-style:italic">// find the end-of-line marker
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> &lt;span style="color:#458;font-weight:bold">var&lt;/span> eol = buffer.PositionOf((&lt;span style="color:#458;font-weight:bold">byte&lt;/span>)&lt;span style="color:#d14">&amp;#39;\n&amp;#39;&lt;/span>);
-&lt;span style="color:#000;font-weight:bold">if&lt;/span> (eol == &lt;span style="color:#000;font-weight:bold">null&lt;/span>)
+&lt;span style="color:#95a5a6">// find the end-of-line marker
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#00979d">var&lt;/span> &lt;span style="color:#434f54">eol&lt;/span> = &lt;span style="color:#434f54">buffer&lt;/span>.&lt;span style="color:#434f54">PositionOf&lt;/span>((&lt;span style="color:#00979d">byte&lt;/span>)&lt;span style="color:#7f8c8d">&amp;#39;\n&amp;#39;&lt;/span>);
+&lt;span style="color:#728e00">if&lt;/span> (&lt;span style="color:#434f54">eol&lt;/span> == &lt;span style="color:#728e00">null&lt;/span>)
 {
-nextMessage = &lt;span style="color:#000;font-weight:bold">default&lt;/span>;
-consumedTo = &lt;span style="color:#000;font-weight:bold">default&lt;/span>;
-&lt;span style="color:#000;font-weight:bold">return&lt;/span> &lt;span style="color:#000;font-weight:bold">false&lt;/span>;
+&lt;span style="color:#434f54">nextMessage&lt;/span> = &lt;span style="color:#728e00">default&lt;/span>;
+&lt;span style="color:#434f54">consumedTo&lt;/span> = &lt;span style="color:#728e00">default&lt;/span>;
+&lt;span style="color:#728e00">return&lt;/span> &lt;span style="color:#728e00">false&lt;/span>;
 }
-&lt;span style="color:#998;font-style:italic">// read past the line-ending
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> consumedTo = buffer.GetPosition(&lt;span style="color:#099">1&lt;/span>, eol.Value);
-&lt;span style="color:#998;font-style:italic">// consume the data
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> &lt;span style="color:#458;font-weight:bold">var&lt;/span> payload = buffer.Slice(&lt;span style="color:#099">0&lt;/span>, eol.Value);
-nextMessage = ReadSomeMessageType(payload);
-&lt;span style="color:#000;font-weight:bold">return&lt;/span> &lt;span style="color:#000;font-weight:bold">true&lt;/span>;
+&lt;span style="color:#95a5a6">// read past the line-ending
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#434f54">consumedTo&lt;/span> = &lt;span style="color:#434f54">buffer&lt;/span>.&lt;span style="color:#434f54">GetPosition&lt;/span>(&lt;span style="color:#8a7b52">1&lt;/span>, &lt;span style="color:#434f54">eol&lt;/span>.&lt;span style="color:#434f54">Value&lt;/span>);
+&lt;span style="color:#95a5a6">// consume the data
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#00979d">var&lt;/span> &lt;span style="color:#434f54">payload&lt;/span> = &lt;span style="color:#434f54">buffer&lt;/span>.&lt;span style="color:#434f54">Slice&lt;/span>(&lt;span style="color:#8a7b52">0&lt;/span>, &lt;span style="color:#434f54">eol&lt;/span>.&lt;span style="color:#434f54">Value&lt;/span>);
+&lt;span style="color:#434f54">nextMessage&lt;/span> = &lt;span style="color:#434f54">ReadSomeMessageType&lt;/span>(&lt;span style="color:#434f54">payload&lt;/span>);
+&lt;span style="color:#728e00">return&lt;/span> &lt;span style="color:#728e00">true&lt;/span>;
 }
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>这里&lt;code>PositionOf&lt;/code> 尝试获取第一个行标记的位置。如果一个也找不到，我们就放弃，否则我们将&lt;code>consumedTo&lt;/code> 设为”行标记+1“（即我们会消费行标记），然后我们分割我们的缓冲区来创建一个子集，表示&lt;em>不包括&lt;/em>行标记的内容，这样我们就可以解析了。最终，我们报告成功，并且庆祝我们可以简单地解析Linux风格的行尾。&lt;/p>
 &lt;h3 id="这里的重点是什么">这里的重点是什么？&lt;/h3>
@@ -1101,88 +1196,88 @@ nextMessage = ReadSomeMessageType(payload);
 &lt;p>让我们先准备一个对等的Stream，然后写入一些简单的东西，然后再读取回来——坚持只使用Stream API。我们将只使用ASCII文本以便不用担心有任何复杂编码的状况，并且我们的读写代码不对下层数据流做任何假设。我们只是写入数据，并且读取到流的末尾从而消费它。&lt;/p>
 &lt;p>我们将先用Stream来做这些——熟悉的领域，然后我们用Pipelines重新实现它，来看其中的相似和不同之处，在之后，我们将研究在其内部究竟发生了什么，然后我们就能明白为什么它会吸引我们&lt;/p>
 &lt;p>也许你会说&amp;quot;啊，我想起来了&lt;code>TextReader&lt;/code>/&lt;code>TextWriter&lt;/code>&amp;quot;，我故意不去使用它们——因为我在这里是在尝试谈论Stream API，这样我们的例子可以扩展到广泛的数据协议和场景&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#000;font-weight:bold">using&lt;/span> (MemoryStream ms = &lt;span style="color:#000;font-weight:bold">new&lt;/span> MemoryStream())
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#728e00">using&lt;/span> (&lt;span style="color:#434f54">MemoryStream&lt;/span> &lt;span style="color:#434f54">ms&lt;/span> = &lt;span style="color:#728e00">new&lt;/span> &lt;span style="color:#434f54">MemoryStream&lt;/span>())
 {
-&lt;span style="color:#998;font-style:italic">// write something
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> WriteSomeData(ms);
-&lt;span style="color:#998;font-style:italic">// rewind - MemoryStream works like a tape
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> ms.Position = &lt;span style="color:#099">0&lt;/span>;
-&lt;span style="color:#998;font-style:italic">// consume it
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> ReadSomeData(ms);
+&lt;span style="color:#95a5a6">// write something
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#434f54">WriteSomeData&lt;/span>(&lt;span style="color:#434f54">ms&lt;/span>);
+&lt;span style="color:#95a5a6">// rewind - MemoryStream works like a tape
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#434f54">ms&lt;/span>.&lt;span style="color:#434f54">Position&lt;/span> = &lt;span style="color:#8a7b52">0&lt;/span>;
+&lt;span style="color:#95a5a6">// consume it
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#434f54">ReadSomeData&lt;/span>(&lt;span style="color:#434f54">ms&lt;/span>);
 }
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>现在，要写入Stream，调用方需要获取并填充一个缓冲区然后将其传递给Stream，此时我们为了简化它，使用同步的API，并且简单地分配一个byte数组&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#000;font-weight:bold">void&lt;/span> WriteSomeData(Stream stream)
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#728e00">void&lt;/span> &lt;span style="color:#434f54">WriteSomeData&lt;/span>(&lt;span style="color:#434f54">Stream&lt;/span> &lt;span style="color:#434f54">stream&lt;/span>)
 {
-&lt;span style="color:#458;font-weight:bold">byte&lt;/span>[] bytes = Encoding.ASCII.GetBytes(&lt;span style="color:#d14">&amp;#34;hello, world!&amp;#34;&lt;/span>);
-stream.Write(bytes, &lt;span style="color:#099">0&lt;/span>, bytes.Length);
-stream.Flush();
+&lt;span style="color:#00979d">byte&lt;/span>[] &lt;span style="color:#434f54">bytes&lt;/span> = &lt;span style="color:#434f54">Encoding&lt;/span>.&lt;span style="color:#434f54">ASCII&lt;/span>.&lt;span style="color:#434f54">GetBytes&lt;/span>(&lt;span style="color:#7f8c8d">&amp;#34;hello, world!&amp;#34;&lt;/span>);
+&lt;span style="color:#434f54">stream&lt;/span>.&lt;span style="color:#434f54">Write&lt;/span>(&lt;span style="color:#434f54">bytes&lt;/span>, &lt;span style="color:#8a7b52">0&lt;/span>, &lt;span style="color:#434f54">bytes&lt;/span>.&lt;span style="color:#434f54">Length&lt;/span>);
+&lt;span style="color:#434f54">stream&lt;/span>.&lt;span style="color:#434f54">Flush&lt;/span>();
 }
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>注意：如果要提高效率地话，在上面的代码中有很多可以做的，但是这不是重点。所以如果你熟悉这类代码并且看着膈应，别慌，之后我们会让它变得更丑陋——呃，我是说更有效率&lt;/p>
 &lt;p>读逻辑的代码会比写逻辑更复杂，因为读代码无法假定一次单独的调用就可以获得所有的数据，一个对Stream的读操作可能会什么也不返回(表明已经读到数据末尾)，也可能填满我们的缓冲区，或者只是返回了一个字节即使我们准备了一个巨大的缓冲区。所以Stream的读代码大多数会是一个循环：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#000;font-weight:bold">void&lt;/span> ReadSomeData(Stream stream)
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#728e00">void&lt;/span> &lt;span style="color:#434f54">ReadSomeData&lt;/span>(&lt;span style="color:#434f54">Stream&lt;/span> &lt;span style="color:#434f54">stream&lt;/span>)
 {
-&lt;span style="color:#458;font-weight:bold">int&lt;/span> bytesRead;
-&lt;span style="color:#998;font-style:italic">// note that the caller usually can&amp;#39;t know much about
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> &lt;span style="color:#998;font-style:italic">// the size; .Length is not usually usable
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> &lt;span style="color:#458;font-weight:bold">byte&lt;/span>[] buffer = &lt;span style="color:#000;font-weight:bold">new&lt;/span> &lt;span style="color:#458;font-weight:bold">byte&lt;/span>[&lt;span style="color:#099">256&lt;/span>];
-&lt;span style="color:#000;font-weight:bold">do&lt;/span>
+&lt;span style="color:#00979d">int&lt;/span> &lt;span style="color:#434f54">bytesRead&lt;/span>;
+&lt;span style="color:#95a5a6">// note that the caller usually can&amp;#39;t know much about
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#95a5a6">// the size; .Length is not usually usable
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#00979d">byte&lt;/span>[] &lt;span style="color:#434f54">buffer&lt;/span> = &lt;span style="color:#728e00">new&lt;/span> &lt;span style="color:#00979d">byte&lt;/span>[&lt;span style="color:#8a7b52">256&lt;/span>];
+&lt;span style="color:#728e00">do&lt;/span>
 {
-bytesRead = stream.Read(buffer, &lt;span style="color:#099">0&lt;/span>, buffer.Length);
-&lt;span style="color:#000;font-weight:bold">if&lt;/span> (bytesRead &amp;gt; &lt;span style="color:#099">0&lt;/span>)
-{ &lt;span style="color:#998;font-style:italic">// note this only works for single-byte encodings
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> &lt;span style="color:#458;font-weight:bold">string&lt;/span> s = Encoding.ASCII.GetString(
-buffer, &lt;span style="color:#099">0&lt;/span>, bytesRead);
-Console.Write(s);
+&lt;span style="color:#434f54">bytesRead&lt;/span> = &lt;span style="color:#434f54">stream&lt;/span>.&lt;span style="color:#434f54">Read&lt;/span>(&lt;span style="color:#434f54">buffer&lt;/span>, &lt;span style="color:#8a7b52">0&lt;/span>, &lt;span style="color:#434f54">buffer&lt;/span>.&lt;span style="color:#434f54">Length&lt;/span>);
+&lt;span style="color:#728e00">if&lt;/span> (&lt;span style="color:#434f54">bytesRead&lt;/span> &amp;gt; &lt;span style="color:#8a7b52">0&lt;/span>)
+{ &lt;span style="color:#95a5a6">// note this only works for single-byte encodings
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#00979d">string&lt;/span> &lt;span style="color:#434f54">s&lt;/span> = &lt;span style="color:#434f54">Encoding&lt;/span>.&lt;span style="color:#434f54">ASCII&lt;/span>.&lt;span style="color:#434f54">GetString&lt;/span>(
+&lt;span style="color:#434f54">buffer&lt;/span>, &lt;span style="color:#8a7b52">0&lt;/span>, &lt;span style="color:#434f54">bytesRead&lt;/span>);
+&lt;span style="color:#434f54">Console&lt;/span>.&lt;span style="color:#434f54">Write&lt;/span>(&lt;span style="color:#434f54">s&lt;/span>);
 }
-} &lt;span style="color:#000;font-weight:bold">while&lt;/span> (bytesRead &amp;gt; &lt;span style="color:#099">0&lt;/span>);
+} &lt;span style="color:#728e00">while&lt;/span> (&lt;span style="color:#434f54">bytesRead&lt;/span> &amp;gt; &lt;span style="color:#8a7b52">0&lt;/span>);
 }
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>现在我们将它翻译成pipelines，一个Pipe可以大略地比作一个&lt;code>MemoryStream&lt;/code>，除了不能多次倒带(rewind)，数据是一个简单的先进先出队列，我们有一个&lt;code>writer&lt;/code>API可以在一端推入数据，而一个&lt;code>reader&lt;/code>API可以在另一端将数据取出，Pipe就是坐在二这之中的一个缓冲区。让我们重现之前的场景，但是用一个Pipe替换掉&lt;code>MemoryStream&lt;/code>（同样，实践中我们通常不会这么做，但是易于举例）：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">Pipe pipe = &lt;span style="color:#000;font-weight:bold">new&lt;/span> Pipe();
-&lt;span style="color:#998;font-style:italic">// write something
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span>&lt;span style="color:#000;font-weight:bold">await&lt;/span> WriteSomeDataAsync(pipe.Writer);
-&lt;span style="color:#998;font-style:italic">// signal that there won&amp;#39;t be anything else written
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span>pipe.Writer.Complete();
-&lt;span style="color:#998;font-style:italic">// consume it
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span>&lt;span style="color:#000;font-weight:bold">await&lt;/span> ReadSomeDataAsync(pipe.Reader);
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#434f54">Pipe&lt;/span> &lt;span style="color:#434f54">pipe&lt;/span> = &lt;span style="color:#728e00">new&lt;/span> &lt;span style="color:#434f54">Pipe&lt;/span>();
+&lt;span style="color:#95a5a6">// write something
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span>&lt;span style="color:#728e00">await&lt;/span> &lt;span style="color:#434f54">WriteSomeDataAsync&lt;/span>(&lt;span style="color:#434f54">pipe&lt;/span>.&lt;span style="color:#434f54">Writer&lt;/span>);
+&lt;span style="color:#95a5a6">// signal that there won&amp;#39;t be anything else written
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span>&lt;span style="color:#434f54">pipe&lt;/span>.&lt;span style="color:#434f54">Writer&lt;/span>.&lt;span style="color:#434f54">Complete&lt;/span>();
+&lt;span style="color:#95a5a6">// consume it
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span>&lt;span style="color:#728e00">await&lt;/span> &lt;span style="color:#434f54">ReadSomeDataAsync&lt;/span>(&lt;span style="color:#434f54">pipe&lt;/span>.&lt;span style="color:#434f54">Reader&lt;/span>);
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>首先我们用默认选项创造一个pipe，然后我们写入它。注意在Pipe中的IO操作通常都是异步的，所以我们需要await我们的两个帮助方法，同样注意，我们并没有将这个Pipe传入它们——和Stream不同，pipelines 对于读和写有着不同的API层面，所以我们将一个&lt;code>PipeWriter&lt;/code> 传入帮助方法用来写入数据，然后传入一个&lt;code>PipeReader&lt;/code>来读取数据，写入数据后，我们在&lt;code>PipeWriter&lt;/code>上调用&lt;code>Complete()&lt;/code>。我们不需要在&lt;code>MemoryStream&lt;/code>中做这个因为当它到达缓冲数据的末尾时会自动&lt;a href="https://en.wikipedia.org/wiki/End-of-file">EOFs&lt;/a>——但是在一些其它的Stream实现中——尤其是单向流——我们也许需要在写入数据后调用&lt;code>Close&lt;/code>&lt;/p>
 &lt;p>好了，那么我们的&lt;code>WriteSomeDataAsync&lt;/code> 是什么呢？注意，我在下面的代码中故意多写了注释：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#000;font-weight:bold">async&lt;/span> ValueTask WriteSomeDataAsync(PipeWriter writer)
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#728e00">async&lt;/span> &lt;span style="color:#434f54">ValueTask&lt;/span> &lt;span style="color:#434f54">WriteSomeDataAsync&lt;/span>(&lt;span style="color:#434f54">PipeWriter&lt;/span> &lt;span style="color:#434f54">writer&lt;/span>)
 {
-&lt;span style="color:#998;font-style:italic">// use an oversized size guess
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> Memory&amp;lt;&lt;span style="color:#458;font-weight:bold">byte&lt;/span>&amp;gt; workspace = writer.GetMemory(&lt;span style="color:#099">20&lt;/span>);
-&lt;span style="color:#998;font-style:italic">// write the data to the workspace
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> &lt;span style="color:#458;font-weight:bold">int&lt;/span> bytes = Encoding.ASCII.GetBytes(
-&lt;span style="color:#d14">&amp;#34;hello, world!&amp;#34;&lt;/span>, workspace.Span);
-&lt;span style="color:#998;font-style:italic">// tell the pipe how much of the workspace
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> &lt;span style="color:#998;font-style:italic">// we actually want to commit
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> writer.Advance(bytes);
-&lt;span style="color:#998;font-style:italic">// this is **not** the same as Stream.Flush!
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> &lt;span style="color:#000;font-weight:bold">await&lt;/span> writer.FlushAsync();
+&lt;span style="color:#95a5a6">// use an oversized size guess
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#434f54">Memory&lt;/span>&amp;lt;&lt;span style="color:#00979d">byte&lt;/span>&amp;gt; &lt;span style="color:#434f54">workspace&lt;/span> = &lt;span style="color:#434f54">writer&lt;/span>.&lt;span style="color:#434f54">GetMemory&lt;/span>(&lt;span style="color:#8a7b52">20&lt;/span>);
+&lt;span style="color:#95a5a6">// write the data to the workspace
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#00979d">int&lt;/span> &lt;span style="color:#434f54">bytes&lt;/span> = &lt;span style="color:#434f54">Encoding&lt;/span>.&lt;span style="color:#434f54">ASCII&lt;/span>.&lt;span style="color:#434f54">GetBytes&lt;/span>(
+&lt;span style="color:#7f8c8d">&amp;#34;hello, world!&amp;#34;&lt;/span>, &lt;span style="color:#434f54">workspace&lt;/span>.&lt;span style="color:#434f54">Span&lt;/span>);
+&lt;span style="color:#95a5a6">// tell the pipe how much of the workspace
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#95a5a6">// we actually want to commit
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#434f54">writer&lt;/span>.&lt;span style="color:#434f54">Advance&lt;/span>(&lt;span style="color:#434f54">bytes&lt;/span>);
+&lt;span style="color:#95a5a6">// this is **not** the same as Stream.Flush!
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#728e00">await&lt;/span> &lt;span style="color:#434f54">writer&lt;/span>.&lt;span style="color:#434f54">FlushAsync&lt;/span>();
 }
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>首先要注意的是，在处理pipelines时：不是你控制缓冲区，而是Pipe，回想我们的Stream代码，读和写代码都创建了本地byte[]，但是在这里我们没有，相反，我们通过&lt;code>GetMemory&lt;/code> (或者它的孪生方法&lt;code>GetSpan&lt;/code>)向Pipe请求了一个缓冲区(&lt;code>workspace&lt;/code>)，就先你从名字中想到的那样，这给了我们一个&lt;code>Memory&amp;lt;byte&amp;gt;&lt;/code>或是一个&lt;code>Span&amp;lt;byte&amp;gt;&lt;/code> ——其容量为最少20字节&lt;/p>
 &lt;p>获取这个缓冲区后，将我们的字符串编码进去，这意味着我们是直接写入Pipe的内存，并且记录下&lt;em>实际上&lt;/em>我们使用了多少字节，然后我们通过&lt;code>Advance&lt;/code>告诉Pipe，我们不受之前请求的20字节的限制——我们可以写入0，20，甚至50字节，最后一个看起来也许会令人意外，但是这实际上是被鼓励的！之前的重点是“至少”——writer可以时间上给我们一个比我们请求的大的很多的缓冲区。当处理较大的数据时，得陇望蜀是很常见的：请求一个我们能有效利用的最小空间，但是之后在检查提供给我们的memory/span的体积后，再决定最终实际写入多少。&lt;/p>
 &lt;p>对&lt;code>Advance&lt;/code>的调用很重要，它意味着一次写操作的终结，使得Pipe中的数据可用从而被reader消费。对&lt;code>FlushAsync&lt;/code> 的调用同样重要，但是有微妙的区别，但是在我们可以充分地阐明这区别是什么前，我们需要先看一看reader。这是我们的&lt;code>ReadSomeDataAsync&lt;/code> 方法：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#000;font-weight:bold">async&lt;/span> ValueTask ReadSomeDataAsync(PipeReader reader)
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#728e00">async&lt;/span> &lt;span style="color:#434f54">ValueTask&lt;/span> &lt;span style="color:#434f54">ReadSomeDataAsync&lt;/span>(&lt;span style="color:#434f54">PipeReader&lt;/span> &lt;span style="color:#434f54">reader&lt;/span>)
 {
-&lt;span style="color:#000;font-weight:bold">while&lt;/span> (&lt;span style="color:#000;font-weight:bold">true&lt;/span>)
+&lt;span style="color:#728e00">while&lt;/span> (&lt;span style="color:#728e00">true&lt;/span>)
 {
-&lt;span style="color:#998;font-style:italic">// await some data being available
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> ReadResult read = &lt;span style="color:#000;font-weight:bold">await&lt;/span> reader.ReadAsync();
-ReadOnlySequence&amp;lt;&lt;span style="color:#458;font-weight:bold">byte&lt;/span>&amp;gt; buffer = read.Buffer;
-&lt;span style="color:#998;font-style:italic">// check whether we&amp;#39;ve reached the end
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> &lt;span style="color:#998;font-style:italic">// and processed everything
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> &lt;span style="color:#000;font-weight:bold">if&lt;/span> (buffer.IsEmpty &amp;amp;&amp;amp; read.IsCompleted)
-&lt;span style="color:#000;font-weight:bold">break&lt;/span>; &lt;span style="color:#998;font-style:italic">// exit loop
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span>
-&lt;span style="color:#998;font-style:italic">// process what we received
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> &lt;span style="color:#000;font-weight:bold">foreach&lt;/span> (Memory&amp;lt;&lt;span style="color:#458;font-weight:bold">byte&lt;/span>&amp;gt; segment &lt;span style="color:#000;font-weight:bold">in&lt;/span> buffer)
+&lt;span style="color:#95a5a6">// await some data being available
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#434f54">ReadResult&lt;/span> &lt;span style="color:#434f54">read&lt;/span> = &lt;span style="color:#728e00">await&lt;/span> &lt;span style="color:#434f54">reader&lt;/span>.&lt;span style="color:#434f54">ReadAsync&lt;/span>();
+&lt;span style="color:#434f54">ReadOnlySequence&lt;/span>&amp;lt;&lt;span style="color:#00979d">byte&lt;/span>&amp;gt; &lt;span style="color:#434f54">buffer&lt;/span> = &lt;span style="color:#434f54">read&lt;/span>.&lt;span style="color:#434f54">Buffer&lt;/span>;
+&lt;span style="color:#95a5a6">// check whether we&amp;#39;ve reached the end
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#95a5a6">// and processed everything
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#728e00">if&lt;/span> (&lt;span style="color:#434f54">buffer&lt;/span>.&lt;span style="color:#434f54">IsEmpty&lt;/span> &amp;amp;&amp;amp; &lt;span style="color:#434f54">read&lt;/span>.&lt;span style="color:#434f54">IsCompleted&lt;/span>)
+&lt;span style="color:#728e00">break&lt;/span>; &lt;span style="color:#95a5a6">// exit loop
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span>
+&lt;span style="color:#95a5a6">// process what we received
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#728e00">foreach&lt;/span> (&lt;span style="color:#434f54">Memory&lt;/span>&amp;lt;&lt;span style="color:#00979d">byte&lt;/span>&amp;gt; &lt;span style="color:#434f54">segment&lt;/span> &lt;span style="color:#728e00">in&lt;/span> &lt;span style="color:#434f54">buffer&lt;/span>)
 {
-&lt;span style="color:#458;font-weight:bold">string&lt;/span> s = Encoding.ASCII.GetString(
-segment.Span);
-Console.Write(s);
+&lt;span style="color:#00979d">string&lt;/span> &lt;span style="color:#434f54">s&lt;/span> = &lt;span style="color:#434f54">Encoding&lt;/span>.&lt;span style="color:#434f54">ASCII&lt;/span>.&lt;span style="color:#434f54">GetString&lt;/span>(
+&lt;span style="color:#434f54">segment&lt;/span>.&lt;span style="color:#434f54">Span&lt;/span>);
+&lt;span style="color:#434f54">Console&lt;/span>.&lt;span style="color:#434f54">Write&lt;/span>(&lt;span style="color:#434f54">s&lt;/span>);
 }
-&lt;span style="color:#998;font-style:italic">// tell the pipe that we used everything
-&lt;/span>&lt;span style="color:#998;font-style:italic">&lt;/span> reader.AdvanceTo(buffer.End);
+&lt;span style="color:#95a5a6">// tell the pipe that we used everything
+&lt;/span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#434f54">reader&lt;/span>.&lt;span style="color:#434f54">AdvanceTo&lt;/span>(&lt;span style="color:#434f54">buffer&lt;/span>.&lt;span style="color:#434f54">End&lt;/span>);
 }
 }
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>就像Stream例子一样，我们有一个循环持续到我们读取到数据的末尾，在Stream中，这种情况通过&lt;code>Read&lt;/code>方法返回一个非正结果时判定，但是在pipeline中有两种检查方式：&lt;/p>
@@ -1205,7 +1300,7 @@ Console.Write(s);
 &lt;li>你可以使用&lt;code>ReadOnlySequence&amp;lt;byte&amp;gt;&lt;/code>中的&lt;code>.GetPosition(...)&lt;/code> 方法，它返回一个相关位置而&lt;em>无需&lt;/em>真正分割&lt;/li>
 &lt;/ul>
 &lt;p>更微妙的是：我们可以分别告诉它我们消费了一些数量，但是我们已检查了另一个不同的数量，这里最常见的例子是表达“你可以丢弃这么多——这些我做完了；但是我看完了所有的数据，我此时无法处理——我需要更多数据（you can drop &lt;em>this much&lt;/em> - I&amp;rsquo;m done with that; but I looked at everything, I can&amp;rsquo;t make any more progress at the moment - I need more data）”，具体来说：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">reader.AdvanceTo(consumedToPosition, buffer.End);
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-csharp" data-lang="csharp">&lt;span style="color:#434f54">reader&lt;/span>.&lt;span style="color:#434f54">AdvanceTo&lt;/span>(&lt;span style="color:#434f54">consumedToPosition&lt;/span>, &lt;span style="color:#434f54">buffer&lt;/span>.&lt;span style="color:#434f54">End&lt;/span>);
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>这里正是&lt;code>PipeWriter.FlushAsync()&lt;/code>和&lt;code>PipeReader.ReadAsync()&lt;/code>微妙的相互作用出场的地方了，我之前跳过了&lt;code>PipeWriter.FlushAsync()&lt;/code>，它实际上在一次调用里提供了两个功能：&lt;/p>
 &lt;ul>
 &lt;li>如果存在一个&lt;code>ReadAsync&lt;/code> 调用，它会被注意到，因为它需要数据，然后它唤醒reader，使读取循环继续&lt;/li>
