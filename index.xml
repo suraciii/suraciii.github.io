@@ -9,14 +9,13 @@
 &lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#00979d">type&lt;/span> &lt;span style="color:#a61717">抽奖机会&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
 };
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>同时我对C说：“我们来用‘抽奖机会’来表示‘抽奖次数’吧。”，抽奖次数是一个比较模糊和口头化的概念，它蕴含着数量上的表达，我偏爱更严谨的词汇。&lt;/p>
-&lt;p>我在&lt;code>抽奖机会&lt;/code>上加了一个属性：&lt;code>类型: '注册赠送的' | '消费获取的'&lt;/code>。&lt;/p>
 &lt;p>“按照你刚才的描述，抽奖机会有两种，一种是用户注册是赠送的，另一种是用户消费后获得的。”&lt;/p>
 &lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#00979d">type&lt;/span> &lt;span style="color:#a61717">抽奖机会&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
 &lt;span style="color:#a61717">类型&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;注册赠送的&amp;#39;&lt;/span> &lt;span style="color:#728e00">|&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;消费获取的&amp;#39;&lt;/span>
 };
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>我问C：“除了类型，你认为抽奖机会还应该具备什么属性呢？”&lt;/p>
 &lt;p>“过期时间！”，C回答。
-于是加上了过期时间：&lt;/p>
+于是：&lt;/p>
 &lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#00979d">type&lt;/span> &lt;span style="color:#a61717">抽奖机会&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
 &lt;span style="color:#a61717">类型&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;注册赠送的&amp;#39;&lt;/span> &lt;span style="color:#728e00">|&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;消费获取的&amp;#39;&lt;/span>
 &lt;span style="color:#728e00">过期时间&lt;/span>: &lt;span style="color:#00979d">DateTime&lt;/span>
@@ -32,7 +31,7 @@
 };
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>接着用同样的方法，我们整理出来了这个业务场景中另外一个相关概念的模型：&lt;/p>
 &lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#00979d">type&lt;/span> &lt;span style="color:#a61717">抽奖活动&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
-&lt;span style="color:#728e00">Id&lt;/span>: &lt;span style="color:#00979d">抽奖活动ID&lt;/span>;
+&lt;span style="color:#728e00">编号&lt;/span>: &lt;span style="color:#00979d">抽奖活动ID&lt;/span>;
 &lt;span style="color:#728e00">类型&lt;/span>: &lt;span style="color:#00979d">活动类型&lt;/span>;
 &lt;span style="color:#a61717">过期时间：&lt;/span>&lt;span style="color:#728e00">DateTime&lt;/span>
 }
@@ -93,7 +92,7 @@
 &lt;/ol>
 &lt;p>上面说过，我和C所做的是“简略”的领域建模，与完整的领域建模有着许多不同，比如在真正进行完整的领域建模时，我应该和C首先以业务专用语言进行用户叙事，来尽量获得业务场景的全貌，又比如还有实体和值对象地识别，领域上下文的整理和映射等。
 不过由于这是一个非常有限的业务场景，而我也只是需要来借助领域建模来帮助我梳理这个特定业务场景，帮助我能看清楚这个问题的本质，所以也就不需要那么麻烦。&lt;/p>
-&lt;p>如果是在真正进行一个业务系统的开发，实践更为完整的领域驱动设计就会有很好的效果，比如，如果我们需要限定只有&lt;/p></description></item><item><title>使用Pulumi在Kubernetes中部署应用</title><link>http://suraciii.github.io/posts/use-pulumi-to-deploy-app-in-k8s/</link><pubDate>Fri, 28 Jan 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/use-pulumi-to-deploy-app-in-k8s/</guid><description>&lt;p>Pulumi是一个现代&lt;code>基础设施即代码(infrastructure as code)&lt;/code>平台，通过它，我们可以使用我们熟悉的编程语言和工具来构建、部署和管理云及云原生基础设施。&lt;/p>
+&lt;p>如果是在真正进行一个业务系统的开发，实践更为完整的领域驱动设计就会有很好的效果。&lt;/p></description></item><item><title>使用Pulumi在Kubernetes中部署应用</title><link>http://suraciii.github.io/posts/use-pulumi-to-deploy-app-in-k8s/</link><pubDate>Fri, 28 Jan 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/use-pulumi-to-deploy-app-in-k8s/</guid><description>&lt;p>Pulumi是一个现代&lt;code>基础设施即代码(infrastructure as code)&lt;/code>平台，通过它，我们可以使用我们熟悉的编程语言和工具来构建、部署和管理云及云原生基础设施。&lt;/p>
 &lt;p>来看一个最简单的例子，准备如下typescript代码：&lt;/p>
 &lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#00979d">import&lt;/span> &lt;span style="color:#728e00">*&lt;/span> &lt;span style="color:#00979d">as&lt;/span> &lt;span style="color:#728e00">pulumi&lt;/span> &lt;span style="color:#00979d">from&lt;/span> &lt;span style="color:#7f8c8d">&amp;#34;@pulumi/pulumi&amp;#34;&lt;/span>;
 &lt;span style="color:#00979d">import&lt;/span> &lt;span style="color:#728e00">*&lt;/span> &lt;span style="color:#00979d">as&lt;/span> &lt;span style="color:#728e00">aws&lt;/span> &lt;span style="color:#00979d">from&lt;/span> &lt;span style="color:#7f8c8d">&amp;#34;@pulumi/aws&amp;#34;&lt;/span>;
