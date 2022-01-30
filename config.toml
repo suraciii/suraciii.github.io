@@ -11,4 +11,4 @@ enableInlineShortcodes = true
 
 [markup]
   [markup.highlight]
-    style = 'github'
+    style = 'arduino'
