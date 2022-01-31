@@ -1,4 +1,22 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on The Dice Maker</title><link>http://suraciii.github.io/posts/</link><description>Recent content in Posts on The Dice Maker</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sun, 30 Jan 2022 00:00:00 +0000</lastBuildDate><atom:link href="http://suraciii.github.io/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>使用领域建模梳理业务和分离复杂性</title><link>http://suraciii.github.io/posts/domain-modeling-for-coupon-lottery/</link><pubDate>Sun, 30 Jan 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/domain-modeling-for-coupon-lottery/</guid><description>&lt;p>一日，同事C来找我交流，问如何做一个抽奖的功能——&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on The Dice Maker</title><link>http://suraciii.github.io/posts/</link><description>Recent content in Posts on The Dice Maker</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Mon, 31 Jan 2022 00:00:00 +0000</lastBuildDate><atom:link href="http://suraciii.github.io/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>如何在不中断作业执行的情况下更新Kubernetes中的应用版本</title><link>http://suraciii.github.io/posts/upgrade-job-execution-app-in-k8s/</link><pubDate>Mon, 31 Jan 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/upgrade-job-execution-app-in-k8s/</guid><description>&lt;p>有这么一个案例：&lt;/p>
+&lt;blockquote>
+&lt;p>Q部门在开发一个应用，应用部署在Kubernetes中，应用中有一个功能是定时或即时地运行用户所配置的作业任务，这些作业通常要耗时几分钟到十几分钟，应用的部署和更新由Kubernetes中的deployment控制，每次部署更新，都是修改deployment中的容器镜像版本，Kubernetes就会逐步把旧版本pod删除掉，并创建出新版本的pod，现在Q部门遇到了这么一个问题：每次部署更新应用的版本时，总是会导致应用中作业执行被中断，他们想在更新版本时避免任务中断&lt;/p>
+&lt;/blockquote>
+&lt;p>怎么解决这个问题呢？&lt;/p>
+&lt;p>这里我有两个思路，这两个思路有些类似又有些不同。&lt;/p>
+&lt;p>类似的地方在于，这两个思路都需要将应用分成两部分，一部分为控制侧，一部分为工作侧，控制侧负责作业的管理、配置、调度等，工作侧负责作业的执行，我们的部署更新只会更新控制侧，工作侧的更新交由给控制侧来控制。
+&lt;img src="http://suraciii.github.io/upgrade-job-execution-app-in-k8s/1.png" alt="">&lt;/p>
+&lt;p>具体来讲，第一个思路里，工作侧会是若干个工作节点，工作节点是常驻的Pod，有任务就执行，没任务就待机，agent可以主动从控制侧拉取任务，或者是由控制侧向agent发送任务执行命令。&lt;/p>
+&lt;p>在部署更新时，我们首先只更新控制侧的应用版本，然后由控制侧通过Kubernetes API更新工作节点，更新节点前首先确认当前节点是否正在执行任务，只有节点处于空闲状态时才会进行更新，并且在更新前会将节点状态设为“维护中”，使其在更新完成前不会接受新的任务。&lt;/p>
+&lt;p>&lt;img src="http://suraciii.github.io/upgrade-job-execution-app-in-k8s/2.png" alt="">&lt;/p>
+&lt;p>节点的更新可以自动触发，或者是设置一个管理按钮，点一下即可开始升级各个节点。&lt;/p>
+&lt;p>另一个思路和上面的类似，只是工作侧从常驻的工作节点换成了暂态的作业Pod，每次需要执行作业时，都创建出一个作业Pod，由作业Pod负责作业的执行。&lt;/p>
+&lt;p>&lt;img src="http://suraciii.github.io/upgrade-job-execution-app-in-k8s/3.png" alt="">&lt;/p>
+&lt;p>在这里，控制侧永远只会创建作业Pod，而不会对其进行更新，作业Pod所负责的作业执行完成后就不再工作等待销毁，新作业会由新创建的作业Pod负责执行。&lt;/p>
+&lt;p>这两个思路都是将应用分成了&lt;strong>控制侧&lt;/strong>和&lt;strong>工作侧&lt;/strong>，应用部署时只更新控制侧的应用版本，&lt;strong>工作侧的更新由控制侧通过Kubernetes的API来控制进行&lt;/strong>，区别是，第一个方案里，工作侧是&lt;strong>长生命周期&lt;/strong>的不停执行作业的工作节点，第二个方案里工作侧是只执行一次特定作业的&lt;strong>短生命周期&lt;/strong>的一次性Pod。&lt;/p>
+&lt;p>很可惜的是，这两个方案都没有被Q部门采用，因为Q部门不愿意将作业执行部分从应用中分离出来（我猜可能是认为做起来比较麻烦吧），而选择容忍应用部署更新时对作业执行的中断。
+不过如果遇到&lt;strong>无法容忍应用更新导致作业中断的场景&lt;/strong>的话，这两个思路应该是值得参考的。&lt;/p>
+&lt;p>如果您有其它思路的话，欢迎同我分享~&lt;/p></description></item><item><title>使用领域建模梳理业务和分离复杂性</title><link>http://suraciii.github.io/posts/domain-modeling-for-coupon-lottery/</link><pubDate>Sun, 30 Jan 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/domain-modeling-for-coupon-lottery/</guid><description>&lt;p>一日，同事C来找我交流，问如何做一个抽奖的功能——&lt;/p>
 &lt;blockquote>
 &lt;p>“我们给每个新注册的用户都赠送了一次抽奖的机会，用户进行购买也能够获得更多抽奖次数，我们会不定时开放一些转盘抽奖活动，用户抽奖的时候我们要先用他账号里的注册时赠送的抽奖机会，如果没有的话再用用户消费获得的抽奖次数，一个抽奖次数只能用一次要防止并发冲突导致被多次使用……我们准备把抽奖次数放到redis中，用户每次使用就把次数减一，但是又需要优先使用系统赠送的抽奖次数数，然后抽奖机会又需要有过期时间——”&lt;/p>
 &lt;/blockquote>
