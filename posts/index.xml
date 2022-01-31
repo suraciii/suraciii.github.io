@@ -1,15 +1,14 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on The Dice Maker</title><link>http://suraciii.github.io/posts/</link><description>Recent content in Posts on The Dice Maker</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sun, 30 Jan 2022 00:00:00 +0000</lastBuildDate><atom:link href="http://suraciii.github.io/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>使用领域建模来梳理业务和分离复杂性</title><link>http://suraciii.github.io/posts/domain-modeling-for-coupon-lottery/</link><pubDate>Sun, 30 Jan 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/domain-modeling-for-coupon-lottery/</guid><description>&lt;p>同事C来找我交流，问如何做一个抽奖的功能——&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on The Dice Maker</title><link>http://suraciii.github.io/posts/</link><description>Recent content in Posts on The Dice Maker</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sun, 30 Jan 2022 00:00:00 +0000</lastBuildDate><atom:link href="http://suraciii.github.io/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>使用领域建模梳理业务和分离复杂性</title><link>http://suraciii.github.io/posts/domain-modeling-for-coupon-lottery/</link><pubDate>Sun, 30 Jan 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/domain-modeling-for-coupon-lottery/</guid><description>&lt;p>一日，同事C来找我交流，问如何做一个抽奖的功能——&lt;/p>
 &lt;blockquote>
-&lt;p>“我们给每个新注册的用户都赠送了一次抽奖的机会，用户进行购买也能够获得更多抽奖次数，我们会不定时开放一些转盘抽奖活动，用户抽奖的时候我们要先用他账号里的注册时赠送的抽奖机会，如果没有的话再用用户消费获得的抽奖次数，一个抽奖次数只能用一次要防止并发冲突导致超抽……我们准备把抽奖次数放到redis中，用户每次使用就把次数减一，但是又需要优先使用系统赠送的抽奖次数数，然后抽奖机会又需要有过期时间——”&lt;/p>
+&lt;p>“我们给每个新注册的用户都赠送了一次抽奖的机会，用户进行购买也能够获得更多抽奖次数，我们会不定时开放一些转盘抽奖活动，用户抽奖的时候我们要先用他账号里的注册时赠送的抽奖机会，如果没有的话再用用户消费获得的抽奖次数，一个抽奖次数只能用一次要防止并发冲突导致被多次使用……我们准备把抽奖次数放到redis中，用户每次使用就把次数减一，但是又需要优先使用系统赠送的抽奖次数数，然后抽奖机会又需要有过期时间——”&lt;/p>
 &lt;/blockquote>
 &lt;p>作为一个&lt;strong>愚钝&lt;/strong>的程序员，我的大脑的思考能力实在是有限的紧，在听了前面一大串已经晕晕乎乎的，听到用redis来实现抽奖次数扣减和过期时间检查这里更是头昏脑胀，仿佛一团乱麻，什么也想不清楚，更别说给出什么有价值的意见了。&lt;/p>
 &lt;p>我对C说：“你已经把我说晕了，咱们先别说redis什么的了。”&lt;/p>
 &lt;p>说着我拿出纸笔，开始和C进行对话：&lt;/p>
 &lt;p>我首先关注的是“抽奖”这个关键词，当然是因为C之前那一大段话都是围绕着“抽奖”讲述的，更具体地，是在讲述使用抽奖次数的策略，在捕捉到“抽奖次数”这个概念后，我在纸上写下：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#00979d">type&lt;/span> &lt;span style="color:#a61717">抽奖机会&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
-};
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#00979d">type&lt;/span> &lt;span style="color:#a61717">抽奖机会&lt;/span> &lt;span style="color:#728e00">=&lt;/span> { };
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>同时我对C说：“我们来用‘抽奖机会’来表示‘抽奖次数’吧。”，抽奖次数是一个比较模糊和口头化的概念，它蕴含着数量上的表达，我偏爱更严谨的词汇。&lt;/p>
-&lt;p>“按照你刚才的描述，抽奖机会有两种，一种是用户注册是赠送的，另一种是用户消费后获得的。”&lt;/p>
+&lt;p>“按照你刚才的描述，抽奖机会有两种，一种是用户注册时赠送的，另一种是用户消费后获得的。”&lt;/p>
 &lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#00979d">type&lt;/span> &lt;span style="color:#a61717">抽奖机会&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
 &lt;span style="color:#a61717">类型&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;注册赠送的&amp;#39;&lt;/span> &lt;span style="color:#728e00">|&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;消费获取的&amp;#39;&lt;/span>
 };
@@ -22,7 +21,7 @@
 };
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>我接着说：“抽奖机会是发送给用户的，所以应该还应该记录其所有者。”，C表示同意。
 “每个抽奖机会都是独立被使用的，应该也是需要可以被追溯的，那它应该有一个编号作为标识。”&lt;/p>
-&lt;p>最终，我们有了一个映射&lt;code>抽奖机会&lt;/code>的模型&lt;/p>
+&lt;p>最终，我们有了一个映射&lt;code>抽奖机会&lt;/code>的模型：&lt;/p>
 &lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#00979d">type&lt;/span> &lt;span style="color:#a61717">抽奖机会&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
 &lt;span style="color:#a61717">编号：抽奖机会&lt;/span>&lt;span style="color:#728e00">ID&lt;/span>
 &lt;span style="color:#728e00">持有人&lt;/span>: &lt;span style="color:#00979d">用户ID&lt;/span>
@@ -36,7 +35,7 @@
 &lt;span style="color:#a61717">过期时间：&lt;/span>&lt;span style="color:#728e00">DateTime&lt;/span>
 }
 &lt;/code>&lt;/pre>&lt;/div>&lt;p>有了这两个模型后，我对C说：“现在我们有了对&lt;code>抽奖机会&lt;/code>和&lt;code>抽奖活动&lt;/code>这两个业务概念的描述，现在我们来分析这个抽奖业务的具体行为吧。”&lt;/p>
-&lt;p>根据我们的分析整理，有了下面几个关键点：&lt;/p>
+&lt;p>通过分析整理，我们找到了下面几个关键点：&lt;/p>
 &lt;ol>
 &lt;li>抽奖发生在一个具体的抽奖活动中&lt;/li>
 &lt;li>抽奖时会选取用户的一个抽奖机会&lt;/li>
@@ -78,8 +77,8 @@
 &lt;p>有学习过领域驱动设计的朋友应该可以明显看出，上面我和C在做的的其实是在进行简略的领域建模。&lt;/p>
 &lt;h2 id="关于领域建模">关于领域建模&lt;/h2>
 &lt;p>&lt;strong>领域建模就是对特定业务问题进行梳理、探索、提炼，将其从一个松散的口头信息描述，抽象转化为一系列能够帮助我们解决问题的概念、关系和流程模型。&lt;/strong>&lt;/p>
-&lt;p>就像是问开车到百货大楼要多久，我们并不能直接得到答案，而是先将这个场景转化为：车的&lt;strong>时速&lt;/strong>是多少？从这里到百货大楼的&lt;strong>路程&lt;/strong>要多远？然后再套用&lt;strong>速率公式&lt;/strong>，有了这些，我们才能得到想要的答案。&lt;/p>
-&lt;p>而对于软件开发，虽然有所不同，但是也有着一样的道理，我们开发软件总是为了解决一些问题，而对于许多业务系统来说，要解决这些业务问题，就一定要对它的业务领域有所了解，领域建模就是一个帮助我们学习目标业务领域中的知识，并将业务问题抽象成可以帮助我们解决这个问题的模型的方法。&lt;/p>
+&lt;p>就像是问开车到商场要多久，我们并不能直接得到答案，而是先将这个场景转化为：车的&lt;strong>时速&lt;/strong>是多少？从这里到商场的&lt;strong>路程&lt;/strong>要多远？然后再套用&lt;strong>速率公式&lt;/strong>，有了这些，我们才能得到想要的答案。&lt;/p>
+&lt;p>而对于软件开发，虽然有所不同，但是也有着一样的道理，我们开发软件总是为了解决一些问题，尤其是对于许多业务系统来说，要解决这些业务问题，就一定要对它的业务领域有所了解，领域建模就是一个帮助我们学习目标业务领域中的知识，并将业务问题抽象成可以帮助我们解决这个问题的模型的方法。&lt;/p>
 &lt;p>事实上，无论我们是否有这个意识，只要我们是在开发业务系统，其相关的业务领域中的知识就或清晰或混乱地存在于我们的代码中，而在开发时，我们一定也会主动或被动地对相关业务领域进行建模——我们设计的类、数据库表结构、模块等，无一不是在对真实世界中的业务进行的抽象，它们都在一定程度上以某种角度描述了相关的业务领域。&lt;/p>
 &lt;p>但是许多时候，这些领域知识或者说模型，总是松散而重复地分散在系统各处，这边一点，那边一点，又同应用逻辑杂糅在一起，这为我们造成了相当程度上的认知负担，尤其是对于我这样愚钝的程序员来说，接收到的信息稍微多一点混乱一点，我的脑袋就什么都想不清楚了。&lt;/p>
 &lt;p>所以我们要把我们开发时被动地做的学习业务中的知识，整理业务中的概念等事情，变成在开发时首先做、主动做、专注做。&lt;/p>
@@ -90,9 +89,8 @@
 &lt;li>模型成果作为代码存在于项目之中，代码中的业务逻辑更容易理解&lt;/li>
 &lt;li>团队成员尤其是新成员可以有效地从代码中学习到领域知识，并且有着统一的认识&lt;/li>
 &lt;/ol>
-&lt;p>上面说过，我和C所做的是“简略”的领域建模，与完整的领域建模有着许多不同，比如在真正进行完整的领域建模时，我应该和C首先以业务专用语言进行用户叙事，来尽量获得业务场景的全貌，又比如还有实体和值对象地识别，领域上下文的整理和映射等。
-不过由于这是一个非常有限的业务场景，而我也只是需要来借助领域建模来帮助我梳理这个特定业务场景，帮助我能看清楚这个问题的本质，所以也就不需要那么麻烦。&lt;/p>
-&lt;p>如果是在真正进行一个业务系统的开发，实践更为完整的领域驱动设计就会有很好的效果。&lt;/p></description></item><item><title>使用Pulumi在Kubernetes中部署应用</title><link>http://suraciii.github.io/posts/use-pulumi-to-deploy-app-in-k8s/</link><pubDate>Fri, 28 Jan 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/use-pulumi-to-deploy-app-in-k8s/</guid><description>&lt;p>Pulumi是一个现代&lt;code>基础设施即代码(infrastructure as code)&lt;/code>平台，通过它，我们可以使用我们熟悉的编程语言和工具来构建、部署和管理云及云原生基础设施。&lt;/p>
+&lt;p>上面说过，我和C所做的是“简略”的领域建模，与完整的领域建模有着许多不同，比如在真正进行完整的领域建模时，我应该和C首先以业务专用语言进行用户叙事，来尽量获得业务场景的全貌，又比如还有实体和值对象的识别，领域上下文的整理和映射等。
+不过由于这是一个非常有限的业务场景，而我也只是需要来借助领域建模来帮助我梳理这个特定业务场景，帮助我能看清楚这个问题的本质，所以也就不需要那么麻烦。&lt;/p></description></item><item><title>使用Pulumi在Kubernetes中部署应用</title><link>http://suraciii.github.io/posts/use-pulumi-to-deploy-app-in-k8s/</link><pubDate>Fri, 28 Jan 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/use-pulumi-to-deploy-app-in-k8s/</guid><description>&lt;p>Pulumi是一个现代&lt;code>基础设施即代码(infrastructure as code)&lt;/code>平台，通过它，我们可以使用我们熟悉的编程语言和工具来构建、部署和管理云及云原生基础设施。&lt;/p>
 &lt;p>来看一个最简单的例子，准备如下typescript代码：&lt;/p>
 &lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="color:#00979d">import&lt;/span> &lt;span style="color:#728e00">*&lt;/span> &lt;span style="color:#00979d">as&lt;/span> &lt;span style="color:#728e00">pulumi&lt;/span> &lt;span style="color:#00979d">from&lt;/span> &lt;span style="color:#7f8c8d">&amp;#34;@pulumi/pulumi&amp;#34;&lt;/span>;
 &lt;span style="color:#00979d">import&lt;/span> &lt;span style="color:#728e00">*&lt;/span> &lt;span style="color:#00979d">as&lt;/span> &lt;span style="color:#728e00">aws&lt;/span> &lt;span style="color:#00979d">from&lt;/span> &lt;span style="color:#7f8c8d">&amp;#34;@pulumi/aws&amp;#34;&lt;/span>;
