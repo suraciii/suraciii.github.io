@@ -1,4 +1,88 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on The Dice Maker</title><link>http://suraciii.github.io/posts/</link><description>Recent content in Posts on The Dice Maker</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Mon, 31 Jan 2022 00:00:00 +0000</lastBuildDate><atom:link href="http://suraciii.github.io/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>如何在不中断作业执行的情况下更新Kubernetes中的应用版本</title><link>http://suraciii.github.io/posts/upgrade-job-execution-app-in-k8s/</link><pubDate>Mon, 31 Jan 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/upgrade-job-execution-app-in-k8s/</guid><description>&lt;p>有这么一个案例：&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on The Dice Maker</title><link>http://suraciii.github.io/posts/</link><description>Recent content in Posts on The Dice Maker</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Wed, 09 Feb 2022 00:00:00 +0000</lastBuildDate><atom:link href="http://suraciii.github.io/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>使用dotnet-monitor收集k8s中.NET应用的诊断数据</title><link>http://suraciii.github.io/posts/dotnet-monitor-diag-memory-threading/</link><pubDate>Wed, 09 Feb 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/dotnet-monitor-diag-memory-threading/</guid><description>&lt;p>平常在用Visual Studio开发.NET应用时，可以在调试时使用性能诊断工具对应用进行诊断，调查其中诸如内存泄露、线程阻塞等问题。&lt;/p>
+&lt;p>但是对于线上尤其是运行在容器中的应用来说，收集诊断数据是非常麻烦的，这里介绍使用dotnet-monitor来方便地收集.NET应用诊断数据。&lt;/p>
+&lt;p>只需要按如下方式对应用的deployment/stateful进行修改：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-yaml" data-lang="yaml">&lt;span style="color:#434f54">apiVersion&lt;/span>: apps/v1
+&lt;span style="color:#434f54">kind&lt;/span>: Deployment
+&lt;span style="color:#434f54">...&lt;/span>
+&lt;span style="color:#434f54">spec&lt;/span>:
+&lt;span style="color:#434f54">template&lt;/span>:
+&lt;span style="color:#434f54">metadata&lt;/span>:
+&lt;span style="color:#434f54">labels&lt;/span>:
+&lt;span style="color:#434f54">app&lt;/span>: myapp
+&lt;span style="color:#434f54">spec&lt;/span>:
+&lt;span style="color:#434f54">containers&lt;/span>:
+- &lt;span style="color:#434f54">name&lt;/span>: myapp
+&lt;span style="color:#434f54">image&lt;/span>: myapp:latest
+&lt;span style="color:#434f54">env&lt;/span>:
+- &lt;span style="color:#434f54">name&lt;/span>: DOTNET_DiagnosticPorts
+&lt;span style="color:#434f54">value&lt;/span>: /diag/port
+&lt;span style="color:#434f54">volumeMounts&lt;/span>:
+- &lt;span style="color:#434f54">mountPath&lt;/span>: /diag
+&lt;span style="color:#434f54">name&lt;/span>: diagvol
+- &lt;span style="color:#434f54">mountPath&lt;/span>: /dumps
+&lt;span style="color:#434f54">name&lt;/span>: dumpsvol
+- &lt;span style="color:#434f54">name&lt;/span>: monitor
+&lt;span style="color:#434f54">image&lt;/span>: mcr.microsoft.com/dotnet/monitor
+&lt;span style="color:#434f54">args&lt;/span>: [ &lt;span style="color:#7f8c8d">&amp;#34;--no-auth&amp;#34;&lt;/span> ]
+&lt;span style="color:#434f54">env&lt;/span>:
+- &lt;span style="color:#434f54">name&lt;/span>: DOTNETMONITOR_Urls
+&lt;span style="color:#434f54">value&lt;/span>: http://localhost:52323
+- &lt;span style="color:#434f54">name&lt;/span>: DOTNETMONITOR_DiagnosticPort__ConnectionMode
+&lt;span style="color:#434f54">value&lt;/span>: Listen
+- &lt;span style="color:#434f54">name&lt;/span>: DOTNETMONITOR_DiagnosticPort__EndpointName
+&lt;span style="color:#434f54">value&lt;/span>: /diag/port
+- &lt;span style="color:#434f54">name&lt;/span>: DOTNETMONITOR_Storage__DumpTempFolder
+&lt;span style="color:#434f54">value&lt;/span>: /dumps
+&lt;span style="color:#434f54">volumeMounts&lt;/span>:
+- &lt;span style="color:#434f54">mountPath&lt;/span>: /diag
+&lt;span style="color:#434f54">name&lt;/span>: diagvol
+- &lt;span style="color:#434f54">mountPath&lt;/span>: /dumps
+&lt;span style="color:#434f54">name&lt;/span>: dumpsvol
+&lt;span style="color:#434f54">resources&lt;/span>:
+&lt;span style="color:#434f54">requests&lt;/span>:
+&lt;span style="color:#434f54">cpu&lt;/span>: 50m
+&lt;span style="color:#434f54">memory&lt;/span>: 32Mi
+&lt;span style="color:#434f54">limits&lt;/span>:
+&lt;span style="color:#434f54">cpu&lt;/span>: 250m
+&lt;span style="color:#434f54">memory&lt;/span>: 256Mi
+&lt;span style="color:#434f54">volumes&lt;/span>:
+- &lt;span style="color:#434f54">name&lt;/span>: diagvol
+&lt;span style="color:#434f54">emptyDir&lt;/span>: {}
+- &lt;span style="color:#434f54">name&lt;/span>: dumpsvol
+&lt;span style="color:#434f54">emptyDir&lt;/span>: {}
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>上面进行了三个改动：&lt;/p>
+&lt;ol>
+&lt;li>添加了名为&lt;code>monitor&lt;/code>的容器作为sidecar&lt;/li>
+&lt;li>分别添加了两个名为&lt;code>diagvol&lt;/code>和&lt;code>dumpsvol&lt;/code>的空目录volumes，并挂载到被诊断应用和monitor中&lt;/li>
+&lt;li>为被诊断应用配置&lt;code>DOTNET_DiagnosticPorts&lt;/code>环境变量&lt;/li>
+&lt;/ol>
+&lt;p>Pod启动后，dotnet-monitor会同被诊断应用的.NET运行时进行IPC通讯，并且dotnet-monitor会将控制命令以API的形式对我们开放。&lt;/p>
+&lt;p>API列表：&lt;/p>
+&lt;ul>
+&lt;li>/processes 获取相关进程的详细信息&lt;/li>
+&lt;li>/dump 获取内存dump&lt;/li>
+&lt;li>/gcdump 获取GCdump&lt;/li>
+&lt;li>/trace 获取进程追踪数据&lt;/li>
+&lt;li>/metrics 以Prometheus格式发布指标数据&lt;/li>
+&lt;li>/livemetrics 获取进程的实时指标&lt;/li>
+&lt;li>/logs 获取进程所产生的日志&lt;/li>
+&lt;li>/info 获取dotnet-monitor的信息&lt;/li>
+&lt;li>/operations 获取或取消当前进行中的操作&lt;/li>
+&lt;/ul>
+&lt;p>这里以两个主要的诊断场景&lt;code>trace&lt;/code>和&lt;code>gcdump&lt;/code>举例演示诊断一个有内存泄露和线程阻塞问题的应用&lt;/p>
+&lt;p>通过&lt;code>kubectl port-forward&lt;/code>命令，转发monitor容器的请求到本机，在浏览器中访问&lt;code>http://localhost:52323/gcdump&lt;/code>，即可捕获并下载被诊断应用的gcdump。&lt;/p>
+&lt;p>下载完成后，通过perfview打开：&lt;/p>
+&lt;p>&lt;img src="http://suraciii.github.io/dotnet-monitor-diag-memory-threading/2.png" alt="">
+&lt;img src="http://suraciii.github.io/dotnet-monitor-diag-memory-threading/3.png" alt="">&lt;/p>
+&lt;p>可以看到内存主要被一个保存了大量&lt;code>Mail&lt;/code>对象的&lt;code>ConcurrentBag&lt;/code>所占用。&lt;/p>
+&lt;h4 id="关于线程阻塞及线程池饥饿问题的诊断">关于线程阻塞及线程池饥饿问题的诊断&lt;/h4>
+&lt;p>访问&lt;code>http://localhost:52323/trace?profile=cpu&lt;/code>，即可捕捉应用的跟踪信息并下载，默认会记录30秒的数据，可以通过&lt;code>durationSeconds&lt;/code>参数更改记录时间。
+下载完成后，通过perfview打开&lt;/p>
+&lt;p>dotnet-monitor内部使用的是和dotnet-trace同样的方式记录追踪信息，而它们都是无法获得线程阻塞时间的数据的，想要获得线程阻塞时间数据，需要使用perfcollect并开启-threadtime选项来收集诊断信息（或者在windows上使用perfview开启/threadTime进行收集）&lt;/p>
+&lt;p>但是我们依然可以通过dotnet-monitor来得知应用当前线程池的大小、线程队列的长度、线程的调用堆栈等信息，从中也一定程度上可以识别线程池饥饿、定位到导致线程阻塞的代码，如图：
+&lt;img src="http://suraciii.github.io/dotnet-monitor-diag-memory-threading/9.png" alt="">&lt;/p>
+&lt;p>&lt;img src="http://suraciii.github.io/dotnet-monitor-diag-memory-threading/11.png" alt="">&lt;/p>
+&lt;p>&lt;img src="http://suraciii.github.io/dotnet-monitor-diag-memory-threading/10.png" alt="">&lt;/p></description></item><item><title>如何在不中断作业执行的情况下更新Kubernetes中的应用版本</title><link>http://suraciii.github.io/posts/upgrade-job-execution-app-in-k8s/</link><pubDate>Mon, 31 Jan 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/upgrade-job-execution-app-in-k8s/</guid><description>&lt;p>有这么一个案例：&lt;/p>
 &lt;blockquote>
 &lt;p>Q部门在开发一个应用，应用部署在Kubernetes中，应用中有一个功能是定时或即时地运行用户所配置的作业任务，这些作业通常要耗时几分钟到十几分钟，应用的部署和更新由Kubernetes中的deployment控制，每次部署更新，都是修改deployment中的容器镜像版本，Kubernetes就会逐步把旧版本pod删除掉，并创建出新版本的pod，现在Q部门遇到了这么一个问题：每次部署更新应用的版本时，总是会导致应用中作业执行被中断，他们想在更新版本时避免任务中断&lt;/p>
 &lt;/blockquote>
