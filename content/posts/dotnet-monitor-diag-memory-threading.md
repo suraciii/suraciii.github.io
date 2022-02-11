@@ -7,7 +7,7 @@ date: 2022-02-09T00:00:00Z
 
 但是对于线上尤其是运行在容器中的应用来说，收集诊断数据是非常麻烦的，这里介绍使用dotnet-monitor来方便地收集.NET应用诊断数据。
 
-只需要按如下方式对应用的deployment/stateful进行修改：
+只需要按如下方式对应用的deployment/statefulset进行修改：
 
 ```yaml
 apiVersion: apps/v1
@@ -69,15 +69,15 @@ spec:
 Pod启动后，dotnet-monitor会同被诊断应用的.NET运行时进行IPC通讯，并且dotnet-monitor会将控制命令以API的形式对我们开放。
 
 API列表：
-* /processes	获取相关进程的详细信息
-* /dump	获取内存dump
-* /gcdump	获取GCdump
-* /trace	获取进程追踪数据
-* /metrics	以Prometheus格式发布指标数据
-* /livemetrics	获取进程的实时指标
-* /logs	获取进程所产生的日志
-* /info 获取dotnet-monitor的信息
-* /operations	获取或取消当前进行中的操作
+* `/processes` 获取相关进程的详细信息
+* `/dump`	获取内存dump
+* `/gcdump`	获取GCdump
+* `/trace` 获取进程追踪数据
+* `/metrics` 以Prometheus格式发布指标数据
+* `/livemetrics` 获取进程的实时指标
+* `/logs`	获取进程所产生的日志
+* `/info` 获取dotnet-monitor的信息
+* `/operations`	获取或取消当前进行中的操作
 
 这里以两个主要的诊断场景`trace`和`gcdump`举例演示诊断一个有内存泄露和线程阻塞问题的应用
 
@@ -100,8 +100,11 @@ dotnet-monitor内部使用的是和dotnet-trace同样的方式记录追踪信息
 
 但是我们依然可以通过dotnet-monitor来得知应用当前线程池的大小、线程队列的长度、线程的调用堆栈等信息，从中也一定程度上可以识别线程池饥饿、定位到导致线程阻塞的代码，如图：
 ![](/dotnet-monitor-diag-memory-threading/9.png)  
-  
+从上图可以看到.NET运行时在不断地创建新的线程
+
 ![](/dotnet-monitor-diag-memory-threading/11.png)  
+从上图可以看到由于`Starvation`，线程池大小在发生变化（增加）
   
 ![](/dotnet-monitor-diag-memory-threading/10.png)
+在调用堆栈中可以看到有导致线程阻塞的代码
 
