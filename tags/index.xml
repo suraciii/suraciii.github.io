@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Tags on The Dice Maker</title><link>http://suraciii.github.io/tags/</link><description>Recent content in Tags on The Dice Maker</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><atom:link href="http://suraciii.github.io/tags/index.xml" rel="self" type="application/rss+xml"/><item><title>使用dotnet-monitor收集k8s中.NET应用的诊断数据</title><link>http://suraciii.github.io/posts/dotnet-monitor-diag-memory-threading/</link><pubDate>Wed, 09 Feb 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/dotnet-monitor-diag-memory-threading/</guid><description>&lt;p>平常在用Visual Studio开发.NET应用时，可以在调试时使用性能诊断工具对应用进行诊断，调查其中诸如内存泄露、线程阻塞等问题。&lt;/p>
 &lt;p>但是对于线上尤其是运行在容器中的应用来说，收集诊断数据是非常麻烦的，这里介绍使用dotnet-monitor来方便地收集.NET应用诊断数据。&lt;/p>
-&lt;p>只需要按如下方式对应用的deployment/stateful进行修改：&lt;/p>
+&lt;p>只需要按如下方式对应用的deployment/statefulset进行修改：&lt;/p>
 &lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-yaml" data-lang="yaml">&lt;span style="color:#434f54">apiVersion&lt;/span>: apps/v1
 &lt;span style="color:#434f54">kind&lt;/span>: Deployment
 &lt;span style="color:#434f54">...&lt;/span>
@@ -59,15 +59,15 @@
 &lt;p>Pod启动后，dotnet-monitor会同被诊断应用的.NET运行时进行IPC通讯，并且dotnet-monitor会将控制命令以API的形式对我们开放。&lt;/p>
 &lt;p>API列表：&lt;/p>
 &lt;ul>
-&lt;li>/processes 获取相关进程的详细信息&lt;/li>
-&lt;li>/dump 获取内存dump&lt;/li>
-&lt;li>/gcdump 获取GCdump&lt;/li>
-&lt;li>/trace 获取进程追踪数据&lt;/li>
-&lt;li>/metrics 以Prometheus格式发布指标数据&lt;/li>
-&lt;li>/livemetrics 获取进程的实时指标&lt;/li>
-&lt;li>/logs 获取进程所产生的日志&lt;/li>
-&lt;li>/info 获取dotnet-monitor的信息&lt;/li>
-&lt;li>/operations 获取或取消当前进行中的操作&lt;/li>
+&lt;li>&lt;code>/processes&lt;/code> 获取相关进程的详细信息&lt;/li>
+&lt;li>&lt;code>/dump&lt;/code> 获取内存dump&lt;/li>
+&lt;li>&lt;code>/gcdump&lt;/code> 获取GCdump&lt;/li>
+&lt;li>&lt;code>/trace&lt;/code> 获取进程追踪数据&lt;/li>
+&lt;li>&lt;code>/metrics&lt;/code> 以Prometheus格式发布指标数据&lt;/li>
+&lt;li>&lt;code>/livemetrics&lt;/code> 获取进程的实时指标&lt;/li>
+&lt;li>&lt;code>/logs&lt;/code> 获取进程所产生的日志&lt;/li>
+&lt;li>&lt;code>/info&lt;/code> 获取dotnet-monitor的信息&lt;/li>
+&lt;li>&lt;code>/operations&lt;/code> 获取或取消当前进行中的操作&lt;/li>
 &lt;/ul>
 &lt;p>这里以两个主要的诊断场景&lt;code>trace&lt;/code>和&lt;code>gcdump&lt;/code>举例演示诊断一个有内存泄露和线程阻塞问题的应用&lt;/p>
 &lt;p>通过&lt;code>kubectl port-forward&lt;/code>命令，转发monitor容器的请求到本机，在浏览器中访问&lt;code>http://localhost:52323/gcdump&lt;/code>，即可捕获并下载被诊断应用的gcdump。&lt;/p>
@@ -80,9 +80,12 @@
 下载完成后，通过perfview打开&lt;/p>
 &lt;p>dotnet-monitor内部使用的是和dotnet-trace同样的方式记录追踪信息，而它们都是无法获得线程阻塞时间的数据的，想要获得线程阻塞时间数据，需要使用perfcollect并开启-threadtime选项来收集诊断信息（或者在windows上使用perfview开启/threadTime进行收集）&lt;/p>
 &lt;p>但是我们依然可以通过dotnet-monitor来得知应用当前线程池的大小、线程队列的长度、线程的调用堆栈等信息，从中也一定程度上可以识别线程池饥饿、定位到导致线程阻塞的代码，如图：
-&lt;img src="http://suraciii.github.io/dotnet-monitor-diag-memory-threading/9.png" alt="">&lt;/p>
-&lt;p>&lt;img src="http://suraciii.github.io/dotnet-monitor-diag-memory-threading/11.png" alt="">&lt;/p>
-&lt;p>&lt;img src="http://suraciii.github.io/dotnet-monitor-diag-memory-threading/10.png" alt="">&lt;/p></description></item><item><title>如何在不中断作业执行的情况下更新Kubernetes中的应用版本</title><link>http://suraciii.github.io/posts/upgrade-job-execution-app-in-k8s/</link><pubDate>Mon, 31 Jan 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/upgrade-job-execution-app-in-k8s/</guid><description>&lt;p>有这么一个案例：&lt;/p>
+&lt;img src="http://suraciii.github.io/dotnet-monitor-diag-memory-threading/9.png" alt="">&lt;br>
+从上图可以看到.NET运行时在不断地创建新的线程&lt;/p>
+&lt;p>&lt;img src="http://suraciii.github.io/dotnet-monitor-diag-memory-threading/11.png" alt="">&lt;br>
+从上图可以看到由于&lt;code>Starvation&lt;/code>，线程池大小在发生变化（增加）&lt;/p>
+&lt;p>&lt;img src="http://suraciii.github.io/dotnet-monitor-diag-memory-threading/10.png" alt="">
+在调用堆栈中可以看到有导致线程阻塞的代码&lt;/p></description></item><item><title>如何在不中断作业执行的情况下更新Kubernetes中的应用版本</title><link>http://suraciii.github.io/posts/upgrade-job-execution-app-in-k8s/</link><pubDate>Mon, 31 Jan 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/upgrade-job-execution-app-in-k8s/</guid><description>&lt;p>有这么一个案例：&lt;/p>
 &lt;blockquote>
 &lt;p>Q部门在开发一个应用，应用部署在Kubernetes中，应用中有一个功能是定时或即时地运行用户所配置的作业任务，这些作业通常要耗时几分钟到十几分钟，应用的部署和更新由Kubernetes中的deployment控制，每次部署更新，都是修改deployment中的容器镜像版本，Kubernetes就会逐步把旧版本pod删除掉，并创建出新版本的pod，现在Q部门遇到了这么一个问题：每次部署更新应用的版本时，总是会导致应用中作业执行被中断，他们想在更新版本时避免任务中断&lt;/p>
 &lt;/blockquote>
@@ -585,7 +588,51 @@ my-namespace-ifywo1p0 Active 1m
 &lt;p>&lt;em>引用：&lt;/em>&lt;/p>
 &lt;p>&lt;em>1. The DevOps Handbook&lt;/em>&lt;br>
 &lt;em>2. &lt;a href="https://azure.microsoft.com/en-us/overview/what-is-devops/">What is DevOps?&lt;/a>&lt;/em>&lt;br>
-&lt;em>3. State Of DevOps 2021&lt;/em>&lt;/p></description></item><item><title>解决吞吐性能问题时的思路</title><link>http://suraciii.github.io/posts/throughput-issue-solutions/</link><pubDate>Fri, 20 Nov 2020 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/throughput-issue-solutions/</guid><description>&lt;h2 id="什么是throughput">什么是Throughput&lt;/h2>
+&lt;em>3. State Of DevOps 2021&lt;/em>&lt;/p></description></item><item><title>来自Grafana Labs的云原生可观测性全家桶之 Cortex</title><link>http://suraciii.github.io/posts/grafana-observability-stack-cortex/</link><pubDate>Thu, 11 Feb 2021 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/grafana-observability-stack-cortex/</guid><description>&lt;p>日志(logs)、指标(metrics)和分布式追踪(traces)被称作可观测性的三大支柱。我们通过一系列的工具和手段，对这些遥测信息进行收集、处理和分析，从而能够帮助我们更及时有效地响应故障和更有信心地发布新的功能。&lt;/p>
+&lt;p>Grafana Labs以其当家产品Grafana面板为人熟知，这里分别介绍一些Grafana Labs提供的可观测领域中的其它开源产品，并和一些其它同类产品进行简单的对比。&lt;/p>
+&lt;h2 id="cortex">Cortex&lt;/h2>
+&lt;p>目前，Prometheus是当前常见且主流的指标监控解决方案，它能够收集指标信息并将其以时序数据保存，并支持服务发现、报警以及灵活的查询能力等，但是单纯使用Prometheus作为指标监控的解决方案，在当前有着一系列的局限：&lt;/p>
+&lt;ul>
+&lt;li>无法水平扩展&lt;/li>
+&lt;li>非高可用&lt;/li>
+&lt;li>不能很好地支持多租户&lt;/li>
+&lt;li>不支持对多集群的指标采集&lt;/li>
+&lt;li>数据只能保存在本地硬盘中，随着数据规模的增长变得难以维护
+这些问题都限制了Prometheus无法作为中心化、中台化的监控解决方案，而这又恰恰是我们所需要的&lt;/li>
+&lt;/ul>
+&lt;p>Cortex项目就是为了解决这些问题，为Prometheus增强其上面列出的所缺少的这些能力。
+Cortex摄取来自各个Prometheus实例的数据，将其转储到对象存储（如s3、Azure Storage等）中——对象存储具备更高的扩展性，数据更易于维护、成本也要更低。
+此外、Cortex也提供了指标数据的并行化查询和缓存，从而提高了查询性能。&lt;/p>
+&lt;p>下图为Cortex的整体架构：
+&lt;img src="http://suraciii.github.io/grafana-observability-stack/1.png" alt="">&lt;/p>
+&lt;p>Cortex的工作方式：&lt;/p>
+&lt;ol>
+&lt;li>各个&lt;strong>prometheus&lt;/strong>实例通过&lt;code>Remote Write&lt;/code>接口将采集到的指标数据发送到&lt;strong>distributor&lt;/strong>&lt;/li>
+&lt;li>&lt;strong>distributor&lt;/strong>在对指标数据进行一系列的检查校验后，将其分批、并行地发送到多个&lt;strong>ingester&lt;/strong>中&lt;/li>
+&lt;li>&lt;strong>ingester&lt;/strong>负责将收到的指标数据缓存并定时提交到对象存储中&lt;/li>
+&lt;li>&lt;strong>querier&lt;/strong>负责指标数据的查询，它会分别从对象存储以及&lt;strong>ingester中同时进行查询&lt;/strong>（因为最新的数据还在ingester中未被提交）&lt;/li>
+&lt;li>&lt;strong>query frontend&lt;/strong>是一个可选的额外查询层面，它可以将查询命令按时间分片放入查询队列，并分别交由多个&lt;strong>queriers&lt;/strong>并行地进行查询，然后再进行整合，并将查询结果进行缓存，从而提高查询效率。&lt;/li>
+&lt;li>&lt;strong>query scheduler&lt;/strong>是一个可选的位于&lt;strong>query frontende&lt;/strong>和&lt;strong>querier&lt;/strong>之间的查询层，其主要是为了能够独立地对查询队列进行伸缩&lt;/li>
+&lt;li>&lt;strong>ruler&lt;/strong>可以通过执行配置的查询来记录规则和警报，并将产生的警报发送给&lt;strong>alert manager&lt;/strong>，将计算后的指标发送给&lt;strong>ingester&lt;/strong>&lt;/li>
+&lt;/ol>
+&lt;p>其中，大多数组件都是无状态的，另外有部分（比如&lt;strong>ingester&lt;/strong>）是依赖一致性哈希的有状态组件，这些组件都可以独立地进行水平伸缩。&lt;/p>
+&lt;h4 id="与thanos对比">与Thanos对比&lt;/h4>
+&lt;p>Thanos是另一个流行的给Prometheus加buff的方案，其作用和功能与Cortex类似，但是工作方式有所不同。&lt;/p>
+&lt;p>Thanos的设计非常简洁且优雅：
+&lt;img src="http://suraciii.github.io/grafana-observability-stack/2.png" alt="">&lt;/p>
+&lt;ol>
+&lt;li>Thanos为每个prometheus实例添加一个&lt;strong>sidecar&lt;/strong>，sidecar定时地将prometheus中的指标数据上传到对象存储中&lt;/li>
+&lt;li>&lt;strong>store gateway&lt;/strong>负责对象存储中的指标数据的读取&lt;/li>
+&lt;li>&lt;strong>querier&lt;/strong>负责执行PromQL查询，它会向&lt;strong>store gateway&lt;/strong>、&lt;strong>sidecar&lt;/strong>s以及其它&lt;strong>querier&lt;/strong>中读取数据并进行聚合&lt;/li>
+&lt;/ol>
+&lt;p>可以看出，thanos的能力更侧重于“数据备份”和“视图整合”这两个方面，其查询层的设计使得可以非常方便地实现多集群的指标收集和查询，得益于其简洁的设计，部署和配置的复杂度也相对较低。
+相比thanos，cortex的能力更为全面，比如：&lt;/p>
+&lt;ul>
+&lt;li>cortex支持通过API的形式配置指标规则和告警，这点对于没有很好地实践DevOps的团队来说更为友好&lt;/li>
+&lt;li>通过二者的查询实现可以看出，cortex的查询性能会相对来说更好一些&lt;/li>
+&lt;li>cortex的水平扩展能力相对较高&lt;/li>
+&lt;li>cortex对多租户的支持更完善一些（比如支持对每个租户的用量控制等）&lt;/li>
+&lt;/ul></description></item><item><title>解决吞吐性能问题时的思路</title><link>http://suraciii.github.io/posts/throughput-issue-solutions/</link><pubDate>Fri, 20 Nov 2020 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/throughput-issue-solutions/</guid><description>&lt;h2 id="什么是throughput">什么是Throughput&lt;/h2>
 &lt;p>Throughput指的是应用处理任务的速率，它所描述的是应用在单位时间内能够处理多大数量的任务&lt;/p>
 &lt;p>如下，如果应用能够在1s中处理3个task，我们可以说它的throughput是3tps&lt;/p>
 &lt;p>&lt;img src="https://fulu-item11-zjk.oss-cn-zhangjiakou.aliyuncs.com/images/1.png" alt="1">&lt;/p>

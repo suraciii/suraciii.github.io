@@ -1,0 +1,71 @@
+<!doctype html><html><head>
+<meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<link rel="shortcut icon" href=http://suraciii.github.io/favicon.ico>
+<link rel=stylesheet href=/css/style.min.css>
+<title>来自Grafana Labs的云原生可观测性全家桶之 Cortex</title>
+</head>
+<body><header id=banner>
+<h2><a href=http://suraciii.github.io/>The Dice Maker</a></h2>
+<nav>
+<ul>
+</ul>
+</nav>
+</header>
+<main id=content>
+<article>
+<header id=post-header>
+<h1>来自Grafana Labs的云原生可观测性全家桶之 Cortex</h1>
+<div>
+<time>February 11, 2021</time>
+</div>
+</header><p>日志(logs)、指标(metrics)和分布式追踪(traces)被称作可观测性的三大支柱。我们通过一系列的工具和手段，对这些遥测信息进行收集、处理和分析，从而能够帮助我们更及时有效地响应故障和更有信心地发布新的功能。</p>
+<p>Grafana Labs以其当家产品Grafana面板为人熟知，这里分别介绍一些Grafana Labs提供的可观测领域中的其它开源产品，并和一些其它同类产品进行简单的对比。</p>
+<h2 id=cortex>Cortex</h2>
+<p>目前，Prometheus是当前常见且主流的指标监控解决方案，它能够收集指标信息并将其以时序数据保存，并支持服务发现、报警以及灵活的查询能力等，但是单纯使用Prometheus作为指标监控的解决方案，在当前有着一系列的局限：</p>
+<ul>
+<li>无法水平扩展</li>
+<li>非高可用</li>
+<li>不能很好地支持多租户</li>
+<li>不支持对多集群的指标采集</li>
+<li>数据只能保存在本地硬盘中，随着数据规模的增长变得难以维护
+这些问题都限制了Prometheus无法作为中心化、中台化的监控解决方案，而这又恰恰是我们所需要的</li>
+</ul>
+<p>Cortex项目就是为了解决这些问题，为Prometheus增强其上面列出的所缺少的这些能力。
+Cortex摄取来自各个Prometheus实例的数据，将其转储到对象存储（如s3、Azure Storage等）中——对象存储具备更高的扩展性，数据更易于维护、成本也要更低。
+此外、Cortex也提供了指标数据的并行化查询和缓存，从而提高了查询性能。</p>
+<p>下图为Cortex的整体架构：
+<img src=/grafana-observability-stack/1.png alt></p>
+<p>Cortex的工作方式：</p>
+<ol>
+<li>各个<strong>prometheus</strong>实例通过<code>Remote Write</code>接口将采集到的指标数据发送到<strong>distributor</strong></li>
+<li><strong>distributor</strong>在对指标数据进行一系列的检查校验后，将其分批、并行地发送到多个<strong>ingester</strong>中</li>
+<li><strong>ingester</strong>负责将收到的指标数据缓存并定时提交到对象存储中</li>
+<li><strong>querier</strong>负责指标数据的查询，它会分别从对象存储以及<strong>ingester中同时进行查询</strong>（因为最新的数据还在ingester中未被提交）</li>
+<li><strong>query frontend</strong>是一个可选的额外查询层面，它可以将查询命令按时间分片放入查询队列，并分别交由多个<strong>queriers</strong>并行地进行查询，然后再进行整合，并将查询结果进行缓存，从而提高查询效率。</li>
+<li><strong>query scheduler</strong>是一个可选的位于<strong>query frontende</strong>和<strong>querier</strong>之间的查询层，其主要是为了能够独立地对查询队列进行伸缩</li>
+<li><strong>ruler</strong>可以通过执行配置的查询来记录规则和警报，并将产生的警报发送给<strong>alert manager</strong>，将计算后的指标发送给<strong>ingester</strong></li>
+</ol>
+<p>其中，大多数组件都是无状态的，另外有部分（比如<strong>ingester</strong>）是依赖一致性哈希的有状态组件，这些组件都可以独立地进行水平伸缩。</p>
+<h4 id=与thanos对比>与Thanos对比</h4>
+<p>Thanos是另一个流行的给Prometheus加buff的方案，其作用和功能与Cortex类似，但是工作方式有所不同。</p>
+<p>Thanos的设计非常简洁且优雅：
+<img src=/grafana-observability-stack/2.png alt></p>
+<ol>
+<li>Thanos为每个prometheus实例添加一个<strong>sidecar</strong>，sidecar定时地将prometheus中的指标数据上传到对象存储中</li>
+<li><strong>store gateway</strong>负责对象存储中的指标数据的读取</li>
+<li><strong>querier</strong>负责执行PromQL查询，它会向<strong>store gateway</strong>、<strong>sidecar</strong>s以及其它<strong>querier</strong>中读取数据并进行聚合</li>
+</ol>
+<p>可以看出，thanos的能力更侧重于“数据备份”和“视图整合”这两个方面，其查询层的设计使得可以非常方便地实现多集群的指标收集和查询，得益于其简洁的设计，部署和配置的复杂度也相对较低。
+相比thanos，cortex的能力更为全面，比如：</p>
+<ul>
+<li>cortex支持通过API的形式配置指标规则和告警，这点对于没有很好地实践DevOps的团队来说更为友好</li>
+<li>通过二者的查询实现可以看出，cortex的查询性能会相对来说更好一些</li>
+<li>cortex的水平扩展能力相对较高</li>
+<li>cortex对多租户的支持更完善一些（比如支持对每个租户的用量控制等）</li>
+</ul>
+</article>
+</main><footer id=footer>
+</footer>
+</body>
+</html>
