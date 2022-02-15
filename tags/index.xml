@@ -1,4 +1,47 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Tags on The Dice Maker</title><link>http://suraciii.github.io/tags/</link><description>Recent content in Tags on The Dice Maker</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><atom:link href="http://suraciii.github.io/tags/index.xml" rel="self" type="application/rss+xml"/><item><title>来自Grafana Labs的云原生可观测性全家桶之 Cortex</title><link>http://suraciii.github.io/posts/grafana-observability-stack-cortex/</link><pubDate>Fri, 11 Feb 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/grafana-observability-stack-cortex/</guid><description>&lt;p>日志(logs)、指标(metrics)和分布式追踪(traces)被称作可观测性的三大支柱。我们通过一系列的工具和手段，对这些遥测信息进行收集、处理和分析，从而能够帮助我们更及时有效地响应故障和更有信心地发布新的功能。&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Tags on The Dice Maker</title><link>http://suraciii.github.io/tags/</link><description>Recent content in Tags on The Dice Maker</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><atom:link href="http://suraciii.github.io/tags/index.xml" rel="self" type="application/rss+xml"/><item><title>来自Grafana Labs的云原生日志解决方案之 Loki</title><link>http://suraciii.github.io/posts/grafana-o11y-stack-loki/</link><pubDate>Tue, 15 Feb 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/grafana-o11y-stack-loki/</guid><description>&lt;p>Loki是一个开源的日志聚合系统，其提供对日志信息的收集、存储、以及查询等功能，和其它日志存储（如ElasticSearch）不同的是，Loki主要将日志数据以标签(labels)分流，按时间分块保存在对象存储而非本地硬盘中，并且，Loki只会对日志信息的元数据(即由标签所组合的日志流及其时间区间)进行索引，而非对全文进行索引。&lt;/p>
+&lt;p>这是一种非常聪明的设计，因为日志数据有两个非常重要的特点：&lt;/p>
+&lt;ol>
+&lt;li>日志数据本质上和指标数据类似，是一种时序数据——数据按时间顺序排列，我们查询时，总是在对某个特定时间区间内的信息进行检索&lt;/li>
+&lt;li>日志数据是不可变的，只会追加新的数据而不会对旧数据进行修改
+这两个特点使得Loki可以相对于主要面向全文检索场景的ElasticSearch，对日志场景做出更深入更激进的优化，比如能够建立更少的索引，以及建立更有效的缓存等。&lt;/li>
+&lt;/ol>
+&lt;h3 id="loki是如何工作的">Loki是如何工作的&lt;/h3>
+&lt;p>Loki的架构和之前所介绍的Cortex项目非常相似，都是由&lt;strong>distributor&lt;/strong>、&lt;strong>ingester&lt;/strong>、&lt;strong>querier&lt;/strong>等组件构成，其行为也基本一样，实际上后面准备介绍的分布式追踪项目Tempo也是使用的这种设计，毕竟这些项目所解决的问题高度相似，都是对时序的遥测数据进行收集、处理、存储和查询。&lt;/p>
+&lt;p>&lt;img src="http://suraciii.github.io/grafana-o11y-stack-loki/arch.svg" alt="">&lt;/p>
+&lt;p>日志数据首先被发送给&lt;strong>distributor&lt;/strong>, &lt;strong>distributor&lt;/strong>对数据进行检查和校验后，将数据分批并行地发送到多个&lt;strong>ingester&lt;/strong>，&lt;strong>ingester&lt;/strong>会将日志数据上传到所配置的对象存储中，并且在保存缓存在本地。&lt;br>
+查询时，需要使用Loki专用的查询语言——LogQL——进行查询，&lt;strong>querier&lt;/strong>组件负责LogQL查询语句的执行，同时从&lt;strong>ingester&lt;/strong>以及后端对象存储中拉取数据进行查询。&lt;br>
+另外，一个可选的&lt;strong>query frontend&lt;/strong>组件可以用来建立一个额外的查询层面，其可以将查询命令按时间分片放入查询队列按调度交由多个&lt;strong>queriers&lt;/strong>并行执行，这样一方面提高了查询的效率，另一方面也避免由于某些比较高成本的查询命令导致内存不足等。&lt;br>
+此外，&lt;strong>ruler&lt;/strong>组件可以像Prometheus一样，配置规则从日志流中生成指标数据和报警信息，报警信息可以直接发到alertmanager进行管理和通知。&lt;/p>
+&lt;p>对于日志数据，Loki将其按日志上的标签信息进行分流，然后按其时间进行分块保存成文件在对象存储中，比如这么一条日志：&lt;/p>
+&lt;pre tabindex="0">&lt;code>labels: {cluster=&amp;quot;prod&amp;quot;,app=&amp;quot;meetingsvc&amp;quot;, pod=&amp;quot;...&amp;quot;, namespace=&amp;quot;...&amp;quot;, ...}
+message: &amp;quot;Order 123 processed&amp;quot;
+timestamp: 1644926567933944082
+&lt;/code>&lt;/pre>&lt;p>Loki会将其完整的标签信息&lt;code>{cluster=&amp;quot;prod&amp;quot;,app=&amp;quot;meetingsvc&amp;quot;, pod=&amp;quot;...&amp;quot;, namespace=&amp;quot;...&amp;quot;, ...}&lt;/code>进行哈希，得到其所属的日志流id为&lt;code>fc98wz37&lt;/code>，这条日志会连同这个日志流其它同时间区间内的日志被打包成一个文件上传到对象存储，并对其标签建立索引。&lt;/p>
+&lt;p>查询时，需要使用这样的LogQL语句：&lt;/p>
+&lt;pre tabindex="0">&lt;code>{app=&amp;quot;meetingsvc&amp;quot;, cluster=&amp;quot;prod&amp;quot; } |= &amp;quot;Order 123&amp;quot;
+&lt;/code>&lt;/pre>&lt;p>语句前半部分&lt;code>{app=&amp;quot;meetingsvc&amp;quot;, cluster=&amp;quot;prod&amp;quot;}&lt;/code>为标签过滤条件，后半部分&lt;code>|= &amp;quot;Order 123&amp;quot;&lt;/code>是对文本进行检索，查询时，Loki首先根据查询语句中的标签条件通过索引找到对应的日志流id，并将此日志流在指定时间内的所有文件都拉取到本地，然后遍历所有文件的内容，根据条件进行检索。&lt;/p>
+&lt;p>可以看到，在这种工作方式下，日志的标签需要谨慎地设计，因为标签值的每一种组合都会产生额外的一个独立日志流，因此要避免以诸如&lt;code>OrderId&lt;/code>等数据作为标签之一。&lt;/p>
+&lt;p>这种“把大块数据拉到本地然后进行遍历查找”的做法，乍一看可能很危险，但是回顾最开始我们说的日志数据的两个特点，就会发现，在正常的使用场景中，日志的查询只会触及特定流的特定时间区间，所以只会下载和遍历有限大小的文件块，而且当一个时间区间的所有日志都被打包上传后，这个文件块就不会再被更新了，因此所有对此文件块所建立的缓存都不会失效（Loki目前对于日志查询的缓存还在积极开发中，只有部分实现）。&lt;/p>
+&lt;h3 id="loki的主要优势">Loki的主要优势&lt;/h3>
+&lt;ol>
+&lt;li>得益于Loki专门面向日志数据的设计，它大大降低了对数据的索引，其存储成本和使用成本都能够显著降低&lt;/li>
+&lt;li>Loki将日志数据存储在对象存储中，可以利用上云服务中对象存储的可扩展性和可靠性&lt;/li>
+&lt;li>部署维护都相对较为简单&lt;/li>
+&lt;li>可以横向扩展，包括对其各个组件单独进行伸缩&lt;/li>
+&lt;li>​相对于一些商用日志产品，Loki是面向云原生的，利用公共云或者私有云或者混合云上的基本的块存储和对象存储服务，就可以轻松地完整建设出一整套供应商中立的日志系统&lt;/li>
+&lt;li>内建多租户支持&lt;/li>
+&lt;li>由于是Grafana自家项目，Grafana里有着原生的Loki组件和面板&lt;/li>
+&lt;/ol>
+&lt;h3 id="plg技术栈">PLG技术栈&lt;/h3>
+&lt;p>与由ElasticSearch、Fluentd、Kibana组成的EFK技术栈类似，Loki也有由Promtail、Loki、Grafana组成的PLG技术栈，其中Promtail是一个类似Fluentd的对日志进行采集、处理和转发的代理，与Fluentd不同的是，Promtail是为Kubernetes和Loki专门设计的，其只能对Kubernetes中的容器日志文件进行采集，并且自动关联相关Pod的labels作为日志消息的标签。&lt;br>
+不过Promtail并不是Loki的唯一选择，Loki也支持Fluentd、Logstash等其它转发器。&lt;/p>
+&lt;p>在Grafana dashboard中，内置有原生的Loki组件，添加Loki作为数据源后，即可在Explore页面进行自定义查询：
+&lt;img src="http://suraciii.github.io/grafana-o11y-stack-loki/explore.svg" alt="">&lt;/p>
+&lt;p>也可以创建特定的面板来根据配置的LogQL展示日志信息：
+&lt;img src="http://suraciii.github.io/grafana-o11y-stack-loki/panel.svg" alt="">&lt;/p>
+&lt;h3 id="最后">最后&lt;/h3>
+&lt;p>总体来说，Loki的设计和行为都和Cortex高度一致，其对待日志数据的方式也和Prometheus相似，正如其介绍中的那样：“Like prometheus, but for logs”，原因上面也说过了，日志数据和其它遥测数据一样，都是时序性的，正是基于这样的设计和架构，在不丢失功能和性能的前提下，得以将日志数据保存在更低成本更高可扩展性更易于管理的对象存储中。&lt;/p>
+&lt;p>就我目前使用Loki的体验来说，其整体上已经基本成熟完备了，只是在某些较为边缘的功能上还有所缺乏，偶尔也会出一些小问题，不过得益于其积极的开发者们和活跃的开源社区都得到了较好的解决，加上其相对较低的维护难度和使用条件以及成本，和其可扩展性，无论场景规模大小，都可以说是一个非常优秀的云原生日志解决方案。&lt;/p></description></item><item><title>来自Grafana Labs的云原生可观测性全家桶之 Cortex</title><link>http://suraciii.github.io/posts/grafana-observability-stack-cortex/</link><pubDate>Fri, 11 Feb 2022 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/grafana-observability-stack-cortex/</guid><description>&lt;p>日志(logs)、指标(metrics)和分布式追踪(traces)被称作可观测性的三大支柱。我们通过一系列的工具和手段，对这些遥测信息进行收集、处理和分析，从而能够帮助我们更及时有效地响应故障和更有信心地发布新的功能。&lt;/p>
 &lt;p>Grafana Labs以其当家产品Grafana面板为人熟知，这里分别介绍一些Grafana Labs提供的可观测领域中的其它开源产品，并和一些其它同类产品进行简单的对比。&lt;/p>
 &lt;h2 id="cortex">Cortex&lt;/h2>
 &lt;p>目前，Prometheus是当前常见且主流的指标监控解决方案，它能够收集指标信息并将其以时序数据保存，并支持服务发现、报警以及灵活的查询能力等，但是单纯使用Prometheus作为指标监控的解决方案，在当前有着一系列的局限：&lt;/p>
