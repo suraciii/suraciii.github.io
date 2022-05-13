@@ -1,114 +1,54 @@
-<!doctype html><html><head>
-<meta charset=utf-8>
-<meta name=viewport content="width=device-width,initial-scale=1">
-<link rel="shortcut icon" href=http://suraciii.github.io/favicon.ico>
-<link rel=stylesheet href=/css/style.min.css>
-<title>使用dotnet-monitor收集k8s中.NET应用的诊断数据</title>
-</head>
-<body><header id=banner>
-<h2><a href=http://suraciii.github.io/>The Dice Maker</a></h2>
-<nav>
-<ul>
-</ul>
-</nav>
-</header>
-<main id=content>
-<article>
-<header id=post-header>
-<h1>使用dotnet-monitor收集k8s中.NET应用的诊断数据</h1>
-<div>
-<time>February 9, 2022</time>
-</div>
-</header><p>平常在用Visual Studio开发.NET应用时，可以在调试时使用性能诊断工具对应用进行诊断，调查其中诸如内存泄露、线程阻塞等问题。</p>
-<p>但是对于线上尤其是运行在容器中的应用来说，收集诊断数据是非常麻烦的，这里介绍使用dotnet-monitor来方便地收集.NET应用诊断数据。</p>
-<p>只需要按如下方式对应用的deployment/statefulset进行修改：</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#434f54>apiVersion</span>: apps/v1
-<span style=color:#434f54>kind</span>: Deployment
-<span style=color:#434f54>...</span>
-<span style=color:#434f54>spec</span>:
-  <span style=color:#434f54>template</span>:
-    <span style=color:#434f54>metadata</span>:
-      <span style=color:#434f54>labels</span>:
-        <span style=color:#434f54>app</span>: myapp
-    <span style=color:#434f54>spec</span>:
-      <span style=color:#434f54>containers</span>:
-      - <span style=color:#434f54>name</span>: myapp
-	      <span style=color:#434f54>image</span>: myapp:latest
- 	      <span style=color:#434f54>env</span>:
-        - <span style=color:#434f54>name</span>: DOTNET_DiagnosticPorts
-          <span style=color:#434f54>value</span>: /diag/port
-        <span style=color:#434f54>volumeMounts</span>:
-        - <span style=color:#434f54>mountPath</span>: /diag
-          <span style=color:#434f54>name</span>: diagvol
-        - <span style=color:#434f54>mountPath</span>: /dumps
-          <span style=color:#434f54>name</span>: dumpsvol
-      - <span style=color:#434f54>name</span>: monitor
-        <span style=color:#434f54>image</span>: mcr.microsoft.com/dotnet/monitor
-        <span style=color:#434f54>args</span>: [ <span style=color:#7f8c8d>&#34;--no-auth&#34;</span> ]
-        <span style=color:#434f54>env</span>:
-        - <span style=color:#434f54>name</span>: DOTNETMONITOR_Urls
-          <span style=color:#434f54>value</span>: http://localhost:52323
-        - <span style=color:#434f54>name</span>: DOTNETMONITOR_DiagnosticPort__ConnectionMode
-          <span style=color:#434f54>value</span>: Listen
-        - <span style=color:#434f54>name</span>: DOTNETMONITOR_DiagnosticPort__EndpointName
-          <span style=color:#434f54>value</span>: /diag/port
-        - <span style=color:#434f54>name</span>: DOTNETMONITOR_Storage__DumpTempFolder
-          <span style=color:#434f54>value</span>: /dumps
-        <span style=color:#434f54>volumeMounts</span>:
-        - <span style=color:#434f54>mountPath</span>: /diag
-          <span style=color:#434f54>name</span>: diagvol
-        - <span style=color:#434f54>mountPath</span>: /dumps
-          <span style=color:#434f54>name</span>: dumpsvol
-        <span style=color:#434f54>resources</span>:
-          <span style=color:#434f54>requests</span>:
-            <span style=color:#434f54>cpu</span>: 50m
-            <span style=color:#434f54>memory</span>: 32Mi
-          <span style=color:#434f54>limits</span>:
-            <span style=color:#434f54>cpu</span>: 250m
-            <span style=color:#434f54>memory</span>: 256Mi
-      <span style=color:#434f54>volumes</span>:
-      - <span style=color:#434f54>name</span>: diagvol
-        <span style=color:#434f54>emptyDir</span>: {}
-      - <span style=color:#434f54>name</span>: dumpsvol
-        <span style=color:#434f54>emptyDir</span>: {}
-</code></pre></div><p>上面进行了三个改动：</p>
-<ol>
-<li>添加了名为<code>monitor</code>的容器作为sidecar</li>
-<li>分别添加了两个名为<code>diagvol</code>和<code>dumpsvol</code>的空目录volumes，并挂载到被诊断应用和monitor中</li>
-<li>为被诊断应用配置<code>DOTNET_DiagnosticPorts</code>环境变量</li>
-</ol>
-<p>Pod启动后，dotnet-monitor会同被诊断应用的.NET运行时进行IPC通讯，并且dotnet-monitor会将控制命令以API的形式对我们开放。</p>
-<p>API列表：</p>
-<ul>
-<li><code>/processes</code> 获取相关进程的详细信息</li>
-<li><code>/dump</code> 获取内存dump</li>
-<li><code>/gcdump</code> 获取GCdump</li>
-<li><code>/trace</code> 获取进程追踪数据</li>
-<li><code>/metrics</code> 以Prometheus格式发布指标数据</li>
-<li><code>/livemetrics</code> 获取进程的实时指标</li>
-<li><code>/logs</code> 获取进程所产生的日志</li>
-<li><code>/info</code> 获取dotnet-monitor的信息</li>
-<li><code>/operations</code> 获取或取消当前进行中的操作</li>
-</ul>
-<p>这里以两个主要的诊断场景<code>trace</code>和<code>gcdump</code>举例演示诊断一个有内存泄露和线程阻塞问题的应用</p>
-<p>通过<code>kubectl port-forward</code>命令，转发monitor容器的请求到本机，在浏览器中访问<code>http://localhost:52323/gcdump</code>，即可捕获并下载被诊断应用的gcdump。</p>
-<p>下载完成后，通过perfview打开：</p>
-<p><img src=/dotnet-monitor-diag-memory-threading/2.png alt>
-<img src=/dotnet-monitor-diag-memory-threading/3.png alt></p>
-<p>可以看到内存主要被一个保存了大量<code>Mail</code>对象的<code>ConcurrentBag</code>所占用。</p>
-<h4 id=关于线程阻塞及线程池饥饿问题的诊断>关于线程阻塞及线程池饥饿问题的诊断</h4>
-<p>访问<code>http://localhost:52323/trace?profile=cpu</code>，即可捕捉应用的跟踪信息并下载，默认会记录30秒的数据，可以通过<code>durationSeconds</code>参数更改记录时间。
-下载完成后，通过perfview打开</p>
-<p>dotnet-monitor内部使用的是和dotnet-trace同样的方式记录追踪信息，而它们都是无法获得线程阻塞时间的数据的，想要获得线程阻塞时间数据，需要使用perfcollect并开启-threadtime选项来收集诊断信息（或者在windows上使用perfview开启/threadTime进行收集）</p>
-<p>但是我们依然可以通过dotnet-monitor来得知应用当前线程池的大小、线程队列的长度、线程的调用堆栈等信息，从中也一定程度上可以识别线程池饥饿、定位到导致线程阻塞的代码，如图：
-<img src=/dotnet-monitor-diag-memory-threading/9.png alt><br>
-从上图可以看到.NET运行时在不断地创建新的线程</p>
-<p><img src=/dotnet-monitor-diag-memory-threading/11.png alt><br>
-从上图可以看到由于<code>Starvation</code>，线程池大小在发生变化（增加）</p>
-<p><img src=/dotnet-monitor-diag-memory-threading/10.png alt>
-在调用堆栈中可以看到有导致线程阻塞的代码</p>
-</article>
-</main><footer id=footer>
-</footer>
-</body>
-</html>
+<!doctype html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><link rel="shortcut icon" href=http://suraciii.github.io/favicon.ico><link rel=stylesheet href=/css/style.min.css><title>使用dotnet-monitor收集k8s中.NET应用的诊断数据</title></head><body><header id=banner><h2><a href=http://suraciii.github.io/>The Dice Maker</a></h2><nav><ul></ul></nav></header><main id=content><article><header id=post-header><h1>使用dotnet-monitor收集k8s中.NET应用的诊断数据</h1><div><time>February 9, 2022</time></div></header><p>平常在用Visual Studio开发.NET应用时，可以在调试时使用性能诊断工具对应用进行诊断，调查其中诸如内存泄露、线程阻塞等问题。</p><p>但是对于线上尤其是运行在容器中的应用来说，收集诊断数据是非常麻烦的，这里介绍使用dotnet-monitor来方便地收集.NET应用诊断数据。</p><p>只需要按如下方式对应用的deployment/statefulset进行修改：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#434f54>apiVersion</span>: apps/v1
+</span></span><span style=display:flex><span><span style=color:#434f54>kind</span>: Deployment
+</span></span><span style=display:flex><span><span style=color:#434f54>...</span>
+</span></span><span style=display:flex><span><span style=color:#434f54>spec</span>:
+</span></span><span style=display:flex><span>  <span style=color:#434f54>template</span>:
+</span></span><span style=display:flex><span>    <span style=color:#434f54>metadata</span>:
+</span></span><span style=display:flex><span>      <span style=color:#434f54>labels</span>:
+</span></span><span style=display:flex><span>        <span style=color:#434f54>app</span>: myapp
+</span></span><span style=display:flex><span>    <span style=color:#434f54>spec</span>:
+</span></span><span style=display:flex><span>      <span style=color:#434f54>containers</span>:
+</span></span><span style=display:flex><span>      - <span style=color:#434f54>name</span>: myapp
+</span></span><span style=display:flex><span>	      <span style=color:#434f54>image</span>: myapp:latest
+</span></span><span style=display:flex><span> 	      <span style=color:#434f54>env</span>:
+</span></span><span style=display:flex><span>        - <span style=color:#434f54>name</span>: DOTNET_DiagnosticPorts
+</span></span><span style=display:flex><span>          <span style=color:#434f54>value</span>: /diag/port
+</span></span><span style=display:flex><span>        <span style=color:#434f54>volumeMounts</span>:
+</span></span><span style=display:flex><span>        - <span style=color:#434f54>mountPath</span>: /diag
+</span></span><span style=display:flex><span>          <span style=color:#434f54>name</span>: diagvol
+</span></span><span style=display:flex><span>        - <span style=color:#434f54>mountPath</span>: /dumps
+</span></span><span style=display:flex><span>          <span style=color:#434f54>name</span>: dumpsvol
+</span></span><span style=display:flex><span>      - <span style=color:#434f54>name</span>: monitor
+</span></span><span style=display:flex><span>        <span style=color:#434f54>image</span>: mcr.microsoft.com/dotnet/monitor
+</span></span><span style=display:flex><span>        <span style=color:#434f54>args</span>: [ <span style=color:#7f8c8d>&#34;--no-auth&#34;</span> ]
+</span></span><span style=display:flex><span>        <span style=color:#434f54>env</span>:
+</span></span><span style=display:flex><span>        - <span style=color:#434f54>name</span>: DOTNETMONITOR_Urls
+</span></span><span style=display:flex><span>          <span style=color:#434f54>value</span>: http://localhost:52323
+</span></span><span style=display:flex><span>        - <span style=color:#434f54>name</span>: DOTNETMONITOR_DiagnosticPort__ConnectionMode
+</span></span><span style=display:flex><span>          <span style=color:#434f54>value</span>: Listen
+</span></span><span style=display:flex><span>        - <span style=color:#434f54>name</span>: DOTNETMONITOR_DiagnosticPort__EndpointName
+</span></span><span style=display:flex><span>          <span style=color:#434f54>value</span>: /diag/port
+</span></span><span style=display:flex><span>        - <span style=color:#434f54>name</span>: DOTNETMONITOR_Storage__DumpTempFolder
+</span></span><span style=display:flex><span>          <span style=color:#434f54>value</span>: /dumps
+</span></span><span style=display:flex><span>        <span style=color:#434f54>volumeMounts</span>:
+</span></span><span style=display:flex><span>        - <span style=color:#434f54>mountPath</span>: /diag
+</span></span><span style=display:flex><span>          <span style=color:#434f54>name</span>: diagvol
+</span></span><span style=display:flex><span>        - <span style=color:#434f54>mountPath</span>: /dumps
+</span></span><span style=display:flex><span>          <span style=color:#434f54>name</span>: dumpsvol
+</span></span><span style=display:flex><span>        <span style=color:#434f54>resources</span>:
+</span></span><span style=display:flex><span>          <span style=color:#434f54>requests</span>:
+</span></span><span style=display:flex><span>            <span style=color:#434f54>cpu</span>: 50m
+</span></span><span style=display:flex><span>            <span style=color:#434f54>memory</span>: 32Mi
+</span></span><span style=display:flex><span>          <span style=color:#434f54>limits</span>:
+</span></span><span style=display:flex><span>            <span style=color:#434f54>cpu</span>: 250m
+</span></span><span style=display:flex><span>            <span style=color:#434f54>memory</span>: 256Mi
+</span></span><span style=display:flex><span>      <span style=color:#434f54>volumes</span>:
+</span></span><span style=display:flex><span>      - <span style=color:#434f54>name</span>: diagvol
+</span></span><span style=display:flex><span>        <span style=color:#434f54>emptyDir</span>: {}
+</span></span><span style=display:flex><span>      - <span style=color:#434f54>name</span>: dumpsvol
+</span></span><span style=display:flex><span>        <span style=color:#434f54>emptyDir</span>: {}
+</span></span></code></pre></div><p>上面进行了三个改动：</p><ol><li>添加了名为<code>monitor</code>的容器作为sidecar</li><li>分别添加了两个名为<code>diagvol</code>和<code>dumpsvol</code>的空目录volumes，并挂载到被诊断应用和monitor中</li><li>为被诊断应用配置<code>DOTNET_DiagnosticPorts</code>环境变量</li></ol><p>Pod启动后，dotnet-monitor会同被诊断应用的.NET运行时进行IPC通讯，并且dotnet-monitor会将控制命令以API的形式对我们开放。</p><p>API列表：</p><ul><li><code>/processes</code> 获取相关进程的详细信息</li><li><code>/dump</code> 获取内存dump</li><li><code>/gcdump</code> 获取GCdump</li><li><code>/trace</code> 获取进程追踪数据</li><li><code>/metrics</code> 以Prometheus格式发布指标数据</li><li><code>/livemetrics</code> 获取进程的实时指标</li><li><code>/logs</code> 获取进程所产生的日志</li><li><code>/info</code> 获取dotnet-monitor的信息</li><li><code>/operations</code> 获取或取消当前进行中的操作</li></ul><p>这里以两个主要的诊断场景<code>trace</code>和<code>gcdump</code>举例演示诊断一个有内存泄露和线程阻塞问题的应用</p><p>通过<code>kubectl port-forward</code>命令，转发monitor容器的请求到本机，在浏览器中访问<code>http://localhost:52323/gcdump</code>，即可捕获并下载被诊断应用的gcdump。</p><p>下载完成后，通过perfview打开：</p><p><img src=/dotnet-monitor-diag-memory-threading/2.png alt>
+<img src=/dotnet-monitor-diag-memory-threading/3.png alt></p><p>可以看到内存主要被一个保存了大量<code>Mail</code>对象的<code>ConcurrentBag</code>所占用。</p><h4 id=关于线程阻塞及线程池饥饿问题的诊断>关于线程阻塞及线程池饥饿问题的诊断</h4><p>访问<code>http://localhost:52323/trace?profile=cpu</code>，即可捕捉应用的跟踪信息并下载，默认会记录30秒的数据，可以通过<code>durationSeconds</code>参数更改记录时间。
+下载完成后，通过perfview打开</p><p>dotnet-monitor内部使用的是和dotnet-trace同样的方式记录追踪信息，而它们都是无法获得线程阻塞时间的数据的，想要获得线程阻塞时间数据，需要使用perfcollect并开启-threadtime选项来收集诊断信息（或者在windows上使用perfview开启/threadTime进行收集）</p><p>但是我们依然可以通过dotnet-monitor来得知应用当前线程池的大小、线程队列的长度、线程的调用堆栈等信息，从中也一定程度上可以识别线程池饥饿、定位到导致线程阻塞的代码，如图：
+<img src=/dotnet-monitor-diag-memory-threading/9.png alt><br>从上图可以看到.NET运行时在不断地创建新的线程</p><p><img src=/dotnet-monitor-diag-memory-threading/11.png alt><br>从上图可以看到由于<code>Starvation</code>，线程池大小在发生变化（增加）</p><p><img src=/dotnet-monitor-diag-memory-threading/10.png alt>
+在调用堆栈中可以看到有导致线程阻塞的代码</p></article></main><footer id=footer></footer></body></html>

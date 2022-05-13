@@ -1,198 +1,51 @@
-<!doctype html><html><head>
-<meta charset=utf-8>
-<meta name=viewport content="width=device-width,initial-scale=1">
-<link rel="shortcut icon" href=http://suraciii.github.io/favicon.ico>
-<link rel=stylesheet href=/css/style.min.css>
-<title>为Kubernetes集群添加用户</title>
-</head>
-<body><header id=banner>
-<h2><a href=http://suraciii.github.io/>The Dice Maker</a></h2>
-<nav>
-<ul>
-</ul>
-</nav>
-</header>
-<main id=content>
-<article>
-<header id=post-header>
-<h1>为Kubernetes集群添加用户</h1>
-<div>
-<time>August 29, 2018</time>
-</div>
-</header><h2 id=kubernetes中的用户>Kubernetes中的用户</h2>
-<p>K8S中有两种用户(User)——服务账号(ServiceAccount)和普通意义上的用户(User)<br>
-ServiceAccount是由K8S管理的，而User通常是在外部管理，K8S不存储用户列表——也就是说，添加/编辑/删除用户都是在外部进行，无需与K8S API交互，虽然K8S并不管理用户，但是在K8S接收API请求时，是可以认知到发出请求的用户的，实际上，所有对K8S的API请求都需要绑定身份信息(User或者ServiceAccount)，这意味着，可以为User配置K8S集群中的请求权限</p>
-<h3 id=有什么区别>有什么区别？</h3>
-<p>最主要的区别上面已经说过了，即ServiceAccount是K8S内部资源，而User是独立于K8S之外的。从它们的本质可以看出：</p>
-<ul>
-<li>
-<p>User通常是人来使用，而ServiceAccount是某个服务/资源/程序使用的</p>
-</li>
-<li>
-<p>User独立在K8S之外，也就是说User是可以作用于全局的，在任何命名空间都可被认知，并且需要在全局唯一<br>
-而ServiceAccount作为K8S内部的某种资源，是存在于某个命名空间之中的，在不同命名空间中的同名ServiceAccount被认为是不同的资源</p>
-</li>
-<li>
-<p>K8S不会管理User，所以User的创建/编辑/注销等，需要依赖外部的管理机制，K8S所能认知的只有一个用户名
-ServiceAccount是由K8S管理的，创建等操作，都通过K8S完成</p>
-</li>
-</ul>
-<p>这里说的添加用户指的是普通意义上的用户，即存在于集群外的用户，为k8s的使用者。<br>
-实际上叫做添加用户也不准确，用户早已存在，这里所做的只是使K8S能够识别此用户，并且控制此用户在集群内的权限</p>
-<h2 id=用户验证>用户验证</h2>
-<p>尽管K8S认知用户靠的只是用户的名字，但是只需要一个名字就能请求K8S的API显然是不合理的，所以依然需要验证此用户的身份
-在K8S中，有以下几种验证方式：</p>
-<ul>
-<li>
-<p>X509客户端证书<br>
-客户端证书验证通过为API Server指定<code>--client-ca-file=xxx</code>选项启用，API Server通过此ca文件来验证API请求携带的客户端证书的有效性，一旦验证成功，API Server就会将客户端证书Subject里的CN属性作为此次请求的用户名</p>
-</li>
-<li>
-<p>静态token文件<br>
-通过指定<code>--token-auth-file=SOMEFILE </code>选项来启用bearer token验证方式，引用的文件是一个包含了 token,用户名,用户ID 的csv文件
-请求时，带上<code>Authorization: Bearer 31ada4fd-adec-460c-809a-9e56ceb75269</code>头信息即可通过bearer token验证</p>
-</li>
-<li>
-<p>静态密码文件<br>
-通过指定<code>--basic-auth-file=SOMEFILE</code>选项启用密码验证，类似的，引用的文件时一个包含 密码,用户名,用户ID 的csv文件
-请求时需要将<code>Authorization</code>头设置为<code>Basic BASE64ENCODED(USER:PASSWORD)</code></p>
-</li>
-</ul>
-<p>这里只介绍客户端验证</p>
-<h2 id=为用户生成证书>为用户生成证书</h2>
-<p>假设我们操作的用户名为tom</p>
-<ol>
-<li>
-<p>首先需要为此用户创建一个私钥<br>
-<code>openssl genrsa -out tom.key 2048</code></p>
-</li>
-<li>
-<p>接着用此私钥创建一个csr(证书签名请求)文件，其中我们需要在subject里带上用户信息(CN为用户名，O为用户组)<br>
-<code>openssl req -new -key tom.key -out tom.csr -subj "/CN=tom/O=MGM"</code><br>
-其中/O参数可以出现多次，即可以有多个用户组</p>
-</li>
-<li>
-<p>找到K8S集群(API Server)的CA证书文件，其位置取决于安装集群的方式，通常会在<code>/etc/kubernetes/pki/</code>路径下，会有两个文件，一个是CA证书(ca.crt)，一个是CA私钥(ca.key)</p>
-</li>
-<li>
-<p>通过集群的CA证书和之前创建的csr文件，来为用户颁发证书<br>
-<code>openssl x509 -req -in tom.csr -CA path/to/ca.crt -CAkey path/to/ca.key -CAcreateserial -out tom.crt -days 365</code><br>
--CA和-CAkey参数需要指定集群CA证书所在位置，-days参数指定此证书的过期时间，这里为365天</p>
-</li>
-<li>
-<p>最后将证书(tom.crt)和私钥(tom.key)保存起来，这两个文件将被用来验证API请求</p>
-</li>
-</ol>
-<h2 id=为用户添加基于角色的访问控制rbac>为用户添加基于角色的访问控制(RBAC)</h2>
-<h3 id=角色role>角色(Role)</h3>
-<p>在RBAC中，角色有两种——普通角色(Role)和集群角色(ClusterRole)，ClusterRole是特殊的Role，相对于Role来说：</p>
-<ul>
-<li>
-<p>Role属于某个命名空间，而ClusterRole属于整个集群，其中包括所有的命名空间</p>
-</li>
-<li>
-<p>ClusterRole能够授予集群范围的权限，比如node资源的管理，比如非资源类型的接口请求(如"/healthz")，比如可以请求全命名空间的资源(通过指定 &ndash;all-namespaces)</p>
-</li>
-</ul>
-<h3 id=为用户添加角色>为用户添加角色</h3>
-<h4 id=首先创造一个角色>首先创造一个角色</h4>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#434f54>kind</span>: Role
-<span style=color:#434f54>apiVersion</span>: rbac.authorization.k8s.io/v1beta1
-<span style=color:#434f54>metadata</span>:
-  <span style=color:#434f54>namespace</span>: a-1
-  <span style=color:#434f54>name</span>: admin
-<span style=color:#434f54>rules</span>:
-- <span style=color:#434f54>apiGroups</span>: [<span style=color:#7f8c8d>&#34;&#34;</span>]
-  <span style=color:#434f54>resources</span>: [<span style=color:#7f8c8d>&#34;*&#34;</span>]
-  <span style=color:#434f54>verbs</span>: [<span style=color:#7f8c8d>&#34;*&#34;</span>]
-</code></pre></div><p>这是在a-1命名空间内创建了一个admin管理员角色，这里只是用admin角色举例，实际上如果只是为了授予用户某命名空间管理员的权限的话，是不需要新建一个角色的，K8S已经内置了一个名为admin的ClusterRole</p>
-<h4 id=将角色和用户绑定>将角色和用户绑定</h4>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#434f54>kind</span>: RoleBinding
-<span style=color:#434f54>apiVersion</span>: rbac.authorization.k8s.io/v1beta1
-<span style=color:#434f54>metadata</span>:
-  <span style=color:#434f54>name</span>: admin-binding
-  <span style=color:#434f54>namespace</span>: a-1
-<span style=color:#434f54>subjects</span>:
-- <span style=color:#434f54>kind</span>: User
-  <span style=color:#434f54>name</span>: tom
-  <span style=color:#434f54>apiGroup</span>: <span style=color:#7f8c8d>&#34;&#34;</span>
-<span style=color:#434f54>roleRef</span>:
-  <span style=color:#434f54>kind</span>: Role
-  <span style=color:#434f54>name</span>: admin
-  <span style=color:#434f54>apiGroup</span>: <span style=color:#7f8c8d>&#34;&#34;</span>
-</code></pre></div><p>如yaml中所示，RoleBinding资源创建了一个 Role-User 之间的关系，<code>roleRef</code>节点指定此RoleBinding所引用的角色，<code>subjects</code>节点指定了此RoleBinding的受体，可以是User，也可以是前面说过的ServiceAccount，在这里只包含了名为 tom 的用户</p>
-<h4 id=添加命名空间管理员的另一种方式>添加命名空间管理员的另一种方式</h4>
-<p>前面说过，K8S内置了一个名为admin的ClusterRole，所以实际上我们无需创建一个admin Role，直接对集群默认的admin ClusterRole添加RoleBinding就可以了</p>
-<div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#434f54>kind</span>: RoleBinding
-<span style=color:#434f54>apiVersion</span>: rbac.authorization.k8s.io/v1beta1
-<span style=color:#434f54>metadata</span>:
-  <span style=color:#434f54>name</span>: admin-binding
-  <span style=color:#434f54>namespace</span>: a-1
-<span style=color:#434f54>subjects</span>:
-- <span style=color:#434f54>kind</span>: User
-  <span style=color:#434f54>name</span>: tom
-  <span style=color:#434f54>apiGroup</span>: <span style=color:#7f8c8d>&#34;&#34;</span>
-<span style=color:#434f54>roleRef</span>:
-  <span style=color:#434f54>kind</span>: ClusterRole
-  <span style=color:#434f54>name</span>: admin
-  <span style=color:#434f54>apiGroup</span>: <span style=color:#7f8c8d>&#34;&#34;</span>
-</code></pre></div><p>这里虽然引用的是作为ClusterRole的admin角色，但是其权限被限制在RoleBinding admin-binding所处的命名空间，即a-1内
-如果想要添加全命名空间或者说全集群的管理员，可以使用cluster-admin角色</p>
-<p>到此为止，我们已经：</p>
-<ul>
-<li>为tom用户提供了基于X509证书的验证</li>
-<li>为a-1命名空间创造了一个admin角色</li>
-<li>为用户tom和角色admin创建了绑定关系</li>
-</ul>
-<h2 id=为kubectl配置用户>为kubectl配置用户</h2>
-<p>tom已经是管理员了，现在我们想要通过kubectl以tom的身份来操作集群，需要将tom的认证信息添加进kubectl的配置，即~/.kube/config中</p>
-<p>这里假设config中已经配置好了k8s集群</p>
-<ol>
-<li>
-<p>通过命令<code>kubectl config set-credentials tom --client-certificate=path/to/tom.crt --client-key=path/to/tom.key</code>将用户tom的验证信息添加进kubectl的配置<br>
-此命令会在配置中添加一个名为tom的用户</p>
-</li>
-<li>
-<p><code>kubectl config set-context tom@aliyun --cluster=aliyun --namespace=a-1 --user=tom</code><br>
-此命令添加了一个context配置——设定使用aliyun集群，默认使用a-1命名空间，使用用户tom进行验证</p>
-</li>
-<li>
-<p>在命令中带上 <code>kubectl --context=tom@aliyun ...</code> 参数即可指定kubectl使用之前添加的名为tom@aliyun的context操作集群<br>
-也可以通过命令 <code>kubectl config use-context tom@aliyun</code> 来设置当前使用的context</p>
-</li>
-</ol>
-<h4 id=tips-将认证信息嵌入kubectl的配置中>Tips: 将认证信息嵌入kubectl的配置中</h4>
-<p>通过<code>kubectl config set-credentials</code>命令添加的用户，其默认使用的是引用证书文件路径的方式，表现在~/.kube/config中，就是：</p>
-<pre tabindex=0><code>users:
+<!doctype html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><link rel="shortcut icon" href=http://suraciii.github.io/favicon.ico><link rel=stylesheet href=/css/style.min.css><title>为Kubernetes集群添加用户</title></head><body><header id=banner><h2><a href=http://suraciii.github.io/>The Dice Maker</a></h2><nav><ul></ul></nav></header><main id=content><article><header id=post-header><h1>为Kubernetes集群添加用户</h1><div><time>August 29, 2018</time></div></header><h2 id=kubernetes中的用户>Kubernetes中的用户</h2><p>K8S中有两种用户(User)——服务账号(ServiceAccount)和普通意义上的用户(User)<br>ServiceAccount是由K8S管理的，而User通常是在外部管理，K8S不存储用户列表——也就是说，添加/编辑/删除用户都是在外部进行，无需与K8S API交互，虽然K8S并不管理用户，但是在K8S接收API请求时，是可以认知到发出请求的用户的，实际上，所有对K8S的API请求都需要绑定身份信息(User或者ServiceAccount)，这意味着，可以为User配置K8S集群中的请求权限</p><h3 id=有什么区别>有什么区别？</h3><p>最主要的区别上面已经说过了，即ServiceAccount是K8S内部资源，而User是独立于K8S之外的。从它们的本质可以看出：</p><ul><li><p>User通常是人来使用，而ServiceAccount是某个服务/资源/程序使用的</p></li><li><p>User独立在K8S之外，也就是说User是可以作用于全局的，在任何命名空间都可被认知，并且需要在全局唯一<br>而ServiceAccount作为K8S内部的某种资源，是存在于某个命名空间之中的，在不同命名空间中的同名ServiceAccount被认为是不同的资源</p></li><li><p>K8S不会管理User，所以User的创建/编辑/注销等，需要依赖外部的管理机制，K8S所能认知的只有一个用户名
+ServiceAccount是由K8S管理的，创建等操作，都通过K8S完成</p></li></ul><p>这里说的添加用户指的是普通意义上的用户，即存在于集群外的用户，为k8s的使用者。<br>实际上叫做添加用户也不准确，用户早已存在，这里所做的只是使K8S能够识别此用户，并且控制此用户在集群内的权限</p><h2 id=用户验证>用户验证</h2><p>尽管K8S认知用户靠的只是用户的名字，但是只需要一个名字就能请求K8S的API显然是不合理的，所以依然需要验证此用户的身份
+在K8S中，有以下几种验证方式：</p><ul><li><p>X509客户端证书<br>客户端证书验证通过为API Server指定<code>--client-ca-file=xxx</code>选项启用，API Server通过此ca文件来验证API请求携带的客户端证书的有效性，一旦验证成功，API Server就会将客户端证书Subject里的CN属性作为此次请求的用户名</p></li><li><p>静态token文件<br>通过指定<code>--token-auth-file=SOMEFILE </code>选项来启用bearer token验证方式，引用的文件是一个包含了 token,用户名,用户ID 的csv文件
+请求时，带上<code>Authorization: Bearer 31ada4fd-adec-460c-809a-9e56ceb75269</code>头信息即可通过bearer token验证</p></li><li><p>静态密码文件<br>通过指定<code>--basic-auth-file=SOMEFILE</code>选项启用密码验证，类似的，引用的文件时一个包含 密码,用户名,用户ID 的csv文件
+请求时需要将<code>Authorization</code>头设置为<code>Basic BASE64ENCODED(USER:PASSWORD)</code></p></li></ul><p>这里只介绍客户端验证</p><h2 id=为用户生成证书>为用户生成证书</h2><p>假设我们操作的用户名为tom</p><ol><li><p>首先需要为此用户创建一个私钥<br><code>openssl genrsa -out tom.key 2048</code></p></li><li><p>接着用此私钥创建一个csr(证书签名请求)文件，其中我们需要在subject里带上用户信息(CN为用户名，O为用户组)<br><code>openssl req -new -key tom.key -out tom.csr -subj "/CN=tom/O=MGM"</code><br>其中/O参数可以出现多次，即可以有多个用户组</p></li><li><p>找到K8S集群(API Server)的CA证书文件，其位置取决于安装集群的方式，通常会在<code>/etc/kubernetes/pki/</code>路径下，会有两个文件，一个是CA证书(ca.crt)，一个是CA私钥(ca.key)</p></li><li><p>通过集群的CA证书和之前创建的csr文件，来为用户颁发证书<br><code>openssl x509 -req -in tom.csr -CA path/to/ca.crt -CAkey path/to/ca.key -CAcreateserial -out tom.crt -days 365</code><br>-CA和-CAkey参数需要指定集群CA证书所在位置，-days参数指定此证书的过期时间，这里为365天</p></li><li><p>最后将证书(tom.crt)和私钥(tom.key)保存起来，这两个文件将被用来验证API请求</p></li></ol><h2 id=为用户添加基于角色的访问控制rbac>为用户添加基于角色的访问控制(RBAC)</h2><h3 id=角色role>角色(Role)</h3><p>在RBAC中，角色有两种——普通角色(Role)和集群角色(ClusterRole)，ClusterRole是特殊的Role，相对于Role来说：</p><ul><li><p>Role属于某个命名空间，而ClusterRole属于整个集群，其中包括所有的命名空间</p></li><li><p>ClusterRole能够授予集群范围的权限，比如node资源的管理，比如非资源类型的接口请求(如"/healthz")，比如可以请求全命名空间的资源(通过指定 &ndash;all-namespaces)</p></li></ul><h3 id=为用户添加角色>为用户添加角色</h3><h4 id=首先创造一个角色>首先创造一个角色</h4><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#434f54>kind</span>: Role
+</span></span><span style=display:flex><span><span style=color:#434f54>apiVersion</span>: rbac.authorization.k8s.io/v1beta1
+</span></span><span style=display:flex><span><span style=color:#434f54>metadata</span>:
+</span></span><span style=display:flex><span>  <span style=color:#434f54>namespace</span>: a-1
+</span></span><span style=display:flex><span>  <span style=color:#434f54>name</span>: admin
+</span></span><span style=display:flex><span><span style=color:#434f54>rules</span>:
+</span></span><span style=display:flex><span>- <span style=color:#434f54>apiGroups</span>: [<span style=color:#7f8c8d>&#34;&#34;</span>]
+</span></span><span style=display:flex><span>  <span style=color:#434f54>resources</span>: [<span style=color:#7f8c8d>&#34;*&#34;</span>]
+</span></span><span style=display:flex><span>  <span style=color:#434f54>verbs</span>: [<span style=color:#7f8c8d>&#34;*&#34;</span>]
+</span></span></code></pre></div><p>这是在a-1命名空间内创建了一个admin管理员角色，这里只是用admin角色举例，实际上如果只是为了授予用户某命名空间管理员的权限的话，是不需要新建一个角色的，K8S已经内置了一个名为admin的ClusterRole</p><h4 id=将角色和用户绑定>将角色和用户绑定</h4><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#434f54>kind</span>: RoleBinding
+</span></span><span style=display:flex><span><span style=color:#434f54>apiVersion</span>: rbac.authorization.k8s.io/v1beta1
+</span></span><span style=display:flex><span><span style=color:#434f54>metadata</span>:
+</span></span><span style=display:flex><span>  <span style=color:#434f54>name</span>: admin-binding
+</span></span><span style=display:flex><span>  <span style=color:#434f54>namespace</span>: a-1
+</span></span><span style=display:flex><span><span style=color:#434f54>subjects</span>:
+</span></span><span style=display:flex><span>- <span style=color:#434f54>kind</span>: User
+</span></span><span style=display:flex><span>  <span style=color:#434f54>name</span>: tom
+</span></span><span style=display:flex><span>  <span style=color:#434f54>apiGroup</span>: <span style=color:#7f8c8d>&#34;&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#434f54>roleRef</span>:
+</span></span><span style=display:flex><span>  <span style=color:#434f54>kind</span>: Role
+</span></span><span style=display:flex><span>  <span style=color:#434f54>name</span>: admin
+</span></span><span style=display:flex><span>  <span style=color:#434f54>apiGroup</span>: <span style=color:#7f8c8d>&#34;&#34;</span>
+</span></span></code></pre></div><p>如yaml中所示，RoleBinding资源创建了一个 Role-User 之间的关系，<code>roleRef</code>节点指定此RoleBinding所引用的角色，<code>subjects</code>节点指定了此RoleBinding的受体，可以是User，也可以是前面说过的ServiceAccount，在这里只包含了名为 tom 的用户</p><h4 id=添加命名空间管理员的另一种方式>添加命名空间管理员的另一种方式</h4><p>前面说过，K8S内置了一个名为admin的ClusterRole，所以实际上我们无需创建一个admin Role，直接对集群默认的admin ClusterRole添加RoleBinding就可以了</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#434f54>kind</span>: RoleBinding
+</span></span><span style=display:flex><span><span style=color:#434f54>apiVersion</span>: rbac.authorization.k8s.io/v1beta1
+</span></span><span style=display:flex><span><span style=color:#434f54>metadata</span>:
+</span></span><span style=display:flex><span>  <span style=color:#434f54>name</span>: admin-binding
+</span></span><span style=display:flex><span>  <span style=color:#434f54>namespace</span>: a-1
+</span></span><span style=display:flex><span><span style=color:#434f54>subjects</span>:
+</span></span><span style=display:flex><span>- <span style=color:#434f54>kind</span>: User
+</span></span><span style=display:flex><span>  <span style=color:#434f54>name</span>: tom
+</span></span><span style=display:flex><span>  <span style=color:#434f54>apiGroup</span>: <span style=color:#7f8c8d>&#34;&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#434f54>roleRef</span>:
+</span></span><span style=display:flex><span>  <span style=color:#434f54>kind</span>: ClusterRole
+</span></span><span style=display:flex><span>  <span style=color:#434f54>name</span>: admin
+</span></span><span style=display:flex><span>  <span style=color:#434f54>apiGroup</span>: <span style=color:#7f8c8d>&#34;&#34;</span>
+</span></span></code></pre></div><p>这里虽然引用的是作为ClusterRole的admin角色，但是其权限被限制在RoleBinding admin-binding所处的命名空间，即a-1内
+如果想要添加全命名空间或者说全集群的管理员，可以使用cluster-admin角色</p><p>到此为止，我们已经：</p><ul><li>为tom用户提供了基于X509证书的验证</li><li>为a-1命名空间创造了一个admin角色</li><li>为用户tom和角色admin创建了绑定关系</li></ul><h2 id=为kubectl配置用户>为kubectl配置用户</h2><p>tom已经是管理员了，现在我们想要通过kubectl以tom的身份来操作集群，需要将tom的认证信息添加进kubectl的配置，即~/.kube/config中</p><p>这里假设config中已经配置好了k8s集群</p><ol><li><p>通过命令<code>kubectl config set-credentials tom --client-certificate=path/to/tom.crt --client-key=path/to/tom.key</code>将用户tom的验证信息添加进kubectl的配置<br>此命令会在配置中添加一个名为tom的用户</p></li><li><p><code>kubectl config set-context tom@aliyun --cluster=aliyun --namespace=a-1 --user=tom</code><br>此命令添加了一个context配置——设定使用aliyun集群，默认使用a-1命名空间，使用用户tom进行验证</p></li><li><p>在命令中带上 <code>kubectl --context=tom@aliyun ...</code> 参数即可指定kubectl使用之前添加的名为tom@aliyun的context操作集群<br>也可以通过命令 <code>kubectl config use-context tom@aliyun</code> 来设置当前使用的context</p></li></ol><h4 id=tips-将认证信息嵌入kubectl的配置中>Tips: 将认证信息嵌入kubectl的配置中</h4><p>通过<code>kubectl config set-credentials</code>命令添加的用户，其默认使用的是引用证书文件路径的方式，表现在~/.kube/config中，就是：</p><pre tabindex=0><code>users:
 - name: tom
   user:
     client-certificate: path/to/tom.crt
     client-key: path/to/tom.key
-</code></pre><p>如果觉得这样总是带着两个证书文件不方便的话，可以将证书内容直接放到config文件里</p>
-<ol>
-<li>
-<p>将tom.crt/tom.key的内容用BASE64编码<br>
-<code>cat tom.crt | base64 --wrap=0</code><br>
-<code>cat tom.key | base64 --wrap=0</code></p>
-</li>
-<li>
-<p>将获取的编码后的文本复制进config文件中</p>
-</li>
-</ol>
-<pre tabindex=0><code>users:
+</code></pre><p>如果觉得这样总是带着两个证书文件不方便的话，可以将证书内容直接放到config文件里</p><ol><li><p>将tom.crt/tom.key的内容用BASE64编码<br><code>cat tom.crt | base64 --wrap=0</code><br><code>cat tom.key | base64 --wrap=0</code></p></li><li><p>将获取的编码后的文本复制进config文件中</p></li></ol><pre tabindex=0><code>users:
 - name: ich
   user:
     client-certificate-data: ...
     client-key-data: ...
-</code></pre><p>这样就不再需要证书和私钥文件了，当然这两个文件还是保存起来比较好</p>
-<p><em>参考资料：</em><br>
-<em><a href=https://kubernetes.io/docs/reference/access-authn-authz/authentication/>Authenticating - Kubernetes Docs</a></em><br>
-<em><a href=https://docs.bitnami.com/kubernetes/how-to/configure-rbac-in-your-kubernetes-cluster/>Configure RBAC in your Kubernetes Cluster</a></em><br>
-<em><a href=https://kubernetes.io/docs/reference/access-authn-authz/rbac/>Using RBAC Authorization - Kubernetes Docs</a></em><br>
-<em><a href=https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#config>Kubectl Reference Docs#config</a></em><br>
-<em><a href=https://brancz.com/2017/10/16/kubernetes-auth-x509-client-certificates/>Kubernetes auth: X509 client certificates</a></em></p>
-</article>
-</main><footer id=footer>
-</footer>
-</body>
-</html>
+</code></pre><p>这样就不再需要证书和私钥文件了，当然这两个文件还是保存起来比较好</p><p><em>参考资料：</em><br><em><a href=https://kubernetes.io/docs/reference/access-authn-authz/authentication/>Authenticating - Kubernetes Docs</a></em><br><em><a href=https://docs.bitnami.com/kubernetes/how-to/configure-rbac-in-your-kubernetes-cluster/>Configure RBAC in your Kubernetes Cluster</a></em><br><em><a href=https://kubernetes.io/docs/reference/access-authn-authz/rbac/>Using RBAC Authorization - Kubernetes Docs</a></em><br><em><a href=https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#config>Kubectl Reference Docs#config</a></em><br><em><a href=https://brancz.com/2017/10/16/kubernetes-auth-x509-client-certificates/>Kubernetes auth: X509 client certificates</a></em></p></article></main><footer id=footer></footer></body></html>
