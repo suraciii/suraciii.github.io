@@ -1,4 +1,95 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Tags on The Dice Maker</title><link>http://suraciii.github.io/tags/</link><description>Recent content in Tags on The Dice Maker</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><atom:link href="http://suraciii.github.io/tags/index.xml" rel="self" type="application/rss+xml"/><item><title>在EF Core中使用拦截器实现自动软删除</title><link>http://suraciii.github.io/posts/ef-soft-delete/</link><pubDate>Fri, 30 Jun 2023 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/ef-soft-delete/</guid><description>&lt;p>拦截器(Interceptor)是EF Core中的一种中间件形式的组件，可以用于在EF Core的工作流中注入用户代码，以进行拦截、修改一些特定的EF Core操作。&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Tags on The Dice Maker</title><link>http://suraciii.github.io/tags/</link><description>Recent content in Tags on The Dice Maker</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><atom:link href="http://suraciii.github.io/tags/index.xml" rel="self" type="application/rss+xml"/><item><title>事件驱动架构下的业务系统需要怎样的事件基础设施</title><link>http://suraciii.github.io/posts/eda-infra/</link><pubDate>Fri, 30 Jun 2023 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/eda-infra/</guid><description>&lt;p>这是一个简单的事件驱动架构下的工作流：&lt;/p>
+&lt;p>&lt;img src="http://suraciii.github.io/eda-infra/eda-workflow.png" alt="">&lt;/p>
+&lt;p>这样的系统中，其相当一部分的业务流程是以相关事件的发布/订阅进行流转的，而在一些更为激进的事件驱动架构实现中，可能其内部绝大多数的交互都是是以事件而非命令（如HTTP/RPC等）的方式进行。&lt;/p>
+&lt;p>设计良好的事件驱动架构的确有着一些优势，比如：&lt;/p>
+&lt;ul>
+&lt;li>耦合度低，更为灵活，向系统添加新模块较为方便&lt;/li>
+&lt;li>具备较高的响应性，避免了上游的阻塞和等待&lt;/li>
+&lt;li>具备高度的可扩展性和对分布式友好&lt;/li>
+&lt;li>为业务流程提供了高度的弹性，或者说可恢复性，在分布式环境下，大量的命令式（HTTP/RPC）交互会带来大量的不确定性，如何面对这些不确定性，来让业务流程可靠、正确地进行下去成为了一个非常棘手的问题，而事件驱动架构就是解决这个问题的极佳方案之一&lt;/li>
+&lt;/ul>
+&lt;p>想要设计以及实现好这样的一个事件驱动架构的系统，就不得不考虑一个至关重要的问题：这个系统需要怎样的事件基础设施，即它应该如何收集事件，需要收集怎样的事件，它如何处理这些事件，以及如何交付这些事件&lt;/p>
+&lt;p>&lt;em>事件驱动架构就像许多其它的架构概念一样，仍然是一个比较模糊的，抽象的概念，这里只讨论实现发布/订阅模式以事件驱动并支撑业务流程的业务系统，而不包括事件流处理系统&lt;/em>&lt;/p>
+&lt;h2 id="不是什么">不是什么？&lt;/h2>
+&lt;p>想要知道一个东西是什么的最好方法，就是首先搞清楚它不是什么&lt;/p>
+&lt;h3 id="消息队列">消息队列&lt;/h3>
+&lt;p>很容易进入的一个误区就是认为事件驱动架构需要的仅仅是一个消息队列，的确，事件总线通常基于消息队列产品（如Kafka、Pulsar等）实现，但是事件驱动系统需要的不仅仅是消息队列&lt;/p>
+&lt;p>消息队列是队列，是有进有出，先进先出的，队列中的消息一旦出队被处理，它的任务就结束了，也就是说，消息是&lt;em>非持久&lt;/em>的&lt;/p>
+&lt;p>&lt;img src="http://suraciii.github.io/eda-infra/mq.png" alt="">&lt;/p>
+&lt;p>消息队列只会有一方消费者，通常也只有一方生产者，当然，在现代分布式的微服务中，“一方”消费者或生产者也许会是具备多个实例副本的单个微服务
+大多数情况下，消息队列中的消息的时序性需要被严格保证，消息出队的顺序需要严格符合消息的入队顺序&lt;/p>
+&lt;p>而在事件驱动系统中，事件流中的事件会被持久化，并提供给可能的多方消费者消费，事件被消费处理后不会从事件流中移除，此外，事件消费者可能不会在意事件的交付顺序——在事件驱动系统中，业务的一致性通常是由事件产生的因果而非事件流中的事件顺序保证的，消费方只关心事件的到达，而不关心事件到达的顺序&lt;/p>
+&lt;p>&lt;img src="http://suraciii.github.io/eda-infra/event-stream.png" alt="">&lt;/p>
+&lt;p>此外，消息队列中消息的处理及时性可能并不重要，有时甚至会故意选择牺牲消息的及时处理来交换系统的稳定性&lt;/p>
+&lt;h3 id="事件溯源">事件溯源&lt;/h3>
+&lt;p>另一个常见的误区是混淆事件驱动架构和事件溯源（Event Sourcing）&lt;/p>
+&lt;p>事件溯源的核心是记录实体状态的变更而非记录实体的当前状态，并通过对变更记录的重放来投影出实体的最新状态&lt;/p>
+&lt;p>&lt;img src="http://suraciii.github.io/eda-infra/eventsourcing.png" alt="">&lt;/p>
+&lt;p>因此，事件溯源需要持久化作为变更记录的事件，并提供严格的时序性保证&lt;/p>
+&lt;p>事件驱动架构和事件溯源的相似之处在于，二者都会以业务事件作为载体（这通常会是业务领域中的领域事件），对事件进行存储以支持重放，但是二者之间有着巨大的差异：&lt;/p>
+&lt;ul>
+&lt;li>事件溯源只记录实体的变更，事件只存在于本上下文内，自产自销，而事件驱动架构中的事件则主要负责系统各模块间的通讯、交互，以驱动业务流程的流转&lt;/li>
+&lt;li>事件溯源以实体为单元建立事件流，每个实体都有着各自的事件流，来记录此实体上发生过的变更，这也是为什么通常更适合选择数据库作为事件溯源的事件存储方案，而事件驱动架构中的事件流通常对应着各个上下文或者微服务&lt;/li>
+&lt;li>在事件溯源中，事件的消费者需要了解实体变更的全部信息，而在事件驱动的业务系统中，事件可以只传达某个事实的发生，而隐藏其中的数据信息&lt;/li>
+&lt;/ul>
+&lt;p>事件溯源，本质上是业务实体的存储的一种实现，而事件驱动架构，则是关于系统各组件如何交互集成的方案&lt;/p>
+&lt;h2 id="寻找适合事件驱动架构的事件基础设施">寻找适合事件驱动架构的事件基础设施&lt;/h2>
+&lt;p>我们需要思考以下几点：&lt;/p>
+&lt;h3 id="事件的投递保证">事件的投递保证&lt;/h3>
+&lt;p>事件也是一种消息，而对于消息，就不得不考虑它的投递保证，投递保证有三种：&lt;/p>
+&lt;ul>
+&lt;li>最多一次投递，这种情况下事件可能会丢失不被处理&lt;/li>
+&lt;li>最少一次投递，这种情况下同一事件可能会被投递多次，但是最终一定会被消费处理&lt;/li>
+&lt;li>严格一次投递&lt;/li>
+&lt;/ul>
+&lt;p>对于事件驱动的业务系统来说，绝大多数场景下需要的都是&lt;code>严格一次投递&lt;/code>，无论是事件的丢失，或者事件的重复处理都会影响业务的一致性或者说正确性，这是不可接受的&lt;/p>
+&lt;p>但是，在分布式环境下，单一组件想要实现&lt;code>严格一次投递&lt;/code>是不可能的，实际上最终只是从&lt;code>最多一次投递&lt;/code>和&lt;code>最少一次投递&lt;/code>中做选择，此时我们不得不选择&lt;code>最少一次投递&lt;/code>，然后在事件的消费端，通过记录已处理事件或业务校验来提供幂等性，最终在整体上做到&lt;strong>同一事件一定会被处理且只被处理一次&lt;/strong>&lt;/p>
+&lt;p>实现&lt;code>最少一次投递&lt;/code>，就需要&lt;/p>
+&lt;ol>
+&lt;li>生产者在发布事件时重试直到事件被成功发布&lt;/li>
+&lt;li>消费者一定会获取到没有被完全处理的事件&lt;/li>
+&lt;li>消费者通过记录已处理事件，或者进行相关业务校验，来忽略掉重复的事件&lt;/li>
+&lt;/ol>
+&lt;p>&lt;img src="http://suraciii.github.io/eda-infra/at-least-once.png" alt="">&lt;/p>
+&lt;p>这样做有一个好处：当生产者发布事件时，它可以放心大胆地确认，只要事件被成功发布，那么这个事件就一定会被送达，这为分布式环境下的业务系统带来了至关重要的确定性，为保证业务（最终）一致性提供了巨大帮助&lt;/p>
+&lt;h3 id="单方生产和多方消费">单方生产和多方消费&lt;/h3>
+&lt;p>事件驱动架构下，事件可能会有多方消费者，一个模块发布的事件也许会被多个模块所关注&lt;br>
+一个比较极端的例子是，当系统中某个用户被禁用时，多个微服务都需要对此事件做出响应&lt;/p>
+&lt;p>但是，事件通常只有一个生产方，因为&lt;strong>业务事件是专属于某个上下文中所发生的影响业务的变化事实，事件标志着一个无可辩驳的事实已经发生&lt;/strong>，它具备极高的权威性
+拿上面的例子来说，用户被禁用的事件只有用户服务才有资格发布，而其它服务如果想要禁用某个用户，比如当付款服务识别到了用户处于有风险的支付环境中，那么它应该做的是去&lt;strong>请求&lt;/strong>用户服务来禁用此用户，而不是直接告诉全系统“某某用户已被禁用”&lt;/p>
+&lt;p>&lt;img src="http://suraciii.github.io/eda-infra/single-publisher.png" alt="">&lt;/p>
+&lt;p>此外，对于现代的分布式应用，通常会有多个实例副本以提高性能和可用性，这些实例副本同属于一个消费方，但却会是多个消费者，这就需要采用&lt;code>竞争消费&lt;/code>的模式来应对，即一个事件只会同一消费者组的其中一个消费者所消费&lt;/p>
+&lt;h3 id="事件的处理顺序">事件的处理顺序&lt;/h3>
+&lt;p>首先需要知道，&lt;strong>事件的处理顺序是否重要，取决于事件的发生顺序是否重要&lt;/strong>，比如，两个订单A和B几乎同时被请求创建并创建成功，那么哪个先被创建，哪个后被创建其实并不重要，因为首先这些创建订单的请求都未必能说清楚是哪个先到达，订单被创建的事件发布顺序也是不确定的，因此处理这两个事件的顺序也是不重要的，因为无论哪个先被处理哪个后被处理，都不影响业务一致性&lt;/p>
+&lt;p>但是有些情况下，就需要重视事件的处理顺序，例如，同一订单，被创建和被取消的事件的处理顺序就十分重要了，如果订单取消事件先于订单创建事件到达，导致订单取消事件无法被正确的处理，就会破坏业务流程的一致性&lt;/p>
+&lt;p>此时有两种选择，要么选择实现&lt;strong>有序的事件流&lt;/strong>，要么，就需要设计&lt;strong>时序不敏感&lt;/strong>的系统
+这两种选择都会有所牺牲，如果选择有序事件流，则会严重降低事件的吞吐，以及系统的性能、可扩展性甚至可用性，如果精心设计（比如采用如Kafka等支持消息分区的技术产品），能够一定程度上降低系统性能和可扩展性的损失&lt;/p>
+&lt;p>我更推荐去设计时序不敏感的系统，来让系统能够健康正常地处理乱序的事件，这需要一些学习成本，和架构改造成本，但是其带来的对性能、可扩展性、容错性以及灵活性上的提升是非常可观的&lt;/p>
+&lt;p>&lt;em>关于时序不敏感的系统，以及设计时序不敏感的事件驱动架构，后面会单独写点东西讨论&lt;/em>&lt;/p>
+&lt;h3 id="吞吐性能和可扩展性">吞吐性能和可扩展性&lt;/h3>
+&lt;p>上面之所以纠结于事件的时序，就是放弃有序事件所带来的性能和可扩展性的提升对于现代云原生应用来说实在是太重要了，对于许多云原生应用来说，可扩展性是性能的前提，性能是响应性的前提&lt;/p>
+&lt;p>甚至对于那些声称“不需要很高的性能也够用”的系统也是如此，因为对于可扩展性差的系统来说，也许几个月之后，当初“够用”的性能就会不够用了&lt;/p>
+&lt;h3 id="近实时性">近实时性&lt;/h3>
+&lt;p>尽管事件是一种异步的通讯方式，但它仍然要求具备较高的实时性，事件通常应该在其被发布的几秒内被处理，偶尔，也许出现分钟级别的处理延迟，但是如果处理延迟在10分钟以上，就十分不健康了，需要考虑是否因为消息的消费速度跟不上消息的生产速度而导致了消息的堆积，如果事件在发布几个小时后才被处理，那这个事件甚至可能已经失去意义了&lt;/p>
+&lt;p>这也是事件驱动架构和普通消息队列的不同之处，事件是消息，是一种通讯方式，是驱动业务正常流转的载体，它需要提供较高的实时性，从而保证系统整体的高响应性&lt;/p>
+&lt;h3 id="可观测性">可观测性&lt;/h3>
+&lt;p>可观测性对于任何系统都有很高的价值，对于有着复杂交互的事件驱动架构的系统更是如此，良好的可观测性能够很好地帮助我们识别和诊断系统中的问题&lt;/p>
+&lt;p>这其中一般包括日志、指标和链路追踪三个维度&lt;/p>
+&lt;h3 id="事件流和路由">事件流和路由&lt;/h3>
+&lt;p>事件基础设施需要考虑如何将接收到的事件整合成事件流，并以消费者的需求将不同事件投递给各个消费者来进行处理&lt;br>
+大多数情况下会以主题（Topic）作为事件流，Topic是生产者发布事件的目的地，是消费者订阅事件的来源，事件生效的区域，和（可能的）顺序保证的有效区&lt;/p>
+&lt;p>在发布/订阅模式下，相同事件会被送到相同的固定的某个Topic，在这个Topic下，这些事件所传达的信息是明确的，没有歧义的，消费者订阅某个Topic下的某个事件，并在事件到达时进行响应处理&lt;/p>
+&lt;p>许多消息队列产品（如Kafka）只能在Topic层级进行路由，这种情况下就只能在消费端实现更细粒度的事件路由，将具体某个事件送到对应的处理逻辑进行处理&lt;/p>
+&lt;p>这里就有个选择题，是 1. 每个消费方订阅一个Topic，生产方将不同事件发布到不同Topic中呢？还是 2. 生产方将事件发布到一个Topic，消费方订阅多个Topic并从中消费事件呢？&lt;/p>
+&lt;p>&lt;img src="http://suraciii.github.io/eda-infra/topics.png" alt="">&lt;/p>
+&lt;p>这里应该选择后者，具体为什么牵涉到一个关于上下文依赖的设计问题，后面单独找时间写一写&lt;/p>
+&lt;h2 id="未完待续">未完待续&lt;/h2>
+&lt;p>关于事件驱动架构，后面准备写的有：&lt;/p>
+&lt;ol>
+&lt;li>如何设计事件驱动系统中的交互，或者说，如何设计事件&lt;/li>
+&lt;li>结合Kafka和Redis，介绍具体如何实现最少一次交付，以及其中的时序问题和可扩展性问题，以及CloudEvent&lt;/li>
+&lt;/ol>
+&lt;p>能不能写出来再说吧&lt;/p></description></item><item><title>在EF Core中使用拦截器实现自动软删除</title><link>http://suraciii.github.io/posts/ef-soft-delete/</link><pubDate>Fri, 30 Jun 2023 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/ef-soft-delete/</guid><description>&lt;p>拦截器(Interceptor)是EF Core中的一种中间件形式的组件，可以用于在EF Core的工作流中注入用户代码，以进行拦截、修改一些特定的EF Core操作。&lt;/p>
 &lt;p>下面以实现软删除为例。&lt;/p>
 &lt;h2 id="ef-core中删除实体的流程">EF Core中删除实体的流程&lt;/h2>
 &lt;p>在EF Core中，通常所有对实体的写操作（增删改）都需要被追踪，EF Core通过对实体对象进行追踪，对比并记录其状态变更，从而生成相应的数据库SQL语句。&lt;/p>
