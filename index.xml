@@ -557,21 +557,21 @@ Cortex摄取来自各个Prometheus实例的数据，将其转储到对象存储�
 于是：&lt;/p>
 &lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#00979d">type&lt;/span> &lt;span style="color:#a61717">抽奖机会&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a61717">类型&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;注册赠送的&amp;#39;&lt;/span> &lt;span style="color:#728e00">|&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;消费获取的&amp;#39;&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a61717">过期时间&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#728e00">DateTime&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">过期时间&lt;/span>: &lt;span style="color:#00979d">DateTime&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>};
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>我接着说：“抽奖机会是发送给用户的，所以应该还应该记录其所有者。”，C表示同意。
 “每个抽奖机会都是独立被使用的，应该也是需要可以被追溯的，那它应该有一个编号作为标识。”&lt;/p>
 &lt;p>最终，我们有了一个映射&lt;code>抽奖机会&lt;/code>的模型：&lt;/p>
 &lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#00979d">type&lt;/span> &lt;span style="color:#a61717">抽奖机会&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a61717">编号：抽奖机会&lt;/span>&lt;span style="color:#728e00">ID&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a61717">持有人&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#a61717">用户&lt;/span>&lt;span style="color:#728e00">ID&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">持有人&lt;/span>: &lt;span style="color:#00979d">用户ID&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a61717">类型&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;注册赠送的&amp;#39;&lt;/span> &lt;span style="color:#728e00">|&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;消费获取的&amp;#39;&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a61717">过期时间&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#728e00">DateTime&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">过期时间&lt;/span>: &lt;span style="color:#00979d">DateTime&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>};
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>接着用同样的方法，我们整理出来了这个业务场景中另外一个相关概念的模型：&lt;/p>
 &lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#00979d">type&lt;/span> &lt;span style="color:#a61717">抽奖活动&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a61717">编号&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#a61717">抽奖活动&lt;/span>&lt;span style="color:#728e00">ID&lt;/span>;
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a61717">类型&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#a61717">活动类型&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">编号&lt;/span>: &lt;span style="color:#00979d">抽奖活动ID&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">类型&lt;/span>: &lt;span style="color:#00979d">活动类型&lt;/span>;
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a61717">过期时间：&lt;/span>&lt;span style="color:#728e00">DateTime&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>有了这两个模型后，我对C说：“现在我们有了对&lt;code>抽奖机会&lt;/code>和&lt;code>抽奖活动&lt;/code>这两个业务概念的描述，现在我们来分析这个抽奖业务的具体行为吧。”&lt;/p>
@@ -584,7 +584,7 @@ Cortex摄取来自各个Prometheus实例的数据，将其转储到对象存储�
 &lt;li>一个抽奖机会只能被使用一次&lt;/li>
 &lt;/ol>
 &lt;p>根据这些，我给出了一段伪代码来对抽奖行为进行描述：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#728e00">function&lt;/span> &lt;span style="color:#a61717">抽奖&lt;/span>(&lt;span style="color:#a61717">活动&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#a61717">抽奖活动&lt;/span>, &lt;span style="color:#a61717">用户&lt;/span>&lt;span style="color:#728e00">ID&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#a61717">用户&lt;/span>&lt;span style="color:#728e00">ID&lt;/span>) {
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#728e00">function&lt;/span> &lt;span style="color:#a61717">抽奖&lt;/span>(&lt;span style="color:#728e00">活动&lt;/span>: &lt;span style="color:#00979d">抽奖活动&lt;/span>, &lt;span style="color:#728e00">用户ID&lt;/span>: &lt;span style="color:#00979d">用户ID&lt;/span>) {
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">if&lt;/span>(&lt;span style="color:#a61717">已过期&lt;/span>(&lt;span style="color:#a61717">活动&lt;/span>)) {
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">throw&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;活动已过期&amp;#39;&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
@@ -596,9 +596,9 @@ Cortex摄取来自各个Prometheus实例的数据，将其转储到对象存储�
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>在这里，我们发现，为了保证“一个抽奖机会只能被使用一次”，我们需要有一个属性来识别抽奖机会是否已经被使用，于是我们更新了抽奖机会的模型：&lt;/p>
 &lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#00979d">type&lt;/span> &lt;span style="color:#a61717">抽奖机会&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a61717">编号：抽奖机会&lt;/span>&lt;span style="color:#728e00">ID&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a61717">持有人&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#a61717">用户&lt;/span>&lt;span style="color:#728e00">ID&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">持有人&lt;/span>: &lt;span style="color:#00979d">用户ID&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a61717">类型&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;注册赠送的&amp;#39;&lt;/span> &lt;span style="color:#728e00">|&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;购买获取的&amp;#39;&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a61717">过期时间&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#728e00">DateTime&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">过期时间&lt;/span>: &lt;span style="color:#00979d">DateTime&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#728e00">+&lt;/span> &lt;span style="color:#a61717">状态&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;已使用&amp;#39;&lt;/span> &lt;span style="color:#728e00">|&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;未使用&amp;#39;&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>};
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>并且在使用抽奖机会时，更新抽奖机会的状态。&lt;/p>
@@ -608,7 +608,7 @@ Cortex摄取来自各个Prometheus实例的数据，将其转储到对象存储�
 &lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#a61717">状态&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;已使用&amp;#39;&lt;/span> &lt;span style="color:#728e00">|&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;未使用&amp;#39;&lt;/span> &lt;span style="color:#728e00">|&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;已被获取&amp;#39;&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>};
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#728e00">function&lt;/span> &lt;span style="color:#a61717">抽奖&lt;/span>(&lt;span style="color:#a61717">活动&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#a61717">抽奖活动&lt;/span>, &lt;span style="color:#a61717">用户&lt;/span>&lt;span style="color:#728e00">ID&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#a61717">用户&lt;/span>&lt;span style="color:#728e00">ID&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#728e00">function&lt;/span> &lt;span style="color:#a61717">抽奖&lt;/span>(&lt;span style="color:#728e00">活动&lt;/span>: &lt;span style="color:#00979d">抽奖活动&lt;/span>, &lt;span style="color:#728e00">用户ID&lt;/span>: &lt;span style="color:#00979d">用户ID&lt;/span>) {
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#95a5a6">// ...
 &lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#95a5a6">&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#00979d">const&lt;/span> &lt;span style="color:#a61717">机会&lt;/span> &lt;span style="color:#728e00">=&lt;/span> &lt;span style="color:#a61717">获取未使用抽奖机会&lt;/span>(&lt;span style="color:#a61717">用户&lt;/span>&lt;span style="color:#728e00">ID&lt;/span>) &lt;span style="color:#95a5a6">// 同时更新其状态为&amp;#39;已被获取&amp;#39;

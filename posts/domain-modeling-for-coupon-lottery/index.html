@@ -5,21 +5,21 @@
 </span></span></code></pre></div><p>我问C：“除了类型，你认为抽奖机会还应该具备什么属性呢？”</p><p>“过期时间！”，C回答。
 于是：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=display:flex><span><span style=color:#00979d>type</span> <span style=color:#a61717>抽奖机会</span> <span style=color:#728e00>=</span> {
 </span></span><span style=display:flex><span>	<span style=color:#a61717>类型</span><span style=color:#728e00>:</span> <span style=color:#7f8c8d>&#39;注册赠送的&#39;</span> <span style=color:#728e00>|</span> <span style=color:#7f8c8d>&#39;消费获取的&#39;</span>
-</span></span><span style=display:flex><span>	<span style=color:#a61717>过期时间</span><span style=color:#728e00>:</span> <span style=color:#728e00>DateTime</span>
+</span></span><span style=display:flex><span>	<span style=color:#728e00>过期时间</span>: <span style=color:#00979d>DateTime</span>
 </span></span><span style=display:flex><span>}; 
 </span></span></code></pre></div><p>我接着说：“抽奖机会是发送给用户的，所以应该还应该记录其所有者。”，C表示同意。
 “每个抽奖机会都是独立被使用的，应该也是需要可以被追溯的，那它应该有一个编号作为标识。”</p><p>最终，我们有了一个映射<code>抽奖机会</code>的模型：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=display:flex><span><span style=color:#00979d>type</span> <span style=color:#a61717>抽奖机会</span> <span style=color:#728e00>=</span> {
 </span></span><span style=display:flex><span>	<span style=color:#a61717>编号：抽奖机会</span><span style=color:#728e00>ID</span>
-</span></span><span style=display:flex><span>	<span style=color:#a61717>持有人</span><span style=color:#728e00>:</span> <span style=color:#a61717>用户</span><span style=color:#728e00>ID</span>
+</span></span><span style=display:flex><span>	<span style=color:#728e00>持有人</span>: <span style=color:#00979d>用户ID</span>
 </span></span><span style=display:flex><span>	<span style=color:#a61717>类型</span><span style=color:#728e00>:</span> <span style=color:#7f8c8d>&#39;注册赠送的&#39;</span> <span style=color:#728e00>|</span> <span style=color:#7f8c8d>&#39;消费获取的&#39;</span>
-</span></span><span style=display:flex><span>	<span style=color:#a61717>过期时间</span><span style=color:#728e00>:</span> <span style=color:#728e00>DateTime</span>
+</span></span><span style=display:flex><span>	<span style=color:#728e00>过期时间</span>: <span style=color:#00979d>DateTime</span>
 </span></span><span style=display:flex><span>};
 </span></span></code></pre></div><p>接着用同样的方法，我们整理出来了这个业务场景中另外一个相关概念的模型：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=display:flex><span><span style=color:#00979d>type</span> <span style=color:#a61717>抽奖活动</span> <span style=color:#728e00>=</span> {
-</span></span><span style=display:flex><span>	<span style=color:#a61717>编号</span><span style=color:#728e00>:</span> <span style=color:#a61717>抽奖活动</span><span style=color:#728e00>ID</span>;
-</span></span><span style=display:flex><span>	<span style=color:#a61717>类型</span><span style=color:#728e00>:</span> <span style=color:#a61717>活动类型</span>;
+</span></span><span style=display:flex><span>	<span style=color:#728e00>编号</span>: <span style=color:#00979d>抽奖活动ID</span>;
+</span></span><span style=display:flex><span>	<span style=color:#728e00>类型</span>: <span style=color:#00979d>活动类型</span>;
 </span></span><span style=display:flex><span>	<span style=color:#a61717>过期时间：</span><span style=color:#728e00>DateTime</span>
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><p>有了这两个模型后，我对C说：“现在我们有了对<code>抽奖机会</code>和<code>抽奖活动</code>这两个业务概念的描述，现在我们来分析这个抽奖业务的具体行为吧。”</p><p>通过分析整理，我们找到了下面几个关键点：</p><ol><li>抽奖发生在一个具体的抽奖活动中</li><li>抽奖时会选取用户的一个抽奖机会</li><li>优先选择‘注册赠送的’抽奖机会</li><li>优先选择临近过期的抽奖机会</li><li>一个抽奖机会只能被使用一次</li></ol><p>根据这些，我给出了一段伪代码来对抽奖行为进行描述：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=display:flex><span><span style=color:#728e00>function</span> <span style=color:#a61717>抽奖</span>(<span style=color:#a61717>活动</span><span style=color:#728e00>:</span> <span style=color:#a61717>抽奖活动</span>, <span style=color:#a61717>用户</span><span style=color:#728e00>ID</span><span style=color:#728e00>:</span> <span style=color:#a61717>用户</span><span style=color:#728e00>ID</span>) {
+</span></span></code></pre></div><p>有了这两个模型后，我对C说：“现在我们有了对<code>抽奖机会</code>和<code>抽奖活动</code>这两个业务概念的描述，现在我们来分析这个抽奖业务的具体行为吧。”</p><p>通过分析整理，我们找到了下面几个关键点：</p><ol><li>抽奖发生在一个具体的抽奖活动中</li><li>抽奖时会选取用户的一个抽奖机会</li><li>优先选择‘注册赠送的’抽奖机会</li><li>优先选择临近过期的抽奖机会</li><li>一个抽奖机会只能被使用一次</li></ol><p>根据这些，我给出了一段伪代码来对抽奖行为进行描述：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=display:flex><span><span style=color:#728e00>function</span> <span style=color:#a61717>抽奖</span>(<span style=color:#728e00>活动</span>: <span style=color:#00979d>抽奖活动</span>, <span style=color:#728e00>用户ID</span>: <span style=color:#00979d>用户ID</span>) {
 </span></span><span style=display:flex><span>	<span style=color:#728e00>if</span>(<span style=color:#a61717>已过期</span>(<span style=color:#a61717>活动</span>)) {
 </span></span><span style=display:flex><span>		<span style=color:#728e00>throw</span> <span style=color:#7f8c8d>&#39;活动已过期&#39;</span>
 </span></span><span style=display:flex><span>	}
@@ -30,9 +30,9 @@
 </span></span><span style=display:flex><span>}
 </span></span></code></pre></div><p>在这里，我们发现，为了保证“一个抽奖机会只能被使用一次”，我们需要有一个属性来识别抽奖机会是否已经被使用，于是我们更新了抽奖机会的模型：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=display:flex><span><span style=color:#00979d>type</span> <span style=color:#a61717>抽奖机会</span> <span style=color:#728e00>=</span> {
 </span></span><span style=display:flex><span>	<span style=color:#a61717>编号：抽奖机会</span><span style=color:#728e00>ID</span>
-</span></span><span style=display:flex><span>	<span style=color:#a61717>持有人</span><span style=color:#728e00>:</span> <span style=color:#a61717>用户</span><span style=color:#728e00>ID</span>
+</span></span><span style=display:flex><span>	<span style=color:#728e00>持有人</span>: <span style=color:#00979d>用户ID</span>
 </span></span><span style=display:flex><span>	<span style=color:#a61717>类型</span><span style=color:#728e00>:</span> <span style=color:#7f8c8d>&#39;注册赠送的&#39;</span> <span style=color:#728e00>|</span> <span style=color:#7f8c8d>&#39;购买获取的&#39;</span>
-</span></span><span style=display:flex><span>	<span style=color:#a61717>过期时间</span><span style=color:#728e00>:</span> <span style=color:#728e00>DateTime</span>
+</span></span><span style=display:flex><span>	<span style=color:#728e00>过期时间</span>: <span style=color:#00979d>DateTime</span>
 </span></span><span style=display:flex><span><span style=color:#728e00>+</span>   <span style=color:#a61717>状态</span><span style=color:#728e00>:</span> <span style=color:#7f8c8d>&#39;已使用&#39;</span> <span style=color:#728e00>|</span> <span style=color:#7f8c8d>&#39;未使用&#39;</span>
 </span></span><span style=display:flex><span>};
 </span></span></code></pre></div><p>并且在使用抽奖机会时，更新抽奖机会的状态。</p><p>接着，我们又发现，为了避免在并发请求中，获取到已被其它请求获取但是还并未被使用的抽奖机会，我们需要额外一个状态来标志这个抽奖机会已经被某个抽奖请求获取到了，随时可能会被更新为<code>已使用</code>。</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=display:flex><span><span style=color:#00979d>type</span> <span style=color:#a61717>抽奖机会</span> <span style=color:#728e00>=</span> {
@@ -40,7 +40,7 @@
 </span></span></span><span style=display:flex><span><span style=color:#95a5a6></span>    <span style=color:#a61717>状态</span><span style=color:#728e00>:</span> <span style=color:#7f8c8d>&#39;已使用&#39;</span> <span style=color:#728e00>|</span> <span style=color:#7f8c8d>&#39;未使用&#39;</span> <span style=color:#728e00>|</span> <span style=color:#7f8c8d>&#39;已被获取&#39;</span>
 </span></span><span style=display:flex><span>};
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#728e00>function</span> <span style=color:#a61717>抽奖</span>(<span style=color:#a61717>活动</span><span style=color:#728e00>:</span> <span style=color:#a61717>抽奖活动</span>, <span style=color:#a61717>用户</span><span style=color:#728e00>ID</span><span style=color:#728e00>:</span> <span style=color:#a61717>用户</span><span style=color:#728e00>ID</span>) {
+</span></span><span style=display:flex><span><span style=color:#728e00>function</span> <span style=color:#a61717>抽奖</span>(<span style=color:#728e00>活动</span>: <span style=color:#00979d>抽奖活动</span>, <span style=color:#728e00>用户ID</span>: <span style=color:#00979d>用户ID</span>) {
 </span></span><span style=display:flex><span>	<span style=color:#95a5a6>// ...
 </span></span></span><span style=display:flex><span><span style=color:#95a5a6></span>
 </span></span><span style=display:flex><span>	<span style=color:#00979d>const</span> <span style=color:#a61717>机会</span> <span style=color:#728e00>=</span> <span style=color:#a61717>获取未使用抽奖机会</span>(<span style=color:#a61717>用户</span><span style=color:#728e00>ID</span>) <span style=color:#95a5a6>// 同时更新其状态为&#39;已被获取&#39;
