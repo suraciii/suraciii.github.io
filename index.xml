@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>The Dice Maker</title><link>http://suraciii.github.io/</link><description>Recent content on The Dice Maker</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Thu, 27 Jul 2023 00:00:00 +0000</lastBuildDate><atom:link href="http://suraciii.github.io/index.xml" rel="self" type="application/rss+xml"/><item><title>事件驱动架构：怎么设计好事件</title><link>http://suraciii.github.io/posts/eda-events/</link><pubDate>Thu, 27 Jul 2023 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/eda-events/</guid><description>&lt;p>当我们在系统中发送一些消息时，可能会有以下三种原因：&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>The Dice Maker</title><link>http://suraciii.github.io/</link><description>Recent content on The Dice Maker</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Thu, 27 Jul 2023 00:00:00 +0000</lastBuildDate><atom:link href="http://suraciii.github.io/index.xml" rel="self" type="application/rss+xml"/><item><title>事件驱动架构：设计好的事件</title><link>http://suraciii.github.io/posts/eda-events/</link><pubDate>Thu, 27 Jul 2023 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/eda-events/</guid><description>&lt;p>当我们在系统中发送一些消息时，可能会有以下三种原因：&lt;/p>
 &lt;ul>
 &lt;li>我要对方为我做某些事&lt;/li>
 &lt;li>系统中发生了某些事&lt;/li>
@@ -33,7 +33,7 @@
 &lt;td>事件&lt;/td>
 &lt;td>刚发生过&lt;/td>
 &lt;td>否&lt;/td>
-&lt;td>0-N&lt;/td>
+&lt;td>0..N&lt;/td>
 &lt;/tr>
 &lt;tr>
 &lt;td>查询&lt;/td>
@@ -110,7 +110,7 @@
 &lt;/ul>
 &lt;p>&lt;img src="http://suraciii.github.io/eda-events/6.png" alt="">&lt;/p>
 &lt;p>这样，支撑模块中的代码就可以被简化，&lt;code>订单模块&lt;/code>也获得了对其核心业务流程的控制权，整个端到端的业务流程在代码中完整地体现，而如果业务流程需要改动，则只需要对&lt;code>订单模块&lt;/code>进行改动&lt;br>
-有些人会提出质疑：随着业务越来越复杂，&lt;code>订单模块&lt;/code>不是会变得越来越臃肿最终成为一个“上帝服务”吗，我的看法是，是的，没错，也许会这样，但是相比于将业务的复杂性扩散分布到系统的各个模块中，将业务复杂性集中在一个核心业务模块上当然会是个更好的设计&lt;/p>
+有些人会提出质疑：随着业务越来越复杂，&lt;code>订单模块&lt;/code>不是会变得越来越臃肿最终成为一个“上帝服务”吗，我的看法是，是的，没错，也许会这样，但是，将业务复杂性集中在一个核心业务模块上，要好于将业务的复杂性扩散分布到系统的各个角落&lt;/p>
 &lt;p>总之，事件并不总是美好的，事件驱动架构并不是说把所有的REST API替换成事件就完事了，想要搞好事件驱动架构，&lt;strong>不仅要知道什么时候应该用事件，还得知道什么时候不该用事件&lt;/strong>&lt;/p>
 &lt;h2 id="事件中的信息">事件中的信息&lt;/h2>
 &lt;p>最后再说下事件中的信息，正如前文所说，事件是一种消息，那这样的消息中应该携带哪些信息，携带多少信息，就是一个非常值得谨慎设计的地方&lt;/p>
@@ -123,17 +123,17 @@
 &lt;p>但是，这就陷入了上面提到过的“为事件的消费方定制事件”的局面，这是个非常不健康的现象，因为也许两个星期后&lt;code>购物车模块&lt;/code>就会跑过来说“嘿，麻烦发布事件的时候把&lt;code>商品类型&lt;/code>也带上”，如果这个事件还有&lt;code>购物车模块&lt;/code>之外的其它模块感兴趣，那就更危险了，&lt;code>商品目录模块&lt;/code>的每次改动都要小心避免破坏其它订阅此事件的模块对此事件的处理&lt;/p>
 &lt;p>那能不能让事件携带尽量完整的信息呢，像这样：&lt;/p>
 &lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#00979d">type&lt;/span> &lt;span style="color:#728e00">CatalogItemUpdated&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">Previous&lt;/span>: &lt;span style="color:#00979d">CatalogItem&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">Current&lt;/span>: &lt;span style="color:#00979d">CatalogItem&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">UpdatedBy&lt;/span>: &lt;span style="color:#00979d">Operator&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">Comment&lt;/span>: &lt;span style="color:#00979d">string&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">previous&lt;/span>: &lt;span style="color:#00979d">CatalogItem&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">current&lt;/span>: &lt;span style="color:#00979d">CatalogItem&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">updatedBy&lt;/span>: &lt;span style="color:#00979d">Operator&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">comment&lt;/span>: &lt;span style="color:#00979d">string&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#95a5a6">// ...
 &lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#95a5a6">&lt;/span>}
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#00979d">type&lt;/span> &lt;span style="color:#728e00">CatalogItem&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">Id&lt;/span>: &lt;span style="color:#00979d">string&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">Name&lt;/span>: &lt;span style="color:#00979d">string&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">Catogory&lt;/span>: &lt;span style="color:#00979d">CatalogCategory&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">Tags&lt;/span>: &lt;span style="color:#00979d">Tag&lt;/span>[]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">id&lt;/span>: &lt;span style="color:#00979d">string&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">name&lt;/span>: &lt;span style="color:#00979d">string&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">catogory&lt;/span>: &lt;span style="color:#00979d">CatalogCategory&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">tags&lt;/span>: &lt;span style="color:#00979d">Tag&lt;/span>[]
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#95a5a6">// ...
 &lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#95a5a6">&lt;/span>}
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>这是一个常见的做法，和前者的区别是事件模型不是为了消费者的业务逻辑而特别定制的，而是像公开REST API接口一样公开了自己上下文中的模型，消费方也能从事件中携带的数据里直接获得自己需要的信息而不需要进行额外的查询，坏消息是事件的消费方对于发布方的依赖和耦合会变得更加紧密&lt;/p>
