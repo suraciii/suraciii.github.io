@@ -1,4 +1,178 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Tags on The Dice Maker</title><link>http://suraciii.github.io/tags/</link><description>Recent content in Tags on The Dice Maker</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><atom:link href="http://suraciii.github.io/tags/index.xml" rel="self" type="application/rss+xml"/><item><title>事件驱动架构下的业务系统需要怎样的事件基础设施</title><link>http://suraciii.github.io/posts/eda-infra/</link><pubDate>Fri, 30 Jun 2023 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/eda-infra/</guid><description>&lt;p>这是一个简单的事件驱动架构下的工作流：&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Tags on The Dice Maker</title><link>http://suraciii.github.io/tags/</link><description>Recent content in Tags on The Dice Maker</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><atom:link href="http://suraciii.github.io/tags/index.xml" rel="self" type="application/rss+xml"/><item><title>事件驱动架构：怎么设计好事件</title><link>http://suraciii.github.io/posts/eda-events/</link><pubDate>Thu, 27 Jul 2023 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/eda-events/</guid><description>&lt;p>当我们在系统中发送一些消息时，可能会有以下三种原因：&lt;/p>
+&lt;ul>
+&lt;li>我要对方为我做某些事&lt;/li>
+&lt;li>系统中发生了某些事&lt;/li>
+&lt;li>我想知道对方的某些信息&lt;/li>
+&lt;/ul>
+&lt;p>在这三种场景中的三种不同的消息分别对应着命令，事件和查询&lt;/p>
+&lt;p>我喜欢用一个星巴克的例子来解释这三种形式的消息：&lt;/p>
+&lt;ul>
+&lt;li>当你走进一家星巴克，但是你有些犹豫要喝点什么，于是你问店员最近有什么新品 —— 这是查询&lt;/li>
+&lt;li>想来想去，你最终还是只想来上一杯拿铁，于是你礼貌却强硬地要求店员为你调制一杯拿铁，你会一直紧紧地盯着他，除非拿到小票，否则你不会离开收银台 —— 这是命令&lt;/li>
+&lt;li>咖啡师将做好的拿铁放在取餐处，对着空气大喊了一声“X先生/女士的拿铁好了”后转身离开，他不关心你是否听到了，甚至不关心你是否还在此处 —— 这是事件&lt;/li>
+&lt;/ul>
+&lt;p>（这个例子的灵感来源于《星巴克不用2PC》;））&lt;/p>
+&lt;p>总结下来，这三种形式的消息具有以下的特性：&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>消息&lt;/th>
+&lt;th>行为/状态变更&lt;/th>
+&lt;th>需要响应&lt;/th>
+&lt;th>接收人&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>命令&lt;/td>
+&lt;td>请求发生&lt;/td>
+&lt;td>也许&lt;/td>
+&lt;td>1&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>事件&lt;/td>
+&lt;td>刚发生过&lt;/td>
+&lt;td>否&lt;/td>
+&lt;td>0-N&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>查询&lt;/td>
+&lt;td>无&lt;/td>
+&lt;td>是&lt;/td>
+&lt;td>1&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>理解这三种消息，尤其是命令与事件之间的区别，对于如何设计一个成功的事件驱动系统来说至关重要&lt;/p>
+&lt;h2 id="以事件替代命令">以事件替代命令&lt;/h2>
+&lt;p>假设一个场景：在一个电商微服务系统中，有着若干个模块，其中包括&lt;/p>
+&lt;ul>
+&lt;li>商品目录模块： 负责维护商品信息&lt;/li>
+&lt;li>购物车模块： 负责维护顾客的购物车信息&lt;/li>
+&lt;/ul>
+&lt;p>假设我们需要实现一个功能：在运营人员变更商品价格后，更新用户购物车中的商品价格&lt;/p>
+&lt;p>一个直观的实现方式是，为&lt;code>购物车模块&lt;/code>实现一个用于更新顾客购物车中的商品价格的接口(在微服务系统中，这通常是一个REST或RPC的API)，并由&lt;code>商品目录模块&lt;/code>在更新商品价格时进行调用&lt;/p>
+&lt;p>&lt;img src="http://suraciii.github.io/eda-events/1.png" alt="">&lt;/p>
+&lt;p>稍有经验的开发者就能看出，这样的设计有着几个问题：&lt;/p>
+&lt;ul>
+&lt;li>对顾客购物车的更新阻塞了对商品价格的更新&lt;/li>
+&lt;li>在分布式系统中，网络请求具备着不确定性，尤其在请求链路较长和请求耗时较长的情况下更是如此&lt;/li>
+&lt;li>由于网络中断，或者用户取消了请求，更新中断了，数据出现了不一致&lt;/li>
+&lt;/ul>
+&lt;p>而对于具备微服务架构设计经验的人来说，很可能还会看到另外的问题：&lt;/p>
+&lt;p>在这种模式下，&lt;code>商品目录模块&lt;/code>调用了&lt;code>购物车模块&lt;/code>的一个接口，这使商品目录模块显式地依赖着购物车模块&lt;br>
+而&lt;code>购物车模块&lt;/code>公开了一个接口，但是这个接口却不属于&lt;code>购物车模块&lt;/code>自己，这个接口是为了&lt;code>商品目录模块&lt;/code>而存在的，是为了响应对方的变化而存在的，并且，&lt;code>购物车模块&lt;/code>中的商品信息、价格信息等是来自于&lt;code>商品目录模块&lt;/code>中的业务知识，这意味着&lt;code>购物车模块&lt;/code>隐式地依赖着&lt;code>商品目录模块`` 更何况，通常这种情况下，&lt;/code>购物车模块&lt;code>也会显式地依赖&lt;/code>商品目录模块`——比如在用户添加商品到购物车时，购物车也许需要检查商品是否已被下架等&lt;/p>
+&lt;p>这样，模块间出现了双向依赖，它的坏味道足以令敏感的架构师皱起眉头，甚至坐立难安，仿佛已经看到了在未来，随着系统的不断演进，这两个模块耦合的越来越深，任何改动都必须在二者上同时进行，或者是，其中一个模块的血液逐渐被另一个模块所吸食，成为一个只有CRUD没有自己的业务逻辑的贫血模块，最后逐渐被对方吞并，成为其中的一部分&lt;/p>
+&lt;p>这时，我们也许可以换个角度来重新看这个功能：&lt;/p>
+&lt;blockquote>
+&lt;p>用户购物车中的商品价格，需要&lt;strong>响应&lt;/strong>商品价格信息的变更&lt;/p>
+&lt;/blockquote>
+&lt;p>按照这样的描述，我们来重新实现这个功能&lt;/p>
+&lt;p>其中一个简单的做法是，&lt;code>购物车模块&lt;/code>根本不保存商品的价格信息，而是只在需要这些信息时，才前往&lt;code>商品目录模块&lt;/code>进行查询，这种方式解决了上面所说的问题，简单而有效，但是这基本只适合我们例子里的当前场景，当业务逻辑更丰满，更复杂起来后，就行不通了，比如，如果需要给购物车中有商品降价的顾客发送促销通知。
+（事实上，如果没有这样的复杂场景的话，&lt;code>购物车模块&lt;/code>也就没有存在的必要了）&lt;/p>
+&lt;p>因此，此时就适合以事件的方式来完成模块间的通信&lt;/p>
+&lt;p>在商品价格变更后，&lt;code>商品目录模块&lt;/code>发布一条名为&amp;quot;商品价格已变更(&lt;code>CatalogItemPriceChanged&lt;/code>)&amp;ldquo;的事件到事件基础设施，而任何对此事件感兴趣的模块，都可以通过事件基础设施订阅此事件，订阅事件后，由事件基础设施负责将事件交付到相关模块，并由各模块对此进行响应&lt;/p>
+&lt;p>&lt;img src="http://suraciii.github.io/eda-events/2.png" alt="">&lt;/p>
+&lt;p>在这种情况下，&lt;code>商品目录模块&lt;/code>对&lt;code>购物车模块&lt;/code>的显式依赖被&lt;strong>反转&lt;/strong>，购物车中的商品价格更新不再阻塞商品目录模块中的业务执行，&lt;em>最终&lt;/em>也保证了数据的一致性&lt;/p>
+&lt;h2 id="事件协作">事件协作&lt;/h2>
+&lt;p>说完两个模块之间的通讯，再来看事件的协作
+既然说是“事件驱动架构”，那么当然就要以事件来触发模块中的业务行为，甚至理所当然地会想到要以事件来驱动整个业务流程，还是以电商系统为例，实现事件驱动架构，经常就会很自然地产出类似下面的事件流(EventFlow)：&lt;/p>
+&lt;ul>
+&lt;li>用户创建订单，&lt;code>订单模块&lt;/code>发布&lt;code>订单已创建&lt;/code>事件&lt;/li>
+&lt;li>&lt;code>支付模块&lt;/code>订阅&lt;code>订单已创建&lt;/code>事件，处理完成后发布&lt;code>支付已完成&lt;/code>事件&lt;/li>
+&lt;li>&lt;code>库存模块&lt;/code>订阅&lt;code>支付已完成&lt;/code>事件，处理完成后发布&lt;code>商品已出库&lt;/code>事件&lt;/li>
+&lt;li>&lt;code>配送模块&lt;/code>订阅&lt;code>商品已出库&lt;/code>事件，处理完成后发布&amp;hellip;&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="http://suraciii.github.io/eda-events/3.png" alt="">&lt;/p>
+&lt;p>这里只是一个极度简化版的事件流，一个完整的流程应该还要包含相应的补偿事件，比如&lt;code>支付失败&lt;/code>和&lt;code>商品出库失败&lt;/code>等事件，以取得跨模块，跨数据库的最终的业务一致性（这被称为“Saga”）&lt;/p>
+&lt;p>这样的系统中不仅以事件来触发模块中的业务行为，甚至也以事件来驱动着整个业务流程的流转，看起来十分地“事件驱动”，各个模块也看起来十分自治、低耦合，但是，实际上它可能会是一个非常糟糕的设计，如果没能在设计之初意识到这点，它可能会给项目带来巨大的痛苦和灾难。&lt;/p>
+&lt;p>直觉上，和前面一样，是事件的消费方依赖于事件的生产方，即：&lt;/p>
+&lt;p>&lt;img src="http://suraciii.github.io/eda-events/4.png" alt="">&lt;/p>
+&lt;p>但是当我们深入下去，可以看到，&lt;code>订单模块&lt;/code>需要通过响应来自&lt;code>支付模块&lt;/code>、&lt;code>库存模块&lt;/code>、&lt;code>配送模块&lt;/code>的事件来更新订单的当前进度（订单状态），以用来进行对退货退款等业务流程的校验，这没什么问题，跟踪订单的生命周期确实是&lt;code>订单模块&lt;/code>的职责，维护订单模块的开发者也乐于去响应这些事件。&lt;/p>
+&lt;p>但是，对于其它模块则未必如此，比如&lt;code>支付模块&lt;/code>作为一个支撑模块，也许并不是仅仅支持订单业务，而是也会支持客户的订阅服务付款、自动续费、会员卡余额充值等支付场景，这种情况下，就需要&lt;code>支付模块&lt;/code>学习了解订单、订阅服务、会员卡等业务流程，需要准确地了解这些业务分别会发布哪些事件，需要知道哪些事件会&lt;strong>导致&lt;/strong>自己启动支付流程&lt;/p>
+&lt;p>还有一种情况是业务流程发生了变更，比如说商城推出了针对VIP客户的先用后买服务，这时&lt;code>支付模块&lt;/code>对于其订阅到的&lt;code>订单已创建&lt;/code>事件，就需要根据&lt;code>订单类型&lt;/code>或者&lt;code>客户类型&lt;/code>来进行选择性的响应，而&lt;code>库存模块&lt;/code>则需要额外从&lt;code>订单模块&lt;/code>订阅&lt;code>订单已创建&lt;/code>事件来提前开启出库和发货流程&lt;/p>
+&lt;p>这样，各个模块模糊了上下游的分界，互相依赖，大大增加了系统的复杂性，从而导致系统维护难度和成本增加，也更容易出问题&lt;/p>
+&lt;p>&lt;img src="http://suraciii.github.io/eda-events/5.png" alt="">&lt;/p>
+&lt;p>对于各支撑模块，其内部引入了大量来自于各个业务场景上的业务逻辑，每次有新的业务场景或者业务流程发生变化都需要跟着进行改动，还要注意兼容已有的业务场景&lt;br>
+而对于&lt;code>订单模块&lt;/code>，一方面，订单业务的变化很可能导致需要对多个模块进行修改，极大增加了开发成本，尤其是当这些模块是由不同团队独立开发时，另一方面，&lt;code>订单模块&lt;/code>也失去了对订单业务流程的控制力和可见性，这个问题在需要进行故障诊断时会显得更加严重&lt;/p>
+&lt;p>此时，就可以考虑下以另外的风格来实现模块间的通讯，思考以下问题：&lt;/p>
+&lt;ul>
+&lt;li>在这个业务流程中，&lt;code>订单已创建&lt;/code>究竟是命令还是事件？&lt;/li>
+&lt;li>谁应该控制和主导这个订单流程？或者说，谁该为这个流程负责？&lt;/li>
+&lt;/ul>
+&lt;p>显然，负责开发&lt;code>订单模块&lt;/code>的团队是这个订单流程的直接责任人，而&lt;code>订单模块&lt;/code>发出的&lt;code>订单已创建&lt;/code>消息并不是一个纯粹的事件，它确切地知道谁是这条消息的接收人，它需要保证&lt;code>支付模块&lt;/code>会收到这条消息并且执行后续的工作，它也十分关注着&lt;code>支付模块&lt;/code>对这条消息的响应所导致的后果（成功还是失败），所以与其说这是一条事件，不如说是一条命令&lt;/p>
+&lt;p>我们不妨对上面的设计进行如下改动：&lt;/p>
+&lt;ul>
+&lt;li>将支撑模块（&lt;code>支付模块&lt;/code>、&lt;code>库存模块&lt;/code>、&lt;code>配送模块&lt;/code>）所抽象出的通用能力，以API的形式开放&lt;/li>
+&lt;li>将类似&lt;code>订单已创建&lt;/code>这样的“命令式的事件”转化为命令&lt;/li>
+&lt;li>由&lt;code>订单模块&lt;/code>来主导并控制业务的流转&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="http://suraciii.github.io/eda-events/6.png" alt="">&lt;/p>
+&lt;p>这样，支撑模块中的代码就可以被简化，&lt;code>订单模块&lt;/code>也获得了对其核心业务流程的控制权，整个端到端的业务流程在代码中完整地体现，而如果业务流程需要改动，则只需要对&lt;code>订单模块&lt;/code>进行改动&lt;br>
+有些人会提出质疑：随着业务越来越复杂，&lt;code>订单模块&lt;/code>不是会变得越来越臃肿最终成为一个“上帝服务”吗，我的看法是，是的，没错，也许会这样，但是相比于将业务的复杂性扩散分布到系统的各个模块中，将业务复杂性集中在一个核心业务模块上当然会是个更好的设计&lt;/p>
+&lt;p>总之，事件并不总是美好的，事件驱动架构并不是说把所有的REST API替换成事件就完事了，想要搞好事件驱动架构，&lt;strong>不仅要知道什么时候应该用事件，还得知道什么时候不该用事件&lt;/strong>&lt;/p>
+&lt;h2 id="事件中的信息">事件中的信息&lt;/h2>
+&lt;p>最后再说下事件中的信息，正如前文所说，事件是一种消息，那这样的消息中应该携带哪些信息，携带多少信息，就是一个非常值得谨慎设计的地方&lt;/p>
+&lt;p>以&lt;code>商品价格已变更&lt;/code>事件为例，其中一个思路是，既然&lt;code>购物车模块&lt;/code>需要响应这个事件，来告诉客户“您购物车里的商品比加入时降价了xxx元”，那么就为它来提供它所需要的信息吧&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#00979d">type&lt;/span> &lt;span style="color:#728e00">CatalogItemPriceChanged&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">catalogItemId&lt;/span>: &lt;span style="color:#00979d">string&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">currentPrice&lt;/span>: &lt;span style="color:#00979d">number&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>看起来不错，事件足够简洁又提供了足够&lt;code>购物车模块&lt;/code>做出响应所需的全部信息，不多不少，恰到好处&lt;/p>
+&lt;p>但是，这就陷入了上面提到过的“为事件的消费方定制事件”的局面，这是个非常不健康的现象，因为也许两个星期后&lt;code>购物车模块&lt;/code>就会跑过来说“嘿，麻烦发布事件的时候把&lt;code>商品类型&lt;/code>也带上”，如果这个事件还有&lt;code>购物车模块&lt;/code>之外的其它模块感兴趣，那就更危险了，&lt;code>商品目录模块&lt;/code>的每次改动都要小心避免破坏其它订阅此事件的模块对此事件的处理&lt;/p>
+&lt;p>那能不能让事件携带尽量完整的信息呢，像这样：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-typescript" data-lang="typescript">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#00979d">type&lt;/span> &lt;span style="color:#728e00">CatalogItemUpdated&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">Previous&lt;/span>: &lt;span style="color:#00979d">CatalogItem&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">Current&lt;/span>: &lt;span style="color:#00979d">CatalogItem&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">UpdatedBy&lt;/span>: &lt;span style="color:#00979d">Operator&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">Comment&lt;/span>: &lt;span style="color:#00979d">string&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#95a5a6">// ...
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#95a5a6">&lt;/span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#00979d">type&lt;/span> &lt;span style="color:#728e00">CatalogItem&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">Id&lt;/span>: &lt;span style="color:#00979d">string&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">Name&lt;/span>: &lt;span style="color:#00979d">string&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">Catogory&lt;/span>: &lt;span style="color:#00979d">CatalogCategory&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">Tags&lt;/span>: &lt;span style="color:#00979d">Tag&lt;/span>[]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#95a5a6">// ...
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#95a5a6">&lt;/span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>这是一个常见的做法，和前者的区别是事件模型不是为了消费者的业务逻辑而特别定制的，而是像公开REST API接口一样公开了自己上下文中的模型，消费方也能从事件中携带的数据里直接获得自己需要的信息而不需要进行额外的查询，坏消息是事件的消费方对于发布方的依赖和耦合会变得更加紧密&lt;/p>
+&lt;p>此外，以上两种模式都属于“事件承载状态传输(Event-Carried State Transfer)”，将状态信息伴随着事件一起发布，使事件消费者不需要再度联系发布者即可进行后续工作。&lt;br>
+在云原生时代，这么做会有一个不良后果，即它引入了对时间和顺序的耦合，导致事件的生产和消费都要去保证事件时序的正确，试想一下，如果&lt;code>商品目录模块&lt;/code>先后进行了两次对同一商品的价格更新，并发布了两个相关事件，如果这两个事件不是以其真实发生的顺序被&lt;code>购物车模块&lt;/code>处理，就会出现数据不一致的情况。
+而如果需要强行保证事件的时序正确，比如在创建事件时标记时间戳或序号，并在消费时正确处理事件时序（比如严格遵循先进先出线性处理），则会大大牺牲系统的并行性和可扩展性（参见&amp;quot;The Universal Scalability Law&amp;rdquo;）&lt;/p>
+&lt;p>这时，我们不妨去仔细思考一下，事件中的关键信息是哪些？哪些信息是至关重要的？&lt;/p>
+&lt;p>首先，最关键的信息是事件名或者事件类型，它传达了“发生了什么”&lt;/p>
+&lt;p>此外，事件还应该携带一些关键的上下文信息，比如：&lt;/p>
+&lt;ul>
+&lt;li>是谁发布了这个事件&lt;/li>
+&lt;li>这个事件是在什么时间发生的&lt;/li>
+&lt;li>这个事件是关于什么东西的&lt;/li>
+&lt;li>事件的唯一标识&lt;/li>
+&lt;/ul>
+&lt;p>这里顺便介绍一下由CNCF主持制定的&lt;code>CloudEvents&lt;/code>规范，其提供了一种描述事件的通用格式，如果将我们上面例子里的事件以&lt;code>CloudEvents&lt;/code>规范实现的话，就是下面这样：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-json" data-lang="json">&lt;span style="display:flex;">&lt;span>{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#434f54">&amp;#34;specversion&amp;#34;&lt;/span> : &lt;span style="color:#7f8c8d">&amp;#34;1.0&amp;#34;&lt;/span>, &lt;span style="color:#95a5a6">// CloudEvents规范版本
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#434f54">&amp;#34;type&amp;#34;&lt;/span> : &lt;span style="color:#7f8c8d">&amp;#34;catalog.item.updated.v2&amp;#34;&lt;/span>, &lt;span style="color:#95a5a6">// 事件类型
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#434f54">&amp;#34;source&amp;#34;&lt;/span> : &lt;span style="color:#7f8c8d">&amp;#34;https://catalogservice/items/123&amp;#34;&lt;/span>, &lt;span style="color:#95a5a6">// 事件源
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#434f54">&amp;#34;subject&amp;#34;&lt;/span> : &lt;span style="color:#7f8c8d">&amp;#34;123&amp;#34;&lt;/span>, &lt;span style="color:#95a5a6">// 事件的主体
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#434f54">&amp;#34;id&amp;#34;&lt;/span> : &lt;span style="color:#7f8c8d">&amp;#34;A234-1234-1234&amp;#34;&lt;/span>, &lt;span style="color:#95a5a6">// 事件唯一标识
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#434f54">&amp;#34;time&amp;#34;&lt;/span> : &lt;span style="color:#7f8c8d">&amp;#34;2018-04-05T17:31:00Z&amp;#34;&lt;/span>, &lt;span style="color:#95a5a6">// 事件发生时间
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#95a5a6">&lt;/span> &lt;span style="color:#434f54">&amp;#34;datacontenttype&amp;#34;&lt;/span> : &lt;span style="color:#7f8c8d">&amp;#34;application/json&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#434f54">&amp;#34;data&amp;#34;&lt;/span> : &lt;span style="color:#7f8c8d">&amp;#34;{}&amp;#34;&lt;/span> &lt;span style="color:#95a5a6">// 事件数据，在这里不是必要的
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#95a5a6">&lt;/span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>按照我们上面的分析，&lt;code>catalog.item.updated.v2&lt;/code>事件可以不必携带更新后的商品信息，而是只发出“我有一个id为123的商品信息发生了变更”的通知，&lt;code>购物车模块&lt;/code>则可以订阅所有来自&lt;code>商品目录模块&lt;/code>的&lt;code>catalog.item.updated.v2&lt;/code>事件，在处理时向&lt;code>商品目录模块&lt;/code>发送查询来获取最新的商品信息&lt;/p>
+&lt;p>这样，尽管产生了额外的一次网络请求，但是却换来了更低的耦合度，并且，通过使系统能够对时序不敏感，换来了可扩展性上的提升&lt;/p>
+&lt;h2 id="最后">最后&lt;/h2>
+&lt;p>老实说，这篇文章里并没有多少我原创性的东西，主要是对一些其他人分享的知识的引用和组合，以及对自己一些架构设计中受到的教训的反思和总结&lt;/p>
+&lt;p>所以如果想更好地了解这些内容的话，可以参考下面列出来的一些资料&lt;/p>
+&lt;p>后面打算写一写具体如何以Kafka和Redis实现事件基础设施，如何可靠地发布事件，以及如何在不牺牲可扩展性的情况下保证事件的处理时序&lt;/p>
+&lt;h3 id="参考">参考：&lt;/h3>
+&lt;ol>
+&lt;li>&lt;a href="https://martinfowler.com/articles/201701-event-driven.html">What do you mean by “Event-Driven”? - Martin Fowler&lt;/a>&lt;/li>
+&lt;li>&lt;a href=""> Designing Event-Driven Systems: Concepts and Patterns for Streaming Services with Apache Kafka - Ben Stopford&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://blog.bernd-ruecker.com/how-to-tame-event-driven-microservices-5b30a6b98f86">How to tame event-driven microservices - Bernd Rücker&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://blog.bernd-ruecker.com/why-service-collaboration-needs-choreography-and-orchestration-239c4f9700fa">Why service collaboration needs choreography AND orchestration - David Boike&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://particular.net/blog/putting-your-events-on-a-diet">Putting your events on a diet - David Boike&lt;/a>&lt;/li>
+&lt;/ol></description></item><item><title>事件驱动架构下的业务系统需要怎样的事件基础设施</title><link>http://suraciii.github.io/posts/eda-infra/</link><pubDate>Fri, 30 Jun 2023 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/eda-infra/</guid><description>&lt;p>这是一个简单的事件驱动架构下的工作流：&lt;/p>
 &lt;p>&lt;img src="http://suraciii.github.io/eda-infra/eda-workflow.png" alt="">&lt;/p>
 &lt;p>这样的系统中，其相当一部分的业务流程是以相关事件的发布/订阅进行流转的，而在一些更为激进的事件驱动架构实现中，可能其内部绝大多数的交互都是是以事件而非命令（如HTTP/RPC等）的方式进行。&lt;/p>
 &lt;p>设计良好的事件驱动架构的确有着一些优势，比如：&lt;/p>
