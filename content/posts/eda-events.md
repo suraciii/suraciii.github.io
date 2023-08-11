@@ -1,5 +1,5 @@
 ---
-title: "事件驱动架构：怎么设计好事件"
+title: "事件驱动架构：设计好的事件"
 date: 2023-07-27T00:00:00Z
 draft: false
 ---
@@ -24,7 +24,7 @@ draft: false
 | 消息 | 行为/状态变更 | 需要响应 | 接收人 |
 |------|-------------|---------|------|
 | 命令 | 请求发生      | 也许    | 1   |
-| 事件 | 刚发生过      | 否      | 0-N |
+| 事件 | 刚发生过      | 否      | 0..N |
 | 查询 | 无           | 是      | 1   |
 
 理解这三种消息，尤其是命令与事件之间的区别，对于如何设计一个成功的事件驱动系统来说至关重要
@@ -120,7 +120,7 @@ draft: false
 ![](/eda-events/6.png)
 
 这样，支撑模块中的代码就可以被简化，`订单模块`也获得了对其核心业务流程的控制权，整个端到端的业务流程在代码中完整地体现，而如果业务流程需要改动，则只需要对`订单模块`进行改动  
-有些人会提出质疑：随着业务越来越复杂，`订单模块`不是会变得越来越臃肿最终成为一个“上帝服务”吗，我的看法是，是的，没错，也许会这样，但是相比于将业务的复杂性扩散分布到系统的各个模块中，将业务复杂性集中在一个核心业务模块上当然会是个更好的设计
+有些人会提出质疑：随着业务越来越复杂，`订单模块`不是会变得越来越臃肿最终成为一个“上帝服务”吗，我的看法是，是的，没错，也许会这样，但是，将业务复杂性集中在一个核心业务模块上，要好于将业务的复杂性扩散分布到系统的各个角落
 
 总之，事件并不总是美好的，事件驱动架构并不是说把所有的REST API替换成事件就完事了，想要搞好事件驱动架构，**不仅要知道什么时候应该用事件，还得知道什么时候不该用事件**
 
@@ -144,17 +144,17 @@ type CatalogItemPriceChanged = {
 那能不能让事件携带尽量完整的信息呢，像这样：
 ```typescript
 type CatalogItemUpdated = {
-	Previous: CatalogItem
-	Current: CatalogItem
-	UpdatedBy: Operator
-	Comment: string
+	previous: CatalogItem
+	current: CatalogItem
+	updatedBy: Operator
+	comment: string
 	// ...
 }
 type CatalogItem = {
-	Id: string
-	Name: string
-	Catogory: CatalogCategory
-	Tags: Tag[]
+	id: string
+	name: string
+	catogory: CatalogCategory
+	tags: Tag[]
 	// ...
 }
 ```
