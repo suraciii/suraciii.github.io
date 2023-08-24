@@ -1,0 +1,64 @@
+<!doctype html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><link rel="shortcut icon" href=http://suraciii.github.io/favicon.ico><link rel=stylesheet href=/css/style.min.css><title>使用k6进行负载测试</title></head><body><header id=banner><h2><a href=http://suraciii.github.io/>The Dice Maker</a></h2><nav><ul></ul></nav></header><main id=content><article><header id=post-header><h1>使用k6进行负载测试</h1><div><time>August 24, 2023</time></div></header><h2 id=k6>k6</h2><p>k6是一款来自Grafana的开源的负载测试工具。</p><p>官方说法中，K6的特点是：</p><ul><li>提供简单易用的CLI工具，具有开发人员友好的API。</li><li>使用 JavaScript ES2015/ES6 编写脚本 - 支持本地和远程模块</li><li>检查(Checks)和阈值(Thresholds) - 用于面向目标、自动化友好的负载测试</li></ul><h3 id=和其它负载工具测试对比>和其它负载工具测试对比</h3><h3 id=jmeter>JMeter</h3><ul><li>k6没有界面化的UI，需要编写基于JavaScript的测试脚本，以及通过命令行来执行测试，这意味着k6的使用者需要具备一些基本的编码能力</li><li>不像JMeter，k6可以轻松地集成到自动化的DevOps流水线中</li><li>k6只支持HTTP相关的负载测试(HTTP1/2, gRPC, WebSockets等)</li><li>k6的性能强劲并且效率高，即使在配置一般的笔记本电脑上也能轻松跑出上万级别的qps</li></ul><h3 id=gatling>Gatling</h3><ul><li>学习成本没有Gatling高（主要是因为Scala的学习成本比较高）</li><li>同样，相对于Gatling，k6的性能和效率非常出色</li><li>Gatling只在高级版本支持分布式负载</li></ul><h3 id=vegeta>Vegeta</h3><ul><li>k6的性能和效率略微逊色于Vegeta</li><li>Vegeta不支持脚本化测试，使用起来比较不方便</li></ul><h3 id=总结>总结</h3><p>对于开发者或者具备一些JavaScript编码能力的测试人员来说，k6使用起来非常方便，其性能高，成本低，可以方便地集成进自动化流水线，支持分布式负载</p><h2 id=一般使用姿势>一般使用姿势</h2><p>k6使用起来非常简单，只需要3步</p><h3 id=1-安装>1. 安装</h3><p>MacOS下可以通过<code>brew install k6</code>命令安装</p><p>Windows下，如果安装了<code>Chocolatey</code>或者<code>winget</code>等包管理工具，可以通过工具命令安装</p><p>或者，访问github.com/grafana/k6/releases，下载对应的安装包或可执行文件</p><h3 id=2-编写脚本>2. 编写脚本</h3><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-javascript data-lang=javascript><span style=display:flex><span><span style=color:#00979d>import</span> { <span style=color:#728e00>check</span> } <span style=color:#728e00>from</span> <span style=color:#7f8c8d>&#39;k6&#39;</span>;
+</span></span><span style=display:flex><span><span style=color:#00979d>import</span> <span style=color:#728e00>http</span> <span style=color:#728e00>from</span> <span style=color:#7f8c8d>&#39;k6/http&#39;</span>;
+</span></span><span style=display:flex><span><span style=color:#00979d>export</span> <span style=color:#728e00>default</span> <span style=color:#728e00>function</span> () {
+</span></span><span style=display:flex><span>    <span style=color:#00979d>const</span> <span style=color:#728e00>url</span> <span style=color:#728e00>=</span> <span style=color:#7f8c8d>`</span><span style=color:#7f8c8d>${</span><span style=color:#728e00>baseUrl</span><span style=color:#7f8c8d>}</span><span style=color:#7f8c8d>/items`</span>
+</span></span><span style=display:flex><span>    <span style=color:#00979d>const</span> <span style=color:#728e00>req_body</span> <span style=color:#728e00>=</span> {
+</span></span><span style=display:flex><span>        <span style=color:#7f8c8d>&#34;foo&#34;</span><span style=color:#728e00>:</span> <span style=color:#7f8c8d>&#34;bar&#34;</span>,
+</span></span><span style=display:flex><span>    };
+</span></span><span style=display:flex><span>    <span style=color:#00979d>const</span> <span style=color:#728e00>params</span> <span style=color:#728e00>=</span> {
+</span></span><span style=display:flex><span>        <span style=color:#728e00>headers</span><span style=color:#728e00>:</span> {
+</span></span><span style=display:flex><span>            <span style=color:#7f8c8d>&#39;Content-Type&#39;</span><span style=color:#728e00>:</span> <span style=color:#7f8c8d>&#39;application/json&#39;</span>
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>    };
+</span></span><span style=display:flex><span>    <span style=color:#00979d>const</span> <span style=color:#728e00>res</span> <span style=color:#728e00>=</span> <span style=color:#728e00>http</span>.<span style=color:#728e00>post</span>(<span style=color:#728e00>url</span>, <span style=color:#728e00>JSON</span>.<span style=color:#728e00>stringify</span>(<span style=color:#728e00>req_body</span>), <span style=color:#728e00>params</span>);
+</span></span><span style=display:flex><span>    <span style=color:#728e00>check</span>(<span style=color:#728e00>res</span>, {
+</span></span><span style=display:flex><span>        <span style=color:#7f8c8d>&#39;status is 200&#39;</span><span style=color:#728e00>:</span> () =&gt; <span style=color:#728e00>res</span>.<span style=color:#728e00>status</span> <span style=color:#728e00>===</span> <span style=color:#8a7b52>200</span>,
+</span></span><span style=display:flex><span>    });
+</span></span><span style=display:flex><span>};
+</span></span></code></pre></div><h3 id=3-执行>3. 执行</h3><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>k6 run --vus <span style=color:#8a7b52>400</span> --duration 3m mytest.js
+</span></span></code></pre></div><p>(启动400个vu，持续执行3分钟)</p><p>等待执行结果：</p><pre tabindex=0><code class=language-log data-lang=log>✓ status is 200
+
+█ setup
+
+checks.........................: 100.00% ✓ 495418      ✗ 0
+data_received..................: 116 MB  642 kB/s
+data_sent......................: 371 MB  2.1 MB/s
+http_req_blocked...............: avg=38.93µs  min=924ns    med=2.45µs   max=80.93ms  p(90)=3.56µs   p(95)=4.48µs
+http_req_connecting............: avg=5.88µs   min=0s       med=0s       max=30.2ms   p(90)=0s       p(95)=0s
+http_req_duration..............: avg=145.1ms  min=10.55ms  med=109.6ms  max=2.99s    p(90)=296.31ms p(95)=372.08ms
+  { expected_response:true }...: avg=145.1ms  min=10.55ms  med=109.6ms  max=2.99s    p(90)=296.31ms p(95)=372.08ms
+http_req_failed................: 0.00%   ✓ 0           ✗ 495418
+http_req_receiving.............: avg=1.28ms   min=12.33µs  med=307.76µs max=120.82ms p(90)=3.44ms   p(95)=5.25ms
+http_req_sending...............: avg=31.82µs  min=7.4µs    med=16.63µs  max=135.44ms p(90)=28.31µs  p(95)=46.41µs
+http_req_tls_handshaking.......: avg=0s       min=0s       med=0s       max=0s       p(90)=0s       p(95)=0s
+http_req_waiting...............: avg=143.79ms min=10.49ms  med=108.24ms max=2.98s    p(90)=294.81ms p(95)=370.19ms
+http_reqs......................: 495418  2749.134151/s
+iteration_duration.............: avg=145.37ms min=300.04µs med=109.85ms max=2.99s    p(90)=296.56ms p(95)=372.5ms
+iterations.....................: 495418  2749.134151/s
+vus............................: 400     min=0         max=400
+vus_max........................: 400     min=400       max=400
+</code></pre><h2 id=在kubernetes中进行分布式负载测试>在Kubernetes中进行分布式负载测试</h2><p>分布式负载测试需要在Kubernetes中安装<code>k6-operator</code>：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>curl https://raw.githubusercontent.com/grafana/k6-operator/main/bundle.yaml | kubectl apply -f -
+</span></span></code></pre></div><p>安装完成后，需要将测试脚本写入ConfigMap中：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>kubectl create configmap mytest --from-file <span style=color:#7f8c8d>&#34;mytest.js&#34;</span>
+</span></span><span style=display:flex><span>script.js
+</span></span></code></pre></div><p>之后，通过在Kubernetes中创建一个类型为<code>K6</code>的资源，来执行测试：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#434f54>apiVersion</span>: k6.io/v1alpha1
+</span></span><span style=display:flex><span><span style=color:#434f54>kind</span>: K6
+</span></span><span style=display:flex><span><span style=color:#434f54>metadata</span>:
+</span></span><span style=display:flex><span>  <span style=color:#434f54>name</span>: mytest
+</span></span><span style=display:flex><span><span style=color:#434f54>spec</span>:
+</span></span><span style=display:flex><span>  <span style=color:#434f54>runner</span>:
+</span></span><span style=display:flex><span>    <span style=color:#434f54>image</span>: registry.cn-hangzhou.aliyuncs.com/surac/grafana-operator:latest-runner
+</span></span><span style=display:flex><span>	<span style=color:#95a5a6># 这个镜像以及下面的镜像是我自己打包的，如果需要用到一些额外的k6扩展，则需要自己打包镜像</span>
+</span></span><span style=display:flex><span>  <span style=color:#434f54>starter</span>:
+</span></span><span style=display:flex><span>    <span style=color:#434f54>image</span>: registry.cn-hangzhou.aliyuncs.com/surac/grafana-operator:latest-starter
+</span></span><span style=display:flex><span>  <span style=color:#434f54>parallelism</span>: <span style=color:#8a7b52>4</span> <span style=color:#95a5a6>#并行实例数，测试任务会分摊到各个实例执行</span>
+</span></span><span style=display:flex><span>  <span style=color:#434f54>script</span>:
+</span></span><span style=display:flex><span>    <span style=color:#434f54>configMap</span>:
+</span></span><span style=display:flex><span>      <span style=color:#434f54>name</span>: mytest.js
+</span></span><span style=display:flex><span>      <span style=color:#434f54>file</span>: mytest.js
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>kubectl apply -f mytest.yaml
+</span></span></code></pre></div><p>k6-operator发现这个资源被创建后，就会创建1个启动<code>Job</code>和4个执行<code>Job</code>，来执行测试任务，可以通过<code>kubectl get jobs</code>来观察</p><pre tabindex=0><code class=language-log data-lang=log>NAME             COMPLETIONS   DURATION   AGE
+mytest-1         1/1           115s       440d
+mytest-2         1/1           114s       440d
+mytest-3         1/1           79s        440d
+mytest-starter   1/1           2s         440d
+</code></pre><h2 id=最后>最后</h2><p>k6还有许多功能，比如：</p><ul><li>阈值(Thresholds)，比如设定“请求的错误率>1%”或者“p99延迟>500ms”时提前结束测试并视为失败，很适合针对服务的SLO来进行测试</li><li>支持将测试指标写到Prometheus，这样就可以在做负载测试时，将QPS、延迟等指标结合服务的CPU、内存、线程等指标进行观察，并且浏览和统计数据也很方便</li></ul></article></main><footer id=footer></footer></body></html>

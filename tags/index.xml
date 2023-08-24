@@ -1,4 +1,114 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Tags on The Dice Maker</title><link>http://suraciii.github.io/tags/</link><description>Recent content in Tags on The Dice Maker</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><atom:link href="http://suraciii.github.io/tags/index.xml" rel="self" type="application/rss+xml"/><item><title>事件驱动架构：设计好的事件</title><link>http://suraciii.github.io/posts/eda-events/</link><pubDate>Thu, 27 Jul 2023 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/eda-events/</guid><description>&lt;p>当我们在系统中发送一些消息时，可能会有以下三种原因：&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Tags on The Dice Maker</title><link>http://suraciii.github.io/tags/</link><description>Recent content in Tags on The Dice Maker</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><atom:link href="http://suraciii.github.io/tags/index.xml" rel="self" type="application/rss+xml"/><item><title>使用k6进行负载测试</title><link>http://suraciii.github.io/posts/load-testing-k6/</link><pubDate>Thu, 24 Aug 2023 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/load-testing-k6/</guid><description>&lt;h2 id="k6">k6&lt;/h2>
+&lt;p>k6是一款来自Grafana的开源的负载测试工具。&lt;/p>
+&lt;p>官方说法中，K6的特点是：&lt;/p>
+&lt;ul>
+&lt;li>提供简单易用的CLI工具，具有开发人员友好的API。&lt;/li>
+&lt;li>使用 JavaScript ES2015/ES6 编写脚本 - 支持本地和远程模块&lt;/li>
+&lt;li>检查(Checks)和阈值(Thresholds) - 用于面向目标、自动化友好的负载测试&lt;/li>
+&lt;/ul>
+&lt;h3 id="和其它负载工具测试对比">和其它负载工具测试对比&lt;/h3>
+&lt;h3 id="jmeter">JMeter&lt;/h3>
+&lt;ul>
+&lt;li>k6没有界面化的UI，需要编写基于JavaScript的测试脚本，以及通过命令行来执行测试，这意味着k6的使用者需要具备一些基本的编码能力&lt;/li>
+&lt;li>不像JMeter，k6可以轻松地集成到自动化的DevOps流水线中&lt;/li>
+&lt;li>k6只支持HTTP相关的负载测试(HTTP1/2, gRPC, WebSockets等)&lt;/li>
+&lt;li>k6的性能强劲并且效率高，即使在配置一般的笔记本电脑上也能轻松跑出上万级别的qps&lt;/li>
+&lt;/ul>
+&lt;h3 id="gatling">Gatling&lt;/h3>
+&lt;ul>
+&lt;li>学习成本没有Gatling高（主要是因为Scala的学习成本比较高）&lt;/li>
+&lt;li>同样，相对于Gatling，k6的性能和效率非常出色&lt;/li>
+&lt;li>Gatling只在高级版本支持分布式负载&lt;/li>
+&lt;/ul>
+&lt;h3 id="vegeta">Vegeta&lt;/h3>
+&lt;ul>
+&lt;li>k6的性能和效率略微逊色于Vegeta&lt;/li>
+&lt;li>Vegeta不支持脚本化测试，使用起来比较不方便&lt;/li>
+&lt;/ul>
+&lt;h3 id="总结">总结&lt;/h3>
+&lt;p>对于开发者或者具备一些JavaScript编码能力的测试人员来说，k6使用起来非常方便，其性能高，成本低，可以方便地集成进自动化流水线，支持分布式负载&lt;/p>
+&lt;h2 id="一般使用姿势">一般使用姿势&lt;/h2>
+&lt;p>k6使用起来非常简单，只需要3步&lt;/p>
+&lt;h3 id="1-安装">1. 安装&lt;/h3>
+&lt;p>MacOS下可以通过&lt;code>brew install k6&lt;/code>命令安装&lt;/p>
+&lt;p>Windows下，如果安装了&lt;code>Chocolatey&lt;/code>或者&lt;code>winget&lt;/code>等包管理工具，可以通过工具命令安装&lt;/p>
+&lt;p>或者，访问github.com/grafana/k6/releases，下载对应的安装包或可执行文件&lt;/p>
+&lt;h3 id="2-编写脚本">2. 编写脚本&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-javascript" data-lang="javascript">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#00979d">import&lt;/span> { &lt;span style="color:#728e00">check&lt;/span> } &lt;span style="color:#728e00">from&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;k6&amp;#39;&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#00979d">import&lt;/span> &lt;span style="color:#728e00">http&lt;/span> &lt;span style="color:#728e00">from&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;k6/http&amp;#39;&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#00979d">export&lt;/span> &lt;span style="color:#728e00">default&lt;/span> &lt;span style="color:#728e00">function&lt;/span> () {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#00979d">const&lt;/span> &lt;span style="color:#728e00">url&lt;/span> &lt;span style="color:#728e00">=&lt;/span> &lt;span style="color:#7f8c8d">`&lt;/span>&lt;span style="color:#7f8c8d">${&lt;/span>&lt;span style="color:#728e00">baseUrl&lt;/span>&lt;span style="color:#7f8c8d">}&lt;/span>&lt;span style="color:#7f8c8d">/items`&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#00979d">const&lt;/span> &lt;span style="color:#728e00">req_body&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#7f8c8d">&amp;#34;foo&amp;#34;&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#34;bar&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> };
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#00979d">const&lt;/span> &lt;span style="color:#728e00">params&lt;/span> &lt;span style="color:#728e00">=&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">headers&lt;/span>&lt;span style="color:#728e00">:&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#7f8c8d">&amp;#39;Content-Type&amp;#39;&lt;/span>&lt;span style="color:#728e00">:&lt;/span> &lt;span style="color:#7f8c8d">&amp;#39;application/json&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> };
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#00979d">const&lt;/span> &lt;span style="color:#728e00">res&lt;/span> &lt;span style="color:#728e00">=&lt;/span> &lt;span style="color:#728e00">http&lt;/span>.&lt;span style="color:#728e00">post&lt;/span>(&lt;span style="color:#728e00">url&lt;/span>, &lt;span style="color:#728e00">JSON&lt;/span>.&lt;span style="color:#728e00">stringify&lt;/span>(&lt;span style="color:#728e00">req_body&lt;/span>), &lt;span style="color:#728e00">params&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#728e00">check&lt;/span>(&lt;span style="color:#728e00">res&lt;/span>, {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#7f8c8d">&amp;#39;status is 200&amp;#39;&lt;/span>&lt;span style="color:#728e00">:&lt;/span> () =&amp;gt; &lt;span style="color:#728e00">res&lt;/span>.&lt;span style="color:#728e00">status&lt;/span> &lt;span style="color:#728e00">===&lt;/span> &lt;span style="color:#8a7b52">200&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> });
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>};
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="3-执行">3. 执行&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>k6 run --vus &lt;span style="color:#8a7b52">400&lt;/span> --duration 3m mytest.js
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>(启动400个vu，持续执行3分钟)&lt;/p>
+&lt;p>等待执行结果：&lt;/p>
+&lt;pre tabindex="0">&lt;code class="language-log" data-lang="log">✓ status is 200
+█ setup
+checks.........................: 100.00% ✓ 495418 ✗ 0
+data_received..................: 116 MB 642 kB/s
+data_sent......................: 371 MB 2.1 MB/s
+http_req_blocked...............: avg=38.93µs min=924ns med=2.45µs max=80.93ms p(90)=3.56µs p(95)=4.48µs
+http_req_connecting............: avg=5.88µs min=0s med=0s max=30.2ms p(90)=0s p(95)=0s
+http_req_duration..............: avg=145.1ms min=10.55ms med=109.6ms max=2.99s p(90)=296.31ms p(95)=372.08ms
+{ expected_response:true }...: avg=145.1ms min=10.55ms med=109.6ms max=2.99s p(90)=296.31ms p(95)=372.08ms
+http_req_failed................: 0.00% ✓ 0 ✗ 495418
+http_req_receiving.............: avg=1.28ms min=12.33µs med=307.76µs max=120.82ms p(90)=3.44ms p(95)=5.25ms
+http_req_sending...............: avg=31.82µs min=7.4µs med=16.63µs max=135.44ms p(90)=28.31µs p(95)=46.41µs
+http_req_tls_handshaking.......: avg=0s min=0s med=0s max=0s p(90)=0s p(95)=0s
+http_req_waiting...............: avg=143.79ms min=10.49ms med=108.24ms max=2.98s p(90)=294.81ms p(95)=370.19ms
+http_reqs......................: 495418 2749.134151/s
+iteration_duration.............: avg=145.37ms min=300.04µs med=109.85ms max=2.99s p(90)=296.56ms p(95)=372.5ms
+iterations.....................: 495418 2749.134151/s
+vus............................: 400 min=0 max=400
+vus_max........................: 400 min=400 max=400
+&lt;/code>&lt;/pre>&lt;h2 id="在kubernetes中进行分布式负载测试">在Kubernetes中进行分布式负载测试&lt;/h2>
+&lt;p>分布式负载测试需要在Kubernetes中安装&lt;code>k6-operator&lt;/code>：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>curl https://raw.githubusercontent.com/grafana/k6-operator/main/bundle.yaml | kubectl apply -f -
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>安装完成后，需要将测试脚本写入ConfigMap中：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>kubectl create configmap mytest --from-file &lt;span style="color:#7f8c8d">&amp;#34;mytest.js&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>script.js
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>之后，通过在Kubernetes中创建一个类型为&lt;code>K6&lt;/code>的资源，来执行测试：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-yaml" data-lang="yaml">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#434f54">apiVersion&lt;/span>: k6.io/v1alpha1
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#434f54">kind&lt;/span>: K6
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#434f54">metadata&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#434f54">name&lt;/span>: mytest
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#434f54">spec&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#434f54">runner&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#434f54">image&lt;/span>: registry.cn-hangzhou.aliyuncs.com/surac/grafana-operator:latest-runner
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#95a5a6"># 这个镜像以及下面的镜像是我自己打包的，如果需要用到一些额外的k6扩展，则需要自己打包镜像&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#434f54">starter&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#434f54">image&lt;/span>: registry.cn-hangzhou.aliyuncs.com/surac/grafana-operator:latest-starter
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#434f54">parallelism&lt;/span>: &lt;span style="color:#8a7b52">4&lt;/span> &lt;span style="color:#95a5a6">#并行实例数，测试任务会分摊到各个实例执行&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#434f54">script&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#434f54">configMap&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#434f54">name&lt;/span>: mytest.js
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#434f54">file&lt;/span>: mytest.js
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>kubectl apply -f mytest.yaml
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>k6-operator发现这个资源被创建后，就会创建1个启动&lt;code>Job&lt;/code>和4个执行&lt;code>Job&lt;/code>，来执行测试任务，可以通过&lt;code>kubectl get jobs&lt;/code>来观察&lt;/p>
+&lt;pre tabindex="0">&lt;code class="language-log" data-lang="log">NAME COMPLETIONS DURATION AGE
+mytest-1 1/1 115s 440d
+mytest-2 1/1 114s 440d
+mytest-3 1/1 79s 440d
+mytest-starter 1/1 2s 440d
+&lt;/code>&lt;/pre>&lt;h2 id="最后">最后&lt;/h2>
+&lt;p>k6还有许多功能，比如：&lt;/p>
+&lt;ul>
+&lt;li>阈值(Thresholds)，比如设定“请求的错误率&amp;gt;1%”或者“p99延迟&amp;gt;500ms”时提前结束测试并视为失败，很适合针对服务的SLO来进行测试&lt;/li>
+&lt;li>支持将测试指标写到Prometheus，这样就可以在做负载测试时，将QPS、延迟等指标结合服务的CPU、内存、线程等指标进行观察，并且浏览和统计数据也很方便&lt;/li>
+&lt;/ul></description></item><item><title>事件驱动架构：设计好的事件</title><link>http://suraciii.github.io/posts/eda-events/</link><pubDate>Thu, 27 Jul 2023 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/eda-events/</guid><description>&lt;p>当我们在系统中发送一些消息时，可能会有以下三种原因：&lt;/p>
 &lt;ul>
 &lt;li>我要对方为我做某些事&lt;/li>
 &lt;li>系统中发生了某些事&lt;/li>
