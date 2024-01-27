@@ -35,7 +35,11 @@
 &lt;li>缩短反馈周期，尽量早地获得反馈&lt;/li>
 &lt;li>工具不是万能的，但是工具很有用&lt;/li>
 &lt;li>不要为每个环境设置单独的分支&lt;/li>
-&lt;/ul></description></item><item><title>使用k6进行负载测试</title><link>http://suraciii.github.io/posts/load-testing-k6/</link><pubDate>Thu, 24 Aug 2023 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/load-testing-k6/</guid><description>&lt;h2 id="k6">k6&lt;/h2>
+&lt;/ul>
+&lt;p>&lt;em>参考资料:&lt;/em>
+&lt;em>1.&lt;a href="https://devblogs.microsoft.com/devops/release-flow-how-we-do-branching-on-the-vsts-team/">Release Flow: How We Do Branching on the VSTS Team&lt;/a>&lt;/em>
+&lt;em>2.&lt;a href="https://trunkbaseddevelopment.com/">Trunk Based Development&lt;/a>&lt;/em>
+&lt;em>3.&lt;a href="https://bankapi.net/demdemo/site/docs/quick-starts/release-flow/index.html">Asseco SEE DEM Developer guide&lt;/a>&lt;/em>&lt;/p></description></item><item><title>使用k6进行负载测试</title><link>http://suraciii.github.io/posts/load-testing-k6/</link><pubDate>Thu, 24 Aug 2023 00:00:00 +0000</pubDate><guid>http://suraciii.github.io/posts/load-testing-k6/</guid><description>&lt;h2 id="k6">k6&lt;/h2>
 &lt;p>k6是一款来自Grafana的开源的负载测试工具。&lt;/p>
 &lt;p>官方说法中，K6的特点是：&lt;/p>
 &lt;ul>
