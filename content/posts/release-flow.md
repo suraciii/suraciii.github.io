@@ -57,3 +57,8 @@ Release Flow下，在开发功能或者修复缺陷时，第一步是从主干�
 * 缩短反馈周期，尽量早地获得反馈
 * 工具不是万能的，但是工具很有用
 * 不要为每个环境设置单独的分支
+
+*参考资料:*
+*1.[Release Flow: How We Do Branching on the VSTS Team](https://devblogs.microsoft.com/devops/release-flow-how-we-do-branching-on-the-vsts-team/)*
+*2.[Trunk Based Development](https://trunkbaseddevelopment.com/)*
+*3.[Asseco SEE DEM Developer guide](https://bankapi.net/demdemo/site/docs/quick-starts/release-flow/index.html)*
